@@ -5,7 +5,8 @@
   migrate                 move the state folder from ~/.claude/jeb-desktop to ~/Library/Application Support/Jeb
                           (install, follow and the updater do this on their own; the old path stays as a link)
   doctor                  read-only health check: one line per check (ok / FIX with the fix), exit 1 on a problem
-  install [--mode dev|release] [--repin] [--add-path] [--dry-run] [--verbose]
+                          (JEB_NO_LAUNCHCTL=1 skips the launchctl queries: `skipped (sandbox)`)
+  install [--mode dev|release] [--repin] [--add-path] [--no-agents] [--dry-run] [--verbose]
                           one short line per step (--verbose: every command and detail). First build through
                           the updater's compile, smoke and start gates (refuses if one fails; updates and
                           releases keep all gates), the
@@ -25,6 +26,16 @@
                           PATH: --add-path adds it to the shell profile (zsh ~/.zprofile, bash ~/.bash_profile,
                           else ~/.profile; JEB_PROFILE; backup first); without it a terminal asks, else the
                           line to add is printed. A different file already at that path is left alone.
+                          --no-agents (sandbox only, used by ./release smoke): everything above up to the install-mode file and
+                          the plists in JEB_HOME/launchd, but no hand-over, no copy into LaunchAgents, no launchctl,
+                          no wait for the desktop, no jebctl link (each prints `skipped (--no-agents)`). Refused
+                          unless HOME differs from the account's real home and the app, LaunchAgents and state
+                          folders are under HOME. JEB_CLONE (honoured only with --no-agents, and by `doctor` when
+                          JEB_NO_LAUNCHCTL=1) runs on that clone instead of this script's: its mod, updater and
+                          release-signers are used, this script's install logic. JEB_SMOKE_TAG selects that tag
+                          instead of the newest verified one (it must verify; a pre-release vX.Y.Z-rc.N tag needs
+                          JEB_ALLOW_RC=1), and with it the release's prebuilt app is mandatory: no prebuilt, no
+                          compile, the install fails with the reason.
   uninstall [--purge] [--dry-run] [--verbose]
                           one short line per step (--verbose: every command and detail). Bootout, remove the
                           plists and the app; versions and logs stay unless --purge (removes everything in JEB_HOME);
@@ -79,7 +90,7 @@ JEB_HOME (state root), JEB_SRC (the app source, default src/ beside this script)
 JEB_BACKUPS override the defaults, mostly for tests.
 The mod path rendered into the plists (JEB_MOD) is mod/ beside desktop/, from this script's own location.
 """
-import fcntl, glob, hashlib, importlib.util, json, os, plistlib, re, shutil, signal, subprocess, sys, tarfile, time
+import fcntl, glob, hashlib, importlib.util, json, os, plistlib, pwd, re, shutil, signal, subprocess, sys, tarfile, time
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import jebhome
@@ -93,6 +104,14 @@ CODE = os.path.dirname(os.path.realpath(__file__))      # realpath: `jebctl` may
 CLONE = os.path.dirname(CODE)
 MOD = os.path.join(CLONE, "mod")
 SRC = os.environ.get("JEB_SRC") or os.path.join(CODE, "src")
+# Sandbox only (./release smoke): --no-agents, no LaunchAgent, launchctl or PATH step; JEB_CLONE then names the clone to run on
+NO_AGENTS = "--no-agents" in sys.argv[1:]
+SMOKE_TAG = (os.environ.get("JEB_SMOKE_TAG") or None) if NO_AGENTS else None
+if os.environ.get("JEB_CLONE") and (NO_AGENTS or (sys.argv[1:2] == ["doctor"] and os.environ.get("JEB_NO_LAUNCHCTL") == "1")):
+    CLONE = os.path.realpath(os.environ["JEB_CLONE"])
+    CODE = os.path.join(CLONE, "desktop")
+    MOD = os.path.join(CLONE, "mod")
+    SRC = os.environ.get("JEB_SRC") or os.path.join(CODE, "src")
 ALL_LABELS = ("com.jeb.desktop", "com.jeb.desktop.watchdog", "com.jeb.desktop.update", "com.jeb.desktop.release")
 VERSIONS = MODE_FILE = RELEASE_STATE = RELEASE_LOG = SIGNERS = None
 
@@ -112,6 +131,7 @@ set_home(HOME)
 REPO_SIGNERS = os.path.join(CODE, "release-signers")        # shipped in the repo (ssh allowed_signers format)
 TAG_RE = re.compile(r"v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")    # SemVer releases; pre-release tags are never followed
 PLUGIN_JSON = os.path.join(MOD, ".claude-plugin", "plugin.json")   # the release writes its "version"; tags are the source
+SMOKE_TAG_RE = re.compile(TAG_RE.pattern + r"(-rc\.(0|[1-9]\d*))?")     # smoke only: a pre-release tag needs JEB_ALLOW_RC=1
 INITIAL_VERSION = "1.0.0"                                          # the first release, as release-please starts
 UID = os.getuid()
 DRY = False
@@ -212,6 +232,14 @@ def release_tags(*args):
     """Sorted oldest first: the v* release tags (of `git tag --list`, or --points-at HEAD with args)."""
     out = git("tag", "--list", "v*", *args).stdout.split()
     return sorted((t for t in out if tag_key(t)), key=tag_key)
+
+
+def head_tags():
+    """The release tags at HEAD; a smoke run (which may name a pre-release tag) asks for its own tag only."""
+    if SMOKE_TAG:
+        r = git("rev-parse", "--verify", "-q", "refs/tags/" + SMOKE_TAG + "^{commit}")
+        return [SMOKE_TAG] if r.returncode == 0 and r.stdout.strip() == git("rev-parse", "HEAD").stdout.strip() else []
+    return release_tags("--points-at", "HEAD")
 
 
 def load_updater():
@@ -575,7 +603,10 @@ def cmd_doctor():
     check(isinstance(jm, str) and os.path.isfile(os.path.join(jm, "hooks", "pixel-art.ts")), "app's mod folder (JebMod) has hooks/pixel-art.ts", "reinstall: ./install")
     for l in labels_for(m):
         check(os.path.isfile(os.path.join(AGENTS, l + ".plist")), f"LaunchAgent plist {l}", "run: ./install")
-        check(ok_run(["launchctl", "print", f"gui/{UID}/{l}"]), f"LaunchAgent loaded {l}", "run: ./install")
+        if os.environ.get("JEB_NO_LAUNCHCTL") == "1":
+            say(f"skip  LaunchAgent loaded {l}: skipped (sandbox)")
+        else:
+            check(ok_run(["launchctl", "print", f"gui/{UID}/{l}"]), f"LaunchAgent loaded {l}", "run: ./install")
     procs, beats = running(), beat_files()
     check(len(procs) == 1, f"exactly one JebDesktop running ({len(procs)})", "run: jebctl start (more than one: jebctl quit, then jebctl start)")
     for pid, _, _ in procs:
@@ -703,10 +734,12 @@ def select_release():
             say(f"warning: could not fetch tags from origin ({r.stderr.strip()[:200]}); using the tags already here")
     base, rs = base_branch(), load_rstate()
     here = git("rev-parse", "HEAD").stdout.strip()
-    for t in reversed(release_tags()):
+    for t in ([SMOKE_TAG] if SMOKE_TAG else reversed(release_tags())):
         if t in rs.get("failed", []):
             continue
         sha, why = verify_tag(t, base)
+        if why and SMOKE_TAG:
+            raise SystemExit(f"{t} does not verify: {why}")
         if why:
             rlog(f"install: {t} rejected: {why}; it will not be retried")
             rs.setdefault("failed", []).append(t)
@@ -722,6 +755,8 @@ def select_release():
         if r.returncode != 0:
             raise SystemExit("git checkout failed: " + r.stderr.strip())
         return here
+    if SMOKE_TAG:
+        raise SystemExit(f"{SMOKE_TAG} was skipped as failed in an earlier run")
     say("release: no verified release tag; staying on the cloned commit, detached (updates start once a verified tag appears)")
     return None
 
@@ -912,7 +947,7 @@ def install_steps(args):
         except IndexError:
             m = ""
         if m not in ("dev", "release"):
-            raise SystemExit("usage: jebctl install [--mode dev|release] [--repin] [--add-path] [--dry-run] [--verbose]")
+            raise SystemExit("usage: jebctl install [--mode dev|release] [--repin] [--add-path] [--no-agents] [--dry-run] [--verbose]")
     detail(f"mode: {m}")
     back = None
     if m == "release":
@@ -921,14 +956,17 @@ def install_steps(args):
     lead("app")
     app, pre, tag = None, [], None
     if m == "release" and os.path.isfile(SIGNERS):
-        on = release_tags("--points-at", "HEAD")
+        on = head_tags()
         if on and verify_tag(on[-1], base_branch())[1] is None:
             tag = on[-1]
+            why = []
             if DRY:
                 detail(f"app: would use {app_name(on[-1])} from the release in place of the compile when its hash matches the app-sha256 line in the tag; else the compile")
             else:
-                app = fetch_app(tag, detail)
+                app = fetch_app(tag, lambda m: (why.append(m), detail(m)))
                 pre = ["--prebuilt", app] if app else []
+                if SMOKE_TAG and not app:       # a smoke run exists to prove the prebuilt path; no silent compile
+                    raise SystemExit("the release's prebuilt app was not used (it would have been built from source): " + (why[-1] if why else "no reason logged"))
     detail("1. first build through the updater (compile, smoke, headless start)")
     t0 = time.time()
     if DRY:
@@ -961,6 +999,13 @@ def install_steps(args):
     write_plists(os.path.join(HOME, "launchd"), m)
     if os.path.exists(os.path.join(HOME, "quit")) and not DRY:
         os.unlink(os.path.join(HOME, "quit"))
+    if NO_AGENTS:
+        detail("3-5. hand-over, LaunchAgents (copy, bootout, bootstrap), waiting for the desktop and the jebctl link: skipped (--no-agents)")
+        fin("skipped (--no-agents)")
+        lead("desktop")
+        fin("skipped (--no-agents)")
+        line("jebctl command", "skipped (--no-agents)")
+        return
     detail("3. hand the desktop over from any running instance")
     hand_over_from_legacy()
     detail("4. LaunchAgents")
@@ -1479,11 +1524,31 @@ def cmd_quit():
     say("quit; `jebctl start` (or the next login) brings it back")
 
 
+def check_sandbox(cmd):
+    """--no-agents skips every LaunchAgent and launchctl step, so it only runs where HOME is not the real home and
+    the app, agents and state folder all sit under it. Returns the reason to refuse, or None."""
+    me, real = os.path.realpath(os.path.expanduser("~")), os.path.realpath(pwd.getpwuid(os.getuid()).pw_dir)
+    if cmd != "install":
+        return "--no-agents is for `install` only"
+    if me == real:
+        return f"--no-agents needs a HOME other than the real one ({real}); it exists for sandboxes (./release smoke)"
+    for what, p in (("JEB_APP_DIR", APP_DIR), ("JEB_LAUNCHAGENTS", AGENTS), ("the state folder", HOME)):
+        if os.path.commonpath([os.path.realpath(p), me]) != me:
+            return f"--no-agents: {what} ({p}) is outside the sandbox HOME {me}"
+    if SMOKE_TAG and not (SMOKE_TAG_RE.fullmatch(SMOKE_TAG) and ("-rc." not in SMOKE_TAG or os.environ.get("JEB_ALLOW_RC") == "1")):
+        return f"JEB_SMOKE_TAG {SMOKE_TAG!r} is not a release tag" + (" (a pre-release tag needs JEB_ALLOW_RC=1)" if "-rc." in SMOKE_TAG else "")
+    return None
+
+
 def main(argv):
     global DRY, VERBOSE
     args = [a for a in argv if a not in ("--dry-run", "--verbose")]
     DRY = "--dry-run" in argv
     cmd = args[0] if args else "status"
+    if NO_AGENTS:
+        why = check_sandbox(cmd)
+        if why:
+            raise SystemExit("jebctl: " + why)
     VERBOSE = "--verbose" in argv or cmd not in ("install", "uninstall")
     if cmd == "status": cmd_status()
     elif cmd == "doctor": return cmd_doctor()

@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""./release [patch|minor|major] [--dry-run] | ./release setup [--dry-run]: cut a Jeb release from this clone (owner side, local, no CI).
+"""./release [patch|minor|major] [--dry-run] | ./release setup [--dry-run] | ./release smoke [TAG] [--dry-run]: cut a Jeb release from this clone (owner side, local, no CI), or smoke-test a published one.
 
   ./release setup         one-time signing setup. When this clone has no SSH signing key configured, makes
                           ~/.ssh/jeb_signing (ed25519; ssh-keygen asks for a passphrase) unless it exists and
@@ -24,9 +24,23 @@
                           the zip (`gh release create <tag> --verify-tag --notes-file ... <zip>`), only on y.
                           Installs use that zip only when it matches the hash in the signed tag. Without a
                           terminal they print those commands instead.
-  --dry-run               change nothing: no file, tag or push.
+  ./release smoke [TAG]   sandboxed end-to-end check of a published release; never touches the real install. TAG
+                          defaults to the newest v* tag on origin (a vX.Y.Z-rc.N tag only when it is the newest or
+                          named). Under <git dir>/jeb-smoke/<TAG>/ (an earlier one is moved to old-<time>), with a
+                          fake HOME, it clones origin for real (your gh and git config are passed through, so the
+                          download path is genuinely exercised) and installs with this tree's `jebctl install
+                          --mode release --no-agents` run on that clone (JEB_CLONE): no LaunchAgent, launchctl or
+                          PATH change anywhere. So it tests the tag's app, mod, updater and gates with the current
+                          tree's install logic; the tag's own ./install is not run (older tags lack --no-agents).
+                          A: fresh install must use the release's prebuilt app (a build from source fails the
+                          smoke), pass codesign, point JebMod at the clone and use the new state folder.
+                          B: an existing install in the old state folder (~/.claude/jeb-desktop) must migrate to
+                          the new one, leave a link, and have its plists rewritten. Then `jebctl doctor` runs
+                          read-only (JEB_NO_LAUNCHCTL=1) against A and its output is shown. Exit 1 on any failure.
+                          JEB_SMOKE_ORIGIN overrides the origin URL (tests).
+  --dry-run               change nothing: no file, tag or push (smoke: prints the plan).
 """
-import os, shutil, signal, subprocess, sys
+import json, os, plistlib, pwd, re, shutil, signal, subprocess, sys, time
 
 CLONE = os.path.dirname(os.path.abspath(__file__))
 CODE = os.path.join(CLONE, "desktop")
@@ -167,9 +181,182 @@ def release(dry, bump):
     return rc
 
 
+# ---- smoke ----
+
+SMOKE_TAG_RE = re.compile(r"v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-rc\.(0|[1-9]\d*))?")    # pre-release tags are for smoke only; installs never follow them
+JEBCTL = os.path.join(CODE, "jebctl")
+
+
+def smoke_key(t):
+    m = SMOKE_TAG_RE.fullmatch(t)
+    return (int(m.group(1)), int(m.group(2)), int(m.group(3)), 0, int(m.group(4))) if m and m.group(4) else (int(m.group(1)), int(m.group(2)), int(m.group(3)), 1, 0)
+
+
+def remote_tags(origin):
+    """Release tags on origin (SemVer, optionally -rc.N), oldest first; exits when origin cannot be read."""
+    r = subprocess.run(["git", "ls-remote", "--tags", "--refs", origin, "refs/tags/v*"], capture_output=True, text=True, timeout=120)
+    if r.returncode != 0:
+        fail(f"cannot list the tags of {origin}: {r.stderr.strip()[:200]}")
+    tags = [l.split("refs/tags/", 1)[1] for l in r.stdout.splitlines() if "refs/tags/" in l]
+    return sorted((t for t in tags if SMOKE_TAG_RE.fullmatch(t)), key=smoke_key)
+
+
+def smoke_env(home, tag, extra=None):
+    """Every child's environment: the owner's PATH and auth (gh, git config) but a fake HOME and no JEB_* from outside."""
+    real = pwd.getpwuid(os.getuid()).pw_dir
+    env = {k: v for k, v in os.environ.items() if not k.startswith("JEB_")}
+    env.update(HOME=home, JEB_APP_DIR=os.path.join(home, "Applications"), JEB_LAUNCHAGENTS=os.path.join(home, "Library", "LaunchAgents"),
+               JEB_SETTINGS=os.path.join(home, ".claude", "settings.json"), JEB_BACKUPS=os.path.join(home, ".claude", "backups", "jeb"),
+               JEB_STORE_DIR=os.path.join(home, ".claude", "plugins", "store"), JEB_BIN_DIR=os.path.join(home, ".local", "bin"),
+               JEB_PROFILE=os.path.join(home, ".zprofile"))
+    env.setdefault("GH_CONFIG_DIR", os.path.join(real, ".config", "gh"))
+    if "GIT_CONFIG_GLOBAL" not in env and os.path.isfile(os.path.join(real, ".gitconfig")):
+        env["GIT_CONFIG_GLOBAL"] = os.path.join(real, ".gitconfig")
+    if "-rc." in tag:
+        env["JEB_ALLOW_RC"] = "1"
+    env.update(extra or {})
+    return env
+
+
+def smoke_case(name, label, sandbox, home, tag, origin, seed=None):
+    """One case: clone origin, install with --no-agents, check. Returns (ok, text)."""
+    t0 = time.time()
+    clone = os.path.join(sandbox, "clone-" + name.lower())
+    state = os.path.join(home, "Library", "Application Support", "Jeb")
+    old = os.path.join(home, ".claude", "jeb-desktop")
+    env = smoke_env(home, tag, {"JEB_CLONE": clone, "JEB_SMOKE_TAG": tag})
+    os.makedirs(os.path.join(home, "Library"))
+    # gh keeps its login in the keychain, found under $HOME/Library/Keychains: link the real one so no token goes into env
+    os.symlink(os.path.join(pwd.getpwuid(os.getuid()).pw_dir, "Library", "Keychains"), os.path.join(home, "Library", "Keychains"))
+    if seed:
+        seed(old)
+    def bad(why):
+        return False, f"FAIL: {why}"
+    r = subprocess.run(["git", "clone", "-q", origin, clone], env=env, capture_output=True, text=True, timeout=900)
+    if r.returncode != 0:
+        return bad("git clone failed: " + (r.stderr.strip().splitlines() or ["?"])[-1][:200])
+    r = subprocess.run(["/usr/bin/python3", "-I", JEBCTL, "install", "--mode", "release", "--no-agents"], env=env, cwd=sandbox, capture_output=True, text=True, timeout=1800)
+    out = (r.stdout + r.stderr).strip()
+    open(os.path.join(sandbox, f"install-{name.lower()}.log"), "w").write(out + "\n")
+    if r.returncode != 0:
+        return bad("install exit %d: %s" % (r.returncode, " | ".join(out.splitlines()[-3:])[:400]))
+    app = os.path.join(home, "Applications", "JebDesktop.app")
+    if not os.path.isdir(app):
+        return bad(f"{app} was not installed")
+    if subprocess.run(["codesign", "--verify", app], capture_output=True).returncode != 0:
+        return bad("codesign --verify failed on the installed app")
+    try:
+        jm = plistlib.load(open(os.path.join(app, "Contents", "Info.plist"), "rb")).get("JebMod")
+    except (OSError, ValueError):
+        jm = None
+    if not isinstance(jm, str) or os.path.realpath(jm) != os.path.realpath(os.path.join(clone, "mod")):
+        return bad(f"Info.plist JebMod is {jm!r}, not the clone's mod")
+    try:
+        ulog = open(os.path.join(state, "update.log")).read()
+    except OSError:
+        return bad(f"no update.log in {state}")
+    if "using the prebuilt binary" not in ulog or f"(prebuilt {tag})" not in out:
+        why = [l for l in out.splitlines() if l.startswith("app:")]
+        return bad("the app was built from source, not the release's prebuilt" + (": " + why[-1] if why else ""))
+    head = subprocess.run(["git", "-C", clone, "rev-parse", "HEAD", f"refs/tags/{tag}^{{commit}}"], capture_output=True, text=True).stdout.split()
+    if len(head) != 2 or head[0] != head[1]:
+        return bad(f"the clone is not at {tag}")
+    if not os.path.isdir(state) or os.path.islink(state):
+        return bad(f"state folder {state} is missing")
+    if name == "A":
+        if os.path.lexists(old):
+            return bad(f"{old} exists on a fresh install")
+    else:
+        if not os.path.islink(old) or os.path.realpath(old) != os.path.realpath(state):
+            return bad(f"{old} is not a link to the new state folder")
+        for n in ("install-mode", "release-state.json", os.path.join("launchd", "com.jeb.desktop.plist"), os.path.join("launchd", "com.jeb.desktop.update.plist")):
+            if not os.path.exists(os.path.join(state, n)):
+                return bad(f"{n} did not survive the move to {state}")
+        ld = os.path.join(state, "launchd")
+        stale = [n for n in sorted(os.listdir(ld)) if ".claude/jeb-desktop" in open(os.path.join(ld, n), errors="replace").read()]
+        if stale:
+            return bad("plists still name the old state folder: " + ", ".join(stale))
+    return True, f"ok (prebuilt {tag}, {time.time() - t0:.0f}s)"
+
+
+def seed_old_layout(old):
+    """A minimal release-mode install as the state folder was laid out before it moved."""
+    os.makedirs(os.path.join(old, "launchd"), mode=0o700)
+    open(os.path.join(old, "install-mode"), "w").write("release\n")
+    json.dump({"failed": [], "checked": int(time.time()) - 3600, "last": None}, open(os.path.join(old, "release-state.json"), "w"))
+    for label in ("com.jeb.desktop", "com.jeb.desktop.update"):     # the update one is not rewritten by the install, so only the migration can fix it
+        with open(os.path.join(old, "launchd", label + ".plist"), "wb") as f:
+            plistlib.dump({"Label": label, "ProgramArguments": ["/usr/bin/true"], "StandardOutPath": os.path.join(old, "run.log"),
+                           "StandardErrorPath": os.path.join(old, "run.err"), "EnvironmentVariables": {"JEB_HOME": old}}, f)
+
+
+def smoke_plugdirs(home, clone, tag):
+    """The ./install settings step against the sandbox settings, so plugdirs is covered too."""
+    sys.path.insert(0, CODE)
+    import plugdirs
+    saved = dict(os.environ)
+    try:
+        os.environ.update(smoke_env(home, tag))
+        plugdirs.edit(os.path.join(clone, "mod"), False, False, lambda *a: None)
+        return plugdirs.settings_path()
+    finally:
+        os.environ.clear(); os.environ.update(saved)
+
+
+def smoke(tag, dry):
+    origin = os.environ.get("JEB_SMOKE_ORIGIN") or git("remote", "get-url", "origin").stdout.strip()
+    if not origin:
+        fail("this clone has no origin")
+    if tag:
+        if not SMOKE_TAG_RE.fullmatch(tag):
+            fail(f"{tag} is not a release tag (vX.Y.Z or vX.Y.Z-rc.N)")
+    else:
+        tags = remote_tags(origin)
+        if not tags:
+            fail(f"no v* release tag on {origin}")
+        tag = tags[-1]
+    root = os.path.join(CLONE, git("rev-parse", "--git-path", "jeb-smoke").stdout.strip())
+    sandbox = os.path.join(root, tag)
+    say(f"smoke {tag} from {origin}\n  sandbox {sandbox} (fake HOME inside; an earlier one is moved to {os.path.join(root, 'old-<time>')})\n"
+        f"  A fresh install: git clone, jebctl install --mode release --no-agents; B existing install in the old state folder; then jebctl doctor (JEB_NO_LAUNCHCTL=1)")
+    if dry:
+        say("dry run: nothing was created.")
+        return 0
+    os.makedirs(root, exist_ok=True)
+    if os.path.lexists(sandbox):
+        aside = os.path.join(root, f"old-{time.strftime('%Y%m%d-%H%M%S')}-{tag}")
+        os.rename(sandbox, aside)
+        say(f"  moved the previous sandbox to {aside}")
+    os.makedirs(sandbox)
+    results = []
+    for name, label, home, seed in (("A", "fresh install", "home", None), ("B", "existing install, old layout", "home-b", seed_old_layout)):
+        try:
+            ok, text = smoke_case(name, label, sandbox, os.path.join(sandbox, home), tag, origin, seed)
+        except (OSError, subprocess.SubprocessError) as e:
+            ok, text = False, f"FAIL: {type(e).__name__}: {e}"
+        say(f"smoke {name} {label}: {text}")
+        results.append(ok)
+    if results[0]:
+        home, clone = os.path.join(sandbox, "home"), os.path.join(sandbox, "clone-a")
+        try:
+            say(f"smoke plugin settings: ok ({smoke_plugdirs(home, clone, tag)})")
+        except (SystemExit, OSError, ImportError) as e:
+            say(f"smoke plugin settings: FAIL: {e}"); results.append(False)
+        r = subprocess.run(["/usr/bin/python3", "-I", JEBCTL, "doctor"], env=smoke_env(home, tag, {"JEB_CLONE": clone, "JEB_NO_LAUNCHCTL": "1"}), cwd=sandbox, capture_output=True, text=True, timeout=300)
+        lines = (r.stdout + r.stderr).strip().splitlines()
+        say("smoke doctor (agents are not loaded in a sandbox; those FIX lines are expected):\n" + "\n".join("  " + l for l in lines))
+        crit = [l for l in lines if l.startswith("FIX") and re.search(r"app bundle|mod folder|signers|state folder", l)]
+        if crit:
+            say("smoke doctor: FAIL: " + "; ".join(c[:120] for c in crit)); results.append(False)
+    say(f"sandbox: {sandbox}\n" + ("smoke passed" if all(results) else "smoke FAILED"))
+    return 0 if all(results) else 1
+
+
 def main(argv):
     dry = "--dry-run" in argv
     rest = [a for a in argv if a != "--dry-run"]
+    if rest[:1] == ["smoke"] and len(rest) <= 2:
+        return smoke(rest[1] if len(rest) == 2 else None, dry)
     if rest not in ([], ["setup"], ["patch"], ["minor"], ["major"]):
         say(__doc__); return 2
     return setup(dry) if rest == ["setup"] else release(dry, rest[0] if rest else "auto")

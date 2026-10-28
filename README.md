@@ -246,6 +246,8 @@ It validates and tests the plugin, does a universal release build (arm64 and x86
 
 It doesn't use release-please itself because that tool creates tags on GitHub's side, unsigned, and installs only follow tags signed by a pinned key.
 
+To check a published release the way a new user gets it, run `./release smoke` (or `./release smoke v1.2.0` for another tag; `--dry-run` prints the plan). It works in a sandbox under `.git/jeb-smoke/<tag>/` with a fake home folder, so your own install is never touched: it clones the repo from GitHub, installs the tag's app, mod and updater with this tree's `jebctl install --mode release --no-agents` (no LaunchAgent, `launchctl` or PATH change), and checks that the release's prebuilt app was used (a build from source fails the smoke), that it is signed and points at the clone's mod, and that the new state folder is used. It then does the same for an install in the old state folder to check the migration, and runs `jebctl doctor` read-only. Your `gh` and git configuration are passed through so the real download path is exercised. The tag's own `./install` is not run, since older tags don't know `--no-agents`. An earlier sandbox is moved aside to `old-<time>`, not deleted. A pre-release tag (`v1.5.0-rc.1`) is smoked only when it is the newest tag or named explicitly.
+
 Existing installs pick the tag up on their next check either way. On GitHub, it's worth protecting `v*` tags and `main` so only the owner can create or move them.
 
 ## Cost and privacy
