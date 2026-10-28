@@ -6,7 +6,72 @@ Jeb is a little farm that lives on your Mac's desktop and keeps track of your Cl
 
 It's internal to Clevyr. The repo is private and proprietary (see [LICENSE](LICENSE)), so please don't share it outside the company.
 
+**Latest release:** [github.com/clevyr/jeb/releases/latest](https://github.com/clevyr/jeb/releases/latest). You don't need to download anything from that page yourself: the install below picks up the newest release, and Jeb keeps itself up to date after that.
+
 ![farm-day](docs/screenshots/farm-day.png)
+
+## Getting Jeb
+
+You need a Mac and Claude Code. Claude does the rest, and it takes about five minutes.
+
+**1. Make sure you can see the repo.** Open [github.com/clevyr/jeb](https://github.com/clevyr/jeb) in your browser while signed in to GitHub. If you get a "not found" page, ask for access first.
+
+**2. Ask Claude to install it.** Open Claude Code in any folder and paste this in:
+
+    Install Jeb for me from github.com/clevyr/jeb. First make sure the GitHub CLI is installed and
+    signed in (help me set it up if it isn't), and run gh auth setup-git. Then clone the latest release
+    into ~/jeb and follow the install guide in that clone's .claude/skills/jeb-install/SKILL.md.
+
+Claude checks what's missing and walks you through fixing it, one step at a time. It may ask you to install Apple's developer tools (a system pop-up; click Install and wait for it to finish) or to sign in to GitHub in your browser. When it's finished it tells you whether everything is healthy.
+
+**3. Start a new Claude Code session.** Jeb only joins sessions started after the install. The farm looks pretty empty at first and fills in as you work.
+
+![farm-built](docs/screenshots/farm-built.png)
+
+## Using Jeb
+
+There's nothing to run. Jeb starts when you log in, comes back on its own if it stops, and updates itself in the background.
+
+It adds an item to the menu bar with:
+
+- A status line showing whether it's running and at what frame rate, or why it's paused.
+- **Pause / Resume** to stop and start drawing.
+- **Frame rate**: Adaptive (the default, which slows down when nothing's moving), 60 fps or 30 fps.
+- **Reload art** to pick up new plugin art without restarting.
+- **Save Screenshot**, which saves a picture per screen to `~/Pictures/Jeb/` and shows it in Finder. It only saves what Jeb draws, never your other windows.
+- **Restart** to start a fresh copy.
+- **Quit Jeb Desktop**, which stops it until you next log in.
+
+![jeb-banjo](docs/screenshots/jeb-banjo.png)
+
+## If something looks wrong
+
+The easiest fix is to ask Claude. Paste this into Claude Code:
+
+    Check my Jeb install: follow ~/jeb/.claude/skills/jeb-doctor/SKILL.md and help me fix what it finds.
+
+It runs a health check and explains each problem in plain words. Some common ones:
+
+- **Nothing on the desktop and no menu bar item.** Jeb was quit or isn't running. Log out and back in, or type `jebctl start` in Terminal.
+- **The menu bar says "Waiting for art".** Jeb can't find its files, usually because the `~/jeb` folder was moved or deleted. Put it back, or ask Claude to install Jeb again.
+- **The desktop is empty.** Start a new Claude Code session; Jeb only joins sessions started after the install.
+
+## Removing Jeb
+
+In Terminal:
+
+    cd ~/jeb
+    ./uninstall
+
+That removes the app and takes Jeb out of Claude Code. Your farm is kept in case you come back; `./uninstall --purge --purge-farm` removes everything. The `~/jeb` folder stays, so you can drag it to the Trash afterwards.
+
+![jeb-idle](docs/art/jeb-idle.gif) ![jeb-hoe](docs/art/jeb-hoe.gif) ![jeb-sip](docs/art/jeb-sip.gif) ![jeb-banjo](docs/art/jeb-banjo.gif) ![blue-run](docs/art/blue-run.gif) ![cow](docs/art/cow.gif) ![hen](docs/art/hen.gif) ![owl](docs/art/owl.gif) ![fire](docs/art/fire.gif)
+
+---
+
+# For developers
+
+Everything below is detail for people who want to know how Jeb works, install it by hand, or change it.
 
 ## What's in the repo
 
@@ -14,19 +79,7 @@ It's internal to Clevyr. The repo is private and proprietary (see [LICENSE](LICE
 - `desktop/` is the macOS app (Swift), plus the Python scripts that install, update and look after it.
 - `creative/` is a scheduled builder that can extend the plugin. It's switched off, `./install` doesn't touch it, and nothing in here starts it.
 
-## Installing
-
-Jeb installs from a release. The easy way is to let Claude do it. Paste this into Claude Code from any folder:
-
-    Install Jeb for me from github.com/clevyr/jeb. First make sure the GitHub CLI is installed and signed in
-    (gh auth status) and run gh auth setup-git. Then clone the latest release into ~/jeb (or use it if it is
-    already there) and follow the jeb-install skill in that clone's .claude/skills/jeb-install/SKILL.md:
-    check the requirements, run ./install, run desktop/jebctl doctor, and explain anything
-    that fails.
-
-It checks you have everything, downloads the release, runs the install and a health check, and tells you in plain words if something needs fixing. Once it's done, start a new Claude Code session so the plugin loads.
-
-### What you need
+## Requirements
 
 - macOS, logged in to a desktop session.
 - Xcode Command Line Tools (`xcode-select --install`). The app is bundled and signed on your machine (and built there too when no prebuilt one is available), so there's no notarization to deal with.
@@ -34,13 +87,13 @@ It checks you have everything, downloads the release, runs the install and a hea
 - Claude Code (`claude` on your PATH), signed in with your own account.
 - The GitHub CLI (`brew install gh`), signed in with access to this repo. Run `gh auth login`, then `gh auth setup-git` so git uses it too. Updates fetch in the background, so git has to reach the repo without asking for anything.
 
-### Doing it by hand
+## Installing by hand
 
     tag=$(gh release view --repo clevyr/jeb --json tagName --jq .tagName)
     git clone --branch "$tag" https://github.com/clevyr/jeb.git ~/jeb
     cd ~/jeb
     ./install
-    desktop/jebctl doctor
+    jebctl doctor
 
 That clones the latest release (git will mention a "detached HEAD", which is expected). It has to be a git clone rather than a downloaded zip, because that's how Jeb updates itself. You can put it anywhere; the install remembers where. `./install --dry-run` shows every step without changing anything. It prints one short line per step; add `--verbose` for every command and detail.
 
@@ -52,29 +105,9 @@ The install:
 4. Adds the clone's `mod/` folder to `CLAUDE_CODE_PLUGIN_DIRS` in `~/.claude/settings.json`. It backs that file up to `~/.claude/backups/jeb/` first and leaves your other entries alone. Running it twice is harmless.
 5. Links `jebctl` into `~/.local/bin` so you can type plain `jebctl` from any folder. If that folder isn't on your PATH it offers to add it to your shell profile (`./install --add-path` adds it without asking); open a new terminal afterwards.
 
-The farm will look pretty empty until you've run a session with the plugin loaded.
+`./uninstall` keeps `~/.claude/jeb-desktop` unless you pass `--purge`, and keeps the plugin's state file unless you pass `--purge-farm`, which backs it up before removing it. It also takes this clone's `mod/` back out of `CLAUDE_CODE_PLUGIN_DIRS` (backing up your settings first) and removes the `jebctl` link. `--dry-run` shows what it would do, and `--verbose` prints every command and detail.
 
-![farm-built](docs/screenshots/farm-built.png)
-
-## Using it
-
-There's not much to do. Jeb starts at login, a watchdog brings it back if it stops, and only one copy ever runs.
-
-It adds an item to the menu bar with:
-
-- A status line showing whether it's running and at what frame rate, or why it's paused.
-- **Pause / Resume** to stop and start drawing.
-- **Frame rate**: Adaptive (the default, which slows down when nothing's moving), 60 fps or 30 fps.
-- **Reload art** to pick up new plugin art without restarting.
-- **Save Screenshot**, which saves a PNG per screen to `~/Pictures/Jeb/` and shows it in Finder. It only saves what Jeb draws, never your other windows, so it doesn't need Screen Recording permission.
-- **Restart** to start a fresh copy that takes over from the old one.
-- **Quit Jeb Desktop**, which stops it until you next log in or run `jebctl start`.
-
-![jeb-banjo](docs/screenshots/jeb-banjo.png)
-
-### Commands
-
-From the clone:
+## Commands
 
     jebctl status            # app, heartbeat, mode, last update, LaunchAgents
     jebctl doctor            # health check, one ok/FIX line per check
@@ -86,8 +119,6 @@ From the clone:
     jebctl screenshot        # same as Save Screenshot, prints the paths
 
 `jebctl screenshot --fixture <name> [--out <dir>] [--hour <h>]` renders one of the test scenes to `<dir>/<name>.png` without touching the running app. `--list` shows the scene names. That's how the screenshots in this README were made (scaled up 3x with `desktop/src/tools/up <in> <out> 3`).
-
-![jeb-idle](docs/art/jeb-idle.gif) ![jeb-hoe](docs/art/jeb-hoe.gif) ![jeb-sip](docs/art/jeb-sip.gif) ![jeb-banjo](docs/art/jeb-banjo.gif) ![blue-run](docs/art/blue-run.gif) ![cow](docs/art/cow.gif) ![hen](docs/art/hen.gif) ![owl](docs/art/owl.gif) ![fire](docs/art/fire.gif)
 
 ## Troubleshooting
 
@@ -131,18 +162,11 @@ Releases are signed tags, and installs only trust signers pinned on that machine
 
 ![farm-night](docs/screenshots/farm-night.png)
 
-## Uninstalling
-
-    cd ~/jeb
-    ./uninstall
-
-This removes the LaunchAgents and the app, and takes this clone's `mod/` back out of `CLAUDE_CODE_PLUGIN_DIRS` (backing up your settings first). It keeps `~/.claude/jeb-desktop` unless you pass `--purge`, and keeps the plugin's state file unless you pass `--purge-farm`, which backs it up before removing it. The clone itself stays put. `--dry-run` shows what it would do, and `--verbose` prints every command and detail.
-
 ## Contributing
 
 ### Setting up
 
-You need everything from [What you need](#what-you-need). Then work from a clone of `main` rather than a release, and install in dev mode:
+You need everything from [Requirements](#requirements). Then work from a clone of `main` rather than a release, and install in dev mode:
 
     git clone https://github.com/clevyr/jeb.git ~/jeb-dev
     cd ~/jeb-dev
