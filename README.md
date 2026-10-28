@@ -18,8 +18,9 @@ It's internal to Clevyr. The repo is private and proprietary (see [LICENSE](LICE
 
 Jeb installs from a release. The easy way is to let Claude do it. Paste this into Claude Code from any folder:
 
-    Install Jeb for me. Clone the latest release of github.com/clevyr/jeb into ~/jeb (or use it if it is
-    already there), then follow the jeb-install skill in that clone's .claude/skills/jeb-install/SKILL.md:
+    Install Jeb for me from github.com/clevyr/jeb. First make sure the GitHub CLI is installed and signed in
+    (gh auth status) and run gh auth setup-git. Then clone the latest release into ~/jeb (or use it if it is
+    already there) and follow the jeb-install skill in that clone's .claude/skills/jeb-install/SKILL.md:
     check the requirements, run ./install with no flags, run desktop/jebctl doctor, and explain anything
     that fails.
 
@@ -28,7 +29,7 @@ It checks you have everything, downloads the release, runs the install and a hea
 ### What you need
 
 - macOS, logged in to a desktop session.
-- Xcode Command Line Tools (`xcode-select --install`). The app is built from source on your machine, so there's no signing or notarization to deal with.
+- Xcode Command Line Tools (`xcode-select --install`). The app is bundled and signed on your machine (and built there too when no prebuilt one is available), so there's no notarization to deal with.
 - `/usr/bin/python3` (comes with the Command Line Tools) and `git`.
 - Claude Code (`claude` on your PATH), signed in with your own account.
 - The GitHub CLI (`brew install gh`), signed in with access to this repo. Run `gh auth login`, then `gh auth setup-git` so git uses it too. Updates fetch in the background, so git has to reach the repo without asking for anything.
@@ -47,7 +48,7 @@ The install:
 
 1. Checks the requirements and stops with a message if anything's missing.
 2. Pins the release signers and moves the clone to the newest signed release (see [Updates](#updates)). It needs a clean clone for this.
-3. Builds the app, runs a quick set of checks (compile, smoke test, headless start), then installs the LaunchAgents and starts it. If a check fails, the clone goes back to where it was and nothing gets installed.
+3. Gets the app (the release's prebuilt one when it can, see [Updates](#updates); otherwise it builds from source), runs a quick set of checks (compile, smoke test, headless start), then installs the LaunchAgents and starts it. If a check fails, the clone goes back to where it was and nothing gets installed.
 4. Adds the clone's `mod/` folder to `CLAUDE_CODE_PLUGIN_DIRS` in `~/.claude/settings.json`. It backs that file up to `~/.claude/backups/jeb/` first and leaves your other entries alone. Running it twice is harmless.
 
 The farm will look pretty empty until you've run a session with the plugin loaded.
@@ -113,6 +114,8 @@ Jeb uses [Semantic Versioning](https://semver.org): releases are tags like `v1.4
 2. It looks at each newer tag, newest first. A tag has to be signed by a pinned signer and point at a commit on the default branch. One that fails is logged and skipped, so a bad tag can't block the real ones.
 3. The first good tag is exported (`git archive <sha>`) into `~/.claude/jeb-desktop/staging/<tag>/`, refusing anything that isn't a plain file or folder or that would land outside it. The new build then goes through the full checks: compile, smoke, parity, a scripted day and a headless start.
 4. If everything passes, the clone moves to that commit (open sessions reload the plugin) and the new app replaces the old one. If the new app crashes or stops reporting in the next few minutes, the old one comes back and that tag is never tried again.
+
+Each release carries a prebuilt app, so the checks in step 3 don't wait on a compile. Before building, the update downloads `JebDesktop-<tag>-macos.zip` from the GitHub release with `gh` and uses it only if its SHA-256 matches the `app-sha256` line in the signed tag message and it includes your Mac's architecture. If there's no such line (an older release), `gh` is missing, the download fails or the hash doesn't match, it builds from source instead, so an update never depends on the download. Either way the checks run on this Mac and the app is bundled and signed locally.
 
 Updates leave the clone alone if it has local changes or is on a branch. `jebctl status` shows the install mode, the current release, the last check and any failed tags, and `jebctl follow --dry-run` shows what the next check would do.
 
@@ -214,7 +217,7 @@ It works out the version the way release-please does, from the [commit messages]
 
 Add `--dry-run` to see the version and notes it would use without changing anything. To force a level, pass it: `./release patch`, `./release minor` or `./release major`.
 
-It validates and tests the plugin, does a dev build and runs the parity checks. Only if all of that passes does it write the new version to `plugin.json`, commit it as `chore(release): v<version>` and make a signed `v<version>` tag. A failed check leaves nothing behind. It then asks once, and on `y` pushes the branch and tag and publishes the GitHub release with those notes, which is what new installs clone. That last step needs `gh` signed in. If the release can't be created, the tag is still pushed and it prints the command to retry.
+It validates and tests the plugin, does a universal release build (arm64 and x86_64) and runs the parity checks on that binary. Only if all of that passes does it write the new version to `plugin.json`, commit it as `chore(release): v<version>` and make a signed `v<version>` tag. The tag message records the SHA-256 of the zipped release build, and that zip is attached to the GitHub release as `JebDesktop-<tag>-macos.zip`. A failed check leaves nothing behind. It then asks once, and on `y` pushes the branch and tag and publishes the GitHub release with those notes and the zip, which is what new installs clone. That last step needs `gh` signed in. If the release can't be created, the tag is still pushed and it prints the command to retry.
 
 It doesn't use release-please itself because that tool creates tags on GitHub's side, unsigned, and installs only follow tags signed by a pinned key.
 

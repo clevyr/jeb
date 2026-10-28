@@ -23,7 +23,8 @@ script), JEB_MOD (the mod, default mod/ beside desktop/; both reach the gates), 
 path written into the bundle's Info.plist instead of JEB_MOD; `jebctl follow` sets it to the clone, as JEB_MOD is a staging copy), JEB_APP_DIR,
 --src, --app-dir, --versions-dir, --force, --no-watch, --watch-secs N, --gates-only (stop after
 the gates: nothing bundled, swapped or recorded as built), --quick (first install: only the compile, smoke and start
-gates; parity and the scripted day are logged as skipped; the rest is unchanged). `jebctl follow` calls main() with a
+gates; parity and the scripted day are logged as skipped; the rest is unchanged), --prebuilt PATH (copy that
+binary in place of running build.sh; `jebctl` passes the release's verified one; every gate still runs on it). `jebctl follow` calls main() with a
 before_swap hook (the release checkout) that runs after the gates and the bundle, before the swap.
 """
 import argparse, concurrent.futures, fcntl, glob, hashlib, importlib.util, json, os, plistlib, re, shutil, subprocess, sys, tempfile, time, ctypes
@@ -375,6 +376,7 @@ def main(argv=None, before_swap=None):
     ap.add_argument("--watch-secs", type=int, default=WATCH_SECS)
     ap.add_argument("--gates-only", action="store_true", help="stop after the gates; nothing is bundled or swapped")
     ap.add_argument("--quick", action="store_true", help="first install: compile, smoke and start gates only (parity and day skipped)")
+    ap.add_argument("--prebuilt", help="use this binary instead of compiling the snapshot (a verified release asset)")
     a = ap.parse_args(argv)
     os.makedirs(HOME, mode=0o700, exist_ok=True)
     lock = open(os.path.join(HOME, "updater.lock"), "w")
@@ -398,7 +400,7 @@ def main(argv=None, before_swap=None):
         return 0
     stamp = time.strftime("%Y%m%d-%H%M%S", time.gmtime()) + "-" + h[:8]
     snap = os.path.join(HOME, "build", stamp)
-    log(f"update {stamp}: building")
+    log(f"update {stamp}: " + ("using the prebuilt binary" if a.prebuilt else "building"))
     try:
         snapshot(a.src, snap)
     except OSError as e:
@@ -414,8 +416,16 @@ def main(argv=None, before_swap=None):
         record(st, "rejected", f"{gate}: {why}", stamp, h)
         return 2
 
-    rc, out, err = run(["sh", "build.sh"], snap, 900, clean_env(JEB_OUT="JebDesktop.dev"))
     binary = os.path.join(snap, "JebDesktop.dev")
+    if a.prebuilt:
+        try:
+            shutil.copy2(a.prebuilt, binary)
+            os.chmod(binary, 0o755)
+            rc, out, err = 0, "", ""
+        except OSError as e:
+            rc, out, err = 1, "", f"cannot copy the prebuilt binary: {e}"
+    else:
+        rc, out, err = run(["sh", "build.sh"], snap, 900, clean_env(JEB_OUT="JebDesktop.dev"))
     if rc != 0 or not os.path.exists(binary):
         return reject("compile", tail(err or out, 4))
     why = build_tools(snap)

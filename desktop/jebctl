@@ -16,6 +16,8 @@
                           tag is looked at. Then tags are fetched and the clone moves to the newest verified
                           tag (signed by a pinned signer, commit on origin's default branch); with no signer or
                           no verified tag it stays on the cloned commit. --repin replaces the pin (key rotation).
+                          The release's prebuilt app is used in place of the compile when it checks out
+                          (see follow); every gate still runs.
   uninstall [--purge] [--dry-run]
                           bootout, remove the plists and the app; versions and logs stay unless --purge (removes everything in JEB_HOME)
   follow [--gates-only] [--dry-run]
@@ -27,11 +29,17 @@
                           only on a pass check the SHA out here and install the build, watch it, roll back
                           (checkout of the previous SHA and bundle) on failure. Skips if the clone is dirty
                           or not on a v* tag. --gates-only stops after the gates. Log: JEB_HOME/release.log
+                          The release's app (JebDesktop-<tag>-macos.zip, a universal binary) is downloaded with
+                          gh and used in place of the compile only when its SHA-256 equals the app-sha256 line
+                          in the signed tag message and it holds this Mac's architecture; anything else (no
+                          line, no gh, no asset, a mismatch) builds from source as before. The gates run on it.
   release [--bump auto|patch|minor|major] [--parity] [--dry-run]
                           owner side: the clone is clean and on the default branch, a signing key is
                           configured (user.signingkey), then `claude plugin validate mod`, `claude plugin
-                          test mod`, a dev build (and the parity gate with --parity), then a local signed tag
-                          v<version>. The version comes from the tags, as release-please does: no tag yet is
+                          test mod`, a universal release build (and the parity gate with --parity on that
+                          same binary), then a local signed tag v<version> whose message carries the SHA-256
+                          of the app zip (JebDesktop-<tag>-macos.zip, written to .git/jeb-release-<tag>/ for
+                          ./release to attach). The version comes from the tags, as release-please does: no tag yet is
                           1.0.0; else the last tag raised by --bump (default auto: the level from the
                           Conventional Commits since it; refuses when none is releasable). Only once every
                           check has passed is it written to mod/.claude-plugin/plugin.json and committed
@@ -61,7 +69,7 @@ JEB_HOME (state root), JEB_SRC (the app source, default src/ beside this script)
 ~/Applications), JEB_LAUNCHAGENTS (default ~/Library/LaunchAgents) override the defaults, mostly for tests.
 The mod path rendered into the plists (JEB_MOD) is mod/ beside desktop/, from this script's own location.
 """
-import fcntl, glob, importlib.util, json, os, plistlib, re, shutil, signal, subprocess, sys, tarfile, time
+import fcntl, glob, hashlib, importlib.util, json, os, plistlib, re, shutil, signal, subprocess, sys, tarfile, time
 
 HOME = os.environ.get("JEB_HOME") or os.path.expanduser("~/.claude/jeb-desktop")
 APP_DIR = os.environ.get("JEB_APP_DIR") or os.path.expanduser("~/Applications")
@@ -541,6 +549,7 @@ def cmd_doctor():
     except (OSError, ValueError, AttributeError):
         last = None
     check(last not in ("rolled-back", "rejected", "rollback-failed", "swap-failed"), f"last update result: {last or 'none'}", "see ~/.claude/jeb-desktop/update.log; run: jebctl status")
+    say("ok    " + ("gh available: updates use the release's prebuilt app" if shutil.which("gh") else "gh not on PATH (optional): updates build from source"))
     if m == "release":
         check(os.path.isfile(SIGNERS), "release signers pinned", "run: ./install --repin (needs desktop/release-signers in the clone)")
     say("all good" if not bad else f"{len(bad)} problem(s)")
@@ -670,11 +679,22 @@ def cmd_install(args):
     if m == "release":
         pin_signers("--repin" in args)        # from the cloned checkout, before any tag is looked at
         back = select_release()
+    app, pre = None, []
+    if m == "release" and os.path.isfile(SIGNERS):
+        on = release_tags("--points-at", "HEAD")
+        if on and verify_tag(on[-1], base_branch())[1] is None:
+            if DRY:
+                say(f"app: would use {app_name(on[-1])} from the release in place of the compile when its hash matches the app-sha256 line in the tag; else the compile")
+            else:
+                app = fetch_app(on[-1])
+                pre = ["--prebuilt", app] if app else []
     say("1. first build through the updater (compile, smoke, headless start)")
     if DRY:
         say(f"$ python3 -I {CODE}/updater.py --force --no-watch --quick")
     else:
-        r = subprocess.run(["/usr/bin/python3", "-I", os.path.join(CODE, "updater.py"), "--force", "--no-watch", "--quick"], env=dict(os.environ, JEB_HOME=HOME, JEB_MOD=MOD, JEB_APP_DIR=APP_DIR))
+        r = subprocess.run(["/usr/bin/python3", "-I", os.path.join(CODE, "updater.py"), "--force", "--no-watch", "--quick"] + pre, env=dict(os.environ, JEB_HOME=HOME, JEB_MOD=MOD, JEB_APP_DIR=APP_DIR))
+        if app:
+            shutil.rmtree(os.path.dirname(os.path.dirname(app)), ignore_errors=True)
         if r.returncode != 0 or not os.path.isdir(APP):
             tail = open(os.path.join(HOME, "update.log")).read().splitlines()[-6:] if os.path.exists(os.path.join(HOME, "update.log")) else []
             if back:
@@ -855,6 +875,55 @@ def verify_tag(tag, base):
     return sha, None
 
 
+def app_name(tag):
+    return f"JebDesktop-{tag}-macos.zip"
+
+
+def fetch_app(tag, log=say):
+    """The release's prebuilt binary, or None (and why, through log). Call only for a tag verify_tag accepted: the
+    download is trusted only when its SHA-256 equals the app-sha256 line in that signed tag's message."""
+    name = app_name(tag)
+    msg = git("cat-file", "tag", "refs/tags/" + tag).stdout.split("\n\n", 1)[-1]
+    m = re.search(r"^app-sha256: ([0-9a-f]{64}) (\S+)$", msg, re.M)
+    if not m or m.group(2) != name:
+        log(f"app: {tag} has no app-sha256 line; building from source"); return None
+    want = m.group(1)
+    if not shutil.which("gh"):
+        log("app: gh is not on PATH; building from source"); return None
+    url = git("remote", "get-url", "origin").stdout.strip()
+    r = re.search(r"github\.com[:/]([^/\s]+/[^/\s]+?)(?:\.git)?/?$", url)
+    if not r:
+        log(f"app: origin is not a GitHub repo ({url[:80]}); building from source"); return None
+    dest = os.path.join(HOME, "staging", tag + "-app")
+    shutil.rmtree(dest, ignore_errors=True)
+    os.makedirs(dest, mode=0o700)
+    zp = os.path.join(dest, name)
+    try:
+        p = subprocess.run(["gh", "release", "download", tag, "-R", r.group(1), "-p", name, "-D", dest, "--clobber"], capture_output=True, text=True, timeout=300)
+    except (OSError, subprocess.TimeoutExpired) as e:
+        log(f"app: download failed ({type(e).__name__}); building from source"); return None
+    if p.returncode != 0 or not os.path.isfile(zp):
+        log(f"app: no {name} to download ({p.stderr.strip()[:150]}); building from source"); return None
+    h = hashlib.sha256()
+    with open(zp, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    if h.hexdigest() != want:
+        os.unlink(zp)
+        log(f"app: {name} does not match the signed hash; discarded, building from source"); return None
+    out = os.path.join(dest, "out")
+    binary = os.path.join(out, "JebDesktop")
+    if subprocess.run(["ditto", "-x", "-k", zp, out], capture_output=True).returncode != 0 or not os.path.isfile(binary):
+        log(f"app: could not unpack {name}; building from source"); return None
+    subprocess.run(["xattr", "-c", binary], capture_output=True)
+    arch = os.uname().machine
+    la = subprocess.run(["lipo", "-archs", binary], capture_output=True, text=True)
+    if la.returncode != 0 or arch not in la.stdout.split():
+        log(f"app: the binary is not built for {arch} ({la.stdout.strip() or 'unreadable'}); building from source"); return None
+    log(f"app: {name} matches the signed hash; using it in place of a build")
+    return binary
+
+
 def cmd_follow(gates_only):
     os.makedirs(HOME, mode=0o700, exist_ok=True)
     lock = open(os.path.join(HOME, "release.lock"), "w")
@@ -918,12 +987,16 @@ def cmd_follow(gates_only):
         say(f"{tag} ({sha[:12]}) is signed by a pinned signer and on origin/{base}")
         say(f"$ git -C {CLONE} archive --format=tar {sha} desktop mod   (members checked, extracted into {staged})")
         say(f"$ JEB_MOD={mod} JEB_SRC={src} updater.py {' '.join(args)}   (compile, smoke, parity, day, start gates)")
+        say(f"app: would use {app_name(tag)} from the release in place of the compile when its hash matches the app-sha256 line in the tag; else the compile")
         if not gates_only:
             say(f"on a pass: git -C {CLONE} checkout --detach {sha}; install the build; watch; on failure git checkout --detach {cur_sha} ({here}) and restore the previous bundle")
         return 0
     # the updater's clean_env passes these to the gates; the bundle's JebMod is the clone's mod (the staging copy is deleted
     # after the update, and the clone is checked out to the same SHA before the bundle is installed)
     os.environ["JEB_MOD"], os.environ["JEB_SRC"], os.environ["JEB_BUNDLE_MOD"] = mod, src, MOD
+    app = fetch_app(tag, rlog)
+    if app:
+        args += ["--prebuilt", app]
     moved = []
     def checkout():
         r = git("checkout", "--detach", sha)
@@ -949,7 +1022,7 @@ def cmd_follow(gates_only):
         rlog(f"follow: now on {tag}")
     else:
         rlog(f"follow: {tag} not installed (updater exit {rc}); will try again later")
-    rs["last"] = {"at": int(time.time()), "tag": tag, "result": result}
+    rs["last"] = {"at": int(time.time()), "tag": tag, "result": result, "app": "prebuilt" if app else "source"}
     save_rstate(rs)
     for d in os.listdir(os.path.join(HOME, "staging")):
         if d != tag or rc == 0:         # a failed one stays for a look; older ones go
@@ -1043,7 +1116,7 @@ def release_steps(args, done):
     say(f"releasing {tag}" + (f" (last release {last})" if last else " (first release)"))
     step("validate plugin", ["claude", "plugin", "validate", "mod"], cwd=CLONE)
     step("test plugin", ["claude", "plugin", "test", "mod"], cwd=CLONE)
-    step("dev build", ["./build.sh"], cwd=SRC, env=dict(os.environ, JEB_OUT="JebDesktop.dev"))
+    step("release build", ["./build.sh"], cwd=SRC, env=dict(os.environ, JEB_OUT="JebDesktop.dev", JEB_UNIVERSAL="1"))
     if "--parity" in args:
         if DRY:
             say("  parity: skipped (dry run)")
@@ -1077,7 +1150,23 @@ def release_steps(args, done):
                 f.write(new)
         step(f"commit chore(release): {tag}", ["git", "-C", CLONE, "commit", "-q", "-m", f"chore(release): {tag}", "--", PLUGIN_JSON])
         done.append("commit")
-    step(f"sign tag {tag} (asks for the key's passphrase)", ["git", "-C", CLONE, "tag", "-s", tag, "-m", f"Jeb {tag}"], tty=True)
+    name = app_name(tag)
+    if DRY:
+        say(f"  app zip: skipped (dry run); would attach {name}")
+        message = f"Jeb {tag}"
+    else:
+        adir = os.path.join(CLONE, git("rev-parse", "--git-path", f"jeb-release-{tag}").stdout.strip())
+        shutil.rmtree(adir, ignore_errors=True)
+        os.makedirs(adir)
+        shutil.copy2(os.path.join(SRC, "JebDesktop.dev"), os.path.join(adir, "JebDesktop"))
+        zp = os.path.join(adir, name)
+        step("app zip", ["ditto", "-c", "-k", os.path.join(adir, "JebDesktop"), zp])
+        h = hashlib.sha256()
+        with open(zp, "rb") as f:
+            for chunk in iter(lambda: f.read(1 << 20), b""):
+                h.update(chunk)
+        message = f"Jeb {tag}\n\napp-sha256: {h.hexdigest()} {name}"
+    step(f"sign tag {tag} (asks for the key's passphrase)", ["git", "-C", CLONE, "tag", "-s", tag, "-m", message], tty=True)
     notes = notes or "Maintenance release."
     if DRY:
         say("release notes:\n" + notes)

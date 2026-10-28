@@ -23,7 +23,7 @@ Walk the user through installing Jeb from the clevyr/jeb repo. Be brief and plai
    `git clone --branch "$tag" https://github.com/clevyr/jeb.git ~/jeb`.
    A "detached HEAD" note is expected. It must be a git clone, not a downloaded archive, because updates use git. If the clone already exists, use it as it is.
 3. Explain briefly what `./install` changes, then run it from the clone with no flags (`--dev` is only for people working on Jeb itself):
-   - builds the desktop app from source and installs it in `~/Applications`;
+   - installs the desktop app in `~/Applications`, using the release's prebuilt app when it can and building from source otherwise;
    - adds LaunchAgents in `~/Library/LaunchAgents` that keep it running and following releases;
    - adds the clone's `mod/` folder to `CLAUDE_CODE_PLUGIN_DIRS` in `~/.claude/settings.json`, after saving a backup.
    The install takes a minute or two.

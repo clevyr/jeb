@@ -17,11 +17,13 @@
   ./release patch|minor|major
                           the same with the bump forced. A new version is written to plugin.json and
                           committed (chore(release): v<version>) only after every check passes.
-                          Both run jebctl's checks (clean tree on the default branch, mod checks, dev build,
-                          parity gate) before anything is written, then the signed tag v<version>. On success
-                          they ask once, then push <base> and <tag> and publish the GitHub release with those
-                          notes (`gh release create <tag> --verify-tag --notes-file ...`), only on y. Without
-                          a terminal they print those commands instead.
+                          Both run jebctl's checks (clean tree on the default branch, mod checks, universal
+                          release build, parity gate) before anything is written, then the signed tag
+                          v<version>, whose message carries the SHA-256 of the app zip. On success they ask
+                          once, then push <base> and <tag> and publish the GitHub release with those notes and
+                          the zip (`gh release create <tag> --verify-tag --notes-file ... <zip>`), only on y.
+                          Installs use that zip only when it matches the hash in the signed tag. Without a
+                          terminal they print those commands instead.
   --dry-run               change nothing: no file, tag or push.
 """
 import os, shutil, signal, subprocess, sys
@@ -144,7 +146,8 @@ def release(dry, bump):
         fail("no release tag at HEAD after the release; nothing to push")
     tag, base = max(tags, key=lambda t: [int(x) if x.isdigit() else -1 for x in t[1:].split(".")]), git("branch", "--show-current").stdout.strip()
     notes = os.path.join(CLONE, git("rev-parse", "--git-path", f"jeb-release-notes-{tag}.md").stdout.strip())
-    publish = ["gh", "release", "create", tag, "--verify-tag", "--title", tag] + (["--notes-file", notes] if os.path.isfile(notes) else ["--generate-notes"])
+    zp = os.path.join(CLONE, git("rev-parse", "--git-path", f"jeb-release-{tag}").stdout.strip(), f"JebDesktop-{tag}-macos.zip")
+    publish = ["gh", "release", "create", tag, "--verify-tag", "--title", tag] + (["--notes-file", notes] if os.path.isfile(notes) else ["--generate-notes"]) + ([zp] if os.path.isfile(zp) else [])
     push = f"git push origin {base} {tag}\n  " + " ".join(publish)
     if not (sys.stdin.isatty() and sys.stdout.isatty()):
         say("no terminal; not pushing. To publish, run:\n  " + push)
