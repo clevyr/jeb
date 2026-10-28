@@ -26,6 +26,13 @@ the gates: nothing bundled, swapped or recorded as built), --quick (first instal
 gates; parity and the scripted day are logged as skipped; the rest is unchanged), --prebuilt PATH (copy that
 binary in place of running build.sh; `jebctl` passes the release's verified one; every gate still runs on it). `jebctl follow` calls main() with a
 before_swap hook (the release checkout) that runs after the gates and the bundle, before the swap.
+
+Progress for the menu bar: while it holds the lock it keeps jebHome/update-status.json current (phase, step i of N, started,
+and at the end a result: up-to-date, updated, failed, rolled-back or error, with a short detail). A jebHome/check-now file (the
+menu's click) is consumed at the start: it skips the 60 s quiet wait but not the pause marker or the seen-hash checks.
+`jebctl follow` sets STATUS_SOURCE = "release" and STATUS_FINAL = False: it owns the final result; the phases still go in.
+Once the final result is written (status("done"), from finish() or from follow), it posts the Darwin notification
+com.jeb.desktop.update-finished so the app can announce the run without polling.
 """
 import argparse, concurrent.futures, fcntl, glob, hashlib, importlib.util, json, os, plistlib, re, shutil, subprocess, sys, tempfile, time, ctypes
 
@@ -65,6 +72,47 @@ def log(msg):
     fd = os.open(LOG, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
     with os.fdopen(fd, "a") as f:
         f.write(time.strftime("%Y-%m-%d %H:%M:%S ") + msg.replace("\n", " | ") + "\n")
+
+
+STATUS_SOURCE, STATUS_FINAL = "dev", True
+FINISHED_NOTIFICATION = "com.jeb.desktop.update-finished"      # Darwin notification the app listens for (UpdateNotifier.swift)
+_ST = {"started": None, "finished": False, "clicked": False}
+
+
+def status(phase, detail="", step=None, steps=None, result=None):
+    """Writes update-status.json (atomic, 0600). Never raises: a status that cannot be written must not stop an update."""
+    now = int(time.time())
+    _ST["started"] = _ST["started"] or now
+    first_done = phase == "done" and not _ST["finished"]
+    if phase == "done":
+        _ST["finished"] = True
+    doc = {"phase": phase, "detail": detail, "step": step, "steps": steps, "started": _ST["started"], "at": now,
+           "result": result, "source": STATUS_SOURCE, "pid": os.getpid(), "clicked": _ST["clicked"]}
+    try:
+        os.makedirs(HOME, mode=0o700, exist_ok=True)
+        tmp = os.path.join(HOME, "update-status.json.tmp")
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w") as f:
+            json.dump(doc, f)
+        os.replace(tmp, os.path.join(HOME, "update-status.json"))
+    except OSError:
+        pass
+    if first_done:
+        notify_finished()
+
+
+def notify_finished():
+    """Tells the running app (a Darwin notification) to read the final status, once per run; after the file is written, never raises."""
+    try:
+        ctypes.CDLL("/usr/lib/libSystem.B.dylib").notify_post(FINISHED_NOTIFICATION.encode())
+    except Exception:
+        pass
+
+
+def finish(result, detail):
+    """The final status of this run; the release follower writes its own instead."""
+    if STATUS_FINAL:
+        status("done", detail[:160], result=result)
 
 
 def tail(text, n=3):
@@ -401,36 +449,65 @@ def main(argv=None, before_swap=None):
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except OSError:
         print("another update is running"); return 0
+    _ST["finished"] = False
+    try:
+        return update(a, before_swap)
+    except BaseException as e:
+        if not _ST["finished"]:
+            finish("error", f"{type(e).__name__}: {e}")
+        raise
+
+
+def update(a, before_swap):
+    """Everything after the lock; every exit writes the final status."""
+    try:
+        os.unlink(os.path.join(HOME, "check-now"))      # the menu's click: skip the quiet wait, nothing else
+        clicked = True
+    except OSError:
+        clicked = False
+    _ST["clicked"] = clicked        # the app notifies an up-to-date result only for a click
     if not (a.force or a.now) and os.path.exists(os.path.join(HOME, "updates-paused")):
+        if clicked:
+            finish("error", "updates are paused")
         return 0
+    status("checking")
     if not os.path.isfile(os.path.join(a.src, "build.sh")) or len(source_files(a.src)) < 10:
-        log(f"no source at {a.src}; nothing to do"); return 1
+        log(f"no source at {a.src}; nothing to do"); finish("error", "no source to build"); return 1
     st = load_state()
-    if not (a.force or a.now):
+    if not (a.force or a.now or clicked):
+        status("waiting for the source to settle")
         deadline = time.time() + 20 * 60
         while time.time() - newest_mtime(a.src) < QUIET:
             if time.time() > deadline:
-                log("source never quiet for 60 s; giving up for now"); return 0
+                log("source never quiet for 60 s; giving up for now"); finish("error", "source never settled; will retry"); return 0
             time.sleep(min(10, max(1, QUIET - (time.time() - newest_mtime(a.src)) + 1)))
     h = source_hash(a.src)
     if not a.force and h in (st.get("built"), *st.get("rejected", [])):
+        if h == st.get("built"):
+            finish("up-to-date", "no changes")
+        else:       # this source failed a gate before; it is not retried until it changes
+            finish("failed", "no changes since a rejected build; see update.log")
         return 0
     stamp = time.strftime("%Y%m%d-%H%M%S", time.gmtime()) + "-" + h[:8]
     snap = os.path.join(HOME, "build", stamp)
     log(f"update {stamp}: " + ("using the prebuilt binary" if a.prebuilt else "building"))
+    gates = [g for g in ("smoke", "parity", "day", "start") if not (a.quick and g in ("parity", "day"))]
+    steps = 1 + len(gates) + (0 if a.gates_only else 1 + (0 if a.no_watch else 1))     # compile, gates, swap, watch
+    status("using the prebuilt binary" if a.prebuilt else "building", step=1, steps=steps)
     try:
         snapshot(a.src, snap)
     except OSError as e:
-        log(f"update {stamp}: snapshot failed: {e}"); return 1
+        log(f"update {stamp}: snapshot failed: {e}"); finish("error", f"snapshot failed: {e}"); return 1
     if source_hash(snap) != h:
         log(f"update {stamp}: source changed during the copy; trying again later")
-        shutil.rmtree(snap, ignore_errors=True); return 0
+        shutil.rmtree(snap, ignore_errors=True); finish("error", "source changed; will retry"); return 0
 
     def reject(gate, why):
         log(f"update {stamp}: REJECTED at {gate}: {why}")
         st.setdefault("rejected", []).append(h)
         st["rejected"] = st["rejected"][-50:]
         record(st, "rejected", f"{gate}: {why}", stamp, h)
+        finish("failed", f"{gate}: {why}")
         return 2
 
     binary = os.path.join(snap, "JebDesktop.dev")
@@ -453,6 +530,7 @@ def main(argv=None, before_swap=None):
         if a.quick and name in ("parity", "day"):
             log(f"update {stamp}: gate {name} skipped (quick)")
             continue
+        status(f"gate {name}", step=2 + gates.index(name), steps=steps)
         t = time.time()
         ok, why = fn()
         log(f"update {stamp}: gate {name} {'ok' if ok else 'FAILED'} ({time.time() - t:.0f} s): {why}")
@@ -460,7 +538,8 @@ def main(argv=None, before_swap=None):
             return reject(name, why)
 
     if a.gates_only:
-        log(f"update {stamp}: gates passed (gates-only: nothing installed)"); return 0
+        log(f"update {stamp}: gates passed (gates-only: nothing installed)"); finish("up-to-date", "gates passed; nothing installed"); return 0
+    status("swapping", step=steps - (0 if a.no_watch else 1), steps=steps)
     new_app = os.path.join(snap, "JebDesktop.app")
     rc, out, err = run(["sh", os.path.join(snap, "tools", "bundle.sh"), snap, new_app], snap, 120, clean_env(JEB_STAMP=stamp, JEB_PREBUILT=binary))
     if rc != 0 or subprocess.run(["codesign", "--verify", new_app], capture_output=True).returncode != 0:
@@ -469,17 +548,18 @@ def main(argv=None, before_swap=None):
         why = before_swap()
         if why:
             log(f"update {stamp}: before-swap step failed, current app kept: {why}")
-            record(st, "before-swap-failed", why, stamp, h); return 1
+            record(st, "before-swap-failed", why, stamp, h); finish("error", f"before swap: {why}"); return 1
     offset = os.path.getsize(os.path.join(HOME, "run.log")) if os.path.exists(os.path.join(HOME, "run.log")) else 0
     try:
         old_stamp = install_bundle(new_app, a.app_dir, a.versions_dir)
     except (OSError, subprocess.CalledProcessError) as e:
         log(f"update {stamp}: swap failed, current app kept: {e}")
-        record(st, "swap-failed", str(e), stamp, h); return 1
+        record(st, "swap-failed", str(e), stamp, h); finish("error", f"swap failed: {e}"); return 1
     st["built"], st["stamp"] = h, stamp
     log(f"update {stamp}: swapped in (previous {old_stamp})")
     record(st, "swapped", f"previous {old_stamp}", stamp, h)
     if not a.no_watch:
+        status("watching the new build", step=steps, steps=steps)
         why = watch_new_build(stamp, a.watch_secs, offset)
         if why:
             log(f"update {stamp}: ROLLBACK: {why}")
@@ -487,15 +567,17 @@ def main(argv=None, before_swap=None):
                 try:
                     restore_bundle(old_stamp, a.app_dir, a.versions_dir)
                 except OSError as e:
-                    log(f"update {stamp}: rollback failed: {e}"); record(st, "rollback-failed", str(e), stamp, h); return 1
+                    log(f"update {stamp}: rollback failed: {e}"); record(st, "rollback-failed", str(e), stamp, h); finish("error", f"rollback failed: {e}"); return 1
             st.setdefault("rejected", []).append(h)
             st["built"], st["stamp"] = None, old_stamp
             record(st, "rolled-back", why, stamp, h)
+            finish("rolled-back", why)
             return 3
         log(f"update {stamp}: healthy")
         record(st, "ok", "healthy", stamp, h)
     else:
         record(st, "ok", "installed", stamp, h)
+    finish("updated", f"updated to {stamp}")
     return 0
 
 

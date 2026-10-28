@@ -25,7 +25,7 @@
 // Files: main.swift (entry point, windows, the one Story, pausing, reloads, stats),
 // Store.swift, Farm.swift, Live.swift, Story.swift (which place, the trips and their
 // lines), FarmScene.swift (the valley), Valley.swift, Strip.swift, Homestead.swift,
-// Camp.swift, Road.swift, Cast.swift, Art.swift, PixelArt.swift, StatusMenu.swift,
+// Camp.swift, Road.swift, Cast.swift, Art.swift, PixelArt.swift, StatusMenu.swift, UpdateNotifier.swift,
 // Heartbeat.swift (install hooks), Probe.swift, Bench.swift (also Save Screenshot's renderer; JEB_SHOT_DIR its folder).   Build: ./build.sh   Live: ./run-live.sh
 // JEB_MOD the mod folder (default the bundle's JebMod, else mod/ beside desktop/ from the executable); JEB_ART_PATH the art file (default the mod's); JEB_PID_FILE a file the running
 // instance keeps its pid in. JEB_NO_PAUSE=1 turns off the occlusion pause (for
@@ -661,6 +661,8 @@ desktop.start()
 if env["JEB_PROBE"] == "1" { desktop.startProbe() }
 let statusMenu = StatusMenu(app: desktop)
 desktop.onArt = { statusMenu.setIcon(art: $0) }
+let updateNotifier = UpdateNotifier()
+updateNotifier.start()
 log("started (occlusion pause \(noPause ? "off" : "on"), idle pause after \(Int(idleSeconds)) s, art \(artPath))")
 
 /// Stops cleanly (SIGUSR1: a newer instance has taken over; the menu's Quit).

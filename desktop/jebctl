@@ -49,6 +49,8 @@
                           only on a pass check the SHA out here and install the build, watch it, roll back
                           (checkout of the previous SHA and bundle) on failure. Skips if the clone is dirty
                           or not on a v* tag. --gates-only stops after the gates. Log: JEB_HOME/release.log
+                          Progress and the final result (and why a check did nothing) go to JEB_HOME/update-status.json,
+                          which the menu bar shows; the menu's click file JEB_HOME/check-now is cleared at the start.
                           The release's app (JebDesktop-<tag>-macos.zip, a universal binary) is downloaded with
                           gh and used in place of the compile only when its SHA-256 equals the app-sha256 line
                           in the signed tag message and it holds this Mac's architecture; anything else (no
@@ -1246,16 +1248,40 @@ def cmd_follow(gates_only):
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except OSError:
         say("another follow is running"); return 0
+    u = load_updater()      # its status helper writes update-status.json for the menu; follow owns the final result
+    u.set_home(HOME)
+    u.STATUS_SOURCE, u.STATUS_FINAL = "release", False
+    try:
+        os.unlink(os.path.join(HOME, "check-now"))      # the menu's click; nothing to skip here
+        u._ST["clicked"] = True
+    except OSError:
+        pass
+    def S(phase, detail="", result=None):
+        if not DRY:
+            u.status(phase, detail[:160] if phase == "done" else detail, result=result)
+    try:
+        S("checking")
+        return follow(gates_only, u, S)
+    except BaseException as e:
+        if not u._ST["finished"]:
+            S("done", f"{type(e).__name__}: {e}", "error")
+        raise
+
+
+def follow(gates_only, u, S):
+    """cmd_follow after the lock; every return writes the final status."""
+    def stop(why, result="error"):
+        S("done", why, result)
     if mode() != "release":
-        rlog("follow: not in release mode; nothing to do"); return 0
+        rlog("follow: not in release mode; nothing to do"); stop("not in release mode"); return 0
     if os.path.exists(os.path.join(HOME, "updates-paused")):
-        rlog("follow: updates are paused; skipping"); return 0
+        rlog("follow: updates are paused; skipping"); stop("updates are paused"); return 0
     if not os.path.isfile(SIGNERS):
-        rlog(f"follow: no pinned release signers ({SIGNERS}); not updating (install from a clone that ships desktop/release-signers)"); return 0
+        rlog(f"follow: no pinned release signers ({SIGNERS}); not updating (install from a clone that ships desktop/release-signers)"); stop("no pinned release signers"); return 0
     if git("status", "--porcelain", "-uno").stdout.strip():
-        rlog("follow: the clone has local changes; skipping"); return 0
+        rlog("follow: the clone has local changes; skipping"); stop("the clone has local changes"); return 0
     if git("symbolic-ref", "-q", "HEAD").returncode == 0:
-        rlog("follow: the clone is on a branch, not detached; skipping (re-run ./install to detach it)"); return 0
+        rlog("follow: the clone is on a branch, not detached; skipping (re-run ./install to detach it)"); stop("the clone is on a branch; re-run ./install"); return 0
     on = release_tags("--points-at", "HEAD")
     cur = on[-1] if on else None        # None: detached on no release tag; every verified tag is a candidate
     cur_sha = git("rev-parse", "HEAD").stdout.strip()
@@ -1263,19 +1289,22 @@ def cmd_follow(gates_only):
     if DRY:
         detail("$ git fetch --tags origin")
     else:
+        S("fetching tags")
         r = git("fetch", "--tags", "origin", timeout=180)
         if r.returncode != 0:
-            rlog(f"follow: fetch failed ({r.stderr.strip()[:200]}); will try again later"); return 0
+            rlog(f"follow: fetch failed ({r.stderr.strip()[:200]}); will try again later"); stop("fetch failed; will retry"); return 0
     rs["checked"] = int(time.time())
     save_rstate(rs)
     base = base_branch()
     new = [t for t in release_tags() if (cur is None or tag_key(t) > tag_key(cur)) and t not in rs.get("failed", [])]
     if not new:
         rlog(f"follow: {cur} is current" if cur else "follow: no release tag to move to")
+        stop(f"{cur} is current" if cur else "no release tag to move to", "up-to-date")
         return 0
     here = cur or f"{cur_sha[:12]} (no release tag)"
     tag = sha = staged = None
     for t in reversed(new):         # newest first: a bogus far-future tag cannot block the real releases
+        S(f"verifying {t}")
         sha, why = verify_tag(t, base)
         if not why:
             staged = os.path.join(HOME, "staging", t)
@@ -1295,6 +1324,7 @@ def cmd_follow(gates_only):
         save_rstate(rs)
     if not tag:
         rlog(f"follow: no verified release newer than {here}")
+        stop(f"no verified release newer than {here}", "up-to-date")
         return 0
     src, mod = os.path.join(staged, "desktop", "src"), os.path.join(staged, "mod")
     args = ["--force", "--src", src] + (["--gates-only"] if gates_only else [])
@@ -1309,6 +1339,7 @@ def cmd_follow(gates_only):
     # the updater's clean_env passes these to the gates; the bundle's JebMod is the clone's mod (the staging copy is deleted
     # after the update, and the clone is checked out to the same SHA before the bundle is installed)
     os.environ["JEB_MOD"], os.environ["JEB_SRC"], os.environ["JEB_BUNDLE_MOD"] = mod, src, MOD
+    S("downloading app")
     app = fetch_app(tag, rlog)
     if app:
         args += ["--prebuilt", app]
@@ -1321,7 +1352,7 @@ def cmd_follow(gates_only):
         rlog(f"follow: {tag} passed the gates; the clone is on {sha[:12]} now")
         return None
     try:
-        rc = load_updater().main(args, None if gates_only else checkout)
+        rc = u.main(args, None if gates_only else checkout)
     except Exception as e:
         rlog(f"follow: updater error: {type(e).__name__}: {e}"); rc = 1
     if moved and rc != 0:
@@ -1339,6 +1370,14 @@ def cmd_follow(gates_only):
         rlog(f"follow: {tag} not installed (updater exit {rc}); will try again later")
     rs["last"] = {"at": int(time.time()), "tag": tag, "result": result, "app": "prebuilt" if app else "source"}
     save_rstate(rs)
+    last = u.load_state().get("last") or {}
+    why = last.get("why") if (last.get("at") or 0) >= u._ST["started"] else None      # the updater's reason, if this run recorded one
+    if gates_only:
+        stop(f"{tag}: gates {'passed' if rc == 0 else 'failed'}; nothing installed", "up-to-date" if rc == 0 else "failed")
+    elif rc == 0:
+        stop(f"updated to {tag}", "updated")
+    else:
+        stop(f"{tag}: {why or 'see update.log'}", {2: "failed", 3: "rolled-back"}.get(rc, "error"))
     for d in os.listdir(os.path.join(HOME, "staging")):
         if d != tag or rc == 0:         # a failed one stays for a look; older ones go
             shutil.rmtree(os.path.join(HOME, "staging", d), ignore_errors=True)

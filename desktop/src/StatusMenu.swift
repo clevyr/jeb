@@ -4,9 +4,13 @@
 //
 // "Check for Updates" starts the update agent of the install mode (jebHome/install-mode: release runs
 // `jebctl follow`, dev the updater) with `launchctl kickstart`; the agents do the work and keep every gate.
-// Above it an info line: the last release tag and when it was checked (release-state.json), or the build stamp.
-// It reads "Checking for Updates…" while that agent's lock is held, "Updates Paused" with jebHome/updates-paused,
-// and is left out when the agent's plist is not installed (JEB_LAUNCHAGENTS overrides ~/Library/LaunchAgents).
+// A click first writes jebHome/check-now (the agents skip the quiet wait for it). Above the item an info line: the last
+// result from jebHome/update-status.json ("Up to date · 14:02", "Update failed: ..."), else the last release tag and when it
+// was checked (release-state.json), or the build stamp. The item reads "Update in Progress — <phase> (i of n), <elapsed>"
+// while that agent's lock is held (a check, a build or the watch after a swap), "Update taking longer than expected" after
+// 30 min, "Checking for Updates…" for up to 60 s after a click until a status appears (then "Couldn't start the update"),
+// and "Updates Paused" with jebHome/updates-paused. Both lines refresh every second while the menu is open (UpdateStatus.swift
+// holds the pure logic). The whole block is left out when the agent's plist is not installed (JEB_LAUNCHAGENTS overrides ~/Library/LaunchAgents).
 //
 // JEB_MENU_TEST=1 (testing only) also listens for the distributed notification
 // "com.jeb.desktop.menu-test" whose object is a menu item's title: the item's
@@ -19,6 +23,11 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     private let app: App
     private let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let menu = NSMenu()
+    private var infoItem: NSMenuItem?
+    private var checkItem: NSMenuItem?
+    private var agent: (mode: String, label: String, lock: String)?
+    private var clickedAt: Double?
+    private var refreshTimer: Timer?
 
     init(app: App) {
         self.app = app
@@ -75,27 +84,38 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         menu.addItem(submenu("Frame rate", rates))
 
         menu.addItem(.separator())
-        if let agent = updateAgent() {
-            let info = NSMenuItem(title: updateInfoLine(agent.mode), action: nil, keyEquivalent: "")
+        agent = updateAgent()
+        infoItem = nil
+        checkItem = nil
+        if let agent = agent {
+            let info = NSMenuItem(title: "", action: nil, keyEquivalent: "")
             info.isEnabled = false
             menu.addItem(info)
             let check = action("Check for Updates", #selector(checkForUpdates))
-            if FileManager.default.fileExists(atPath: jebHome + "/updates-paused") {
-                check.title = "Updates Paused"
-                check.isEnabled = false
-            } else if lockHeld(jebHome + "/" + agent.lock) {
-                check.title = "Checking for Updates…"
-                check.isEnabled = false
-            }
             check.representedObject = agent.label
             menu.addItem(check)
             menu.addItem(.separator())
+            infoItem = info
+            checkItem = check
+            refreshUpdateItems()
         }
         menu.addItem(action("Reload art", #selector(reloadArt)))
         menu.addItem(action("Save Screenshot", #selector(saveScreenshot)))
         menu.addItem(action("Restart", #selector(restart)))
         menu.addItem(.separator())
         menu.addItem(action("Quit Jeb Desktop", #selector(quit)))
+    }
+
+    func menuWillOpen(_ menu: NSMenu) {
+        refreshTimer?.invalidate()
+        let t = Timer(timeInterval: 1, repeats: true) { [weak self] _ in self?.refreshUpdateItems() }
+        RunLoop.main.add(t, forMode: .common)       // .common includes event tracking: the menu is open
+        refreshTimer = t
+    }
+
+    func menuDidClose(_ menu: NSMenu) {
+        refreshTimer?.invalidate()
+        refreshTimer = nil
     }
 
     private func action(_ title: String, _ selector: Selector) -> NSMenuItem {
@@ -125,6 +145,17 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         let agents = env["JEB_LAUNCHAGENTS"] ?? NSHomeDirectory() + "/Library/LaunchAgents"
         guard FileManager.default.fileExists(atPath: "\(agents)/\(label).plist") else { return nil }
         return (release ? "release" : "dev", label, release ? "release.lock" : "updater.lock")
+    }
+
+    /// Re-derives the info and action lines in place (the open menu is never rebuilt).
+    private func refreshUpdateItems() {
+        guard let agent = agent, let info = infoItem, let check = checkItem else { return }
+        let status = (try? Data(contentsOf: URL(fileURLWithPath: jebHome + "/update-status.json"))).flatMap(UpdateStatus.parse)
+        let lines = UpdateText.lines(status: status, lockHeld: lockHeld(jebHome + "/" + agent.lock), paused: FileManager.default.fileExists(atPath: jebHome + "/updates-paused"),
+                                     clickedAt: clickedAt, now: Date().timeIntervalSince1970)
+        info.title = lines.info ?? updateInfoLine(agent.mode)
+        check.title = lines.action
+        check.isEnabled = lines.enabled
     }
 
     private func updateInfoLine(_ mode: String) -> String {
@@ -158,6 +189,8 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         guard let label = sender.representedObject as? String else { return }
         let target = "gui/\(getuid())/\(label)"
         log("menu: check for updates (\(label))")
+        clickedAt = Date().timeIntervalSince1970
+        FileManager.default.createFile(atPath: jebHome + "/check-now", contents: nil, attributes: [.posixPermissions: 0o600])       // the agents skip the quiet wait for it
         if env["JEB_MENU_TEST"] == "1" {
             log("menu: would kickstart \(target)")
             return
