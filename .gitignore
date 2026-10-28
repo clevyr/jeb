@@ -57,3 +57,30 @@ desktop/src/tools/carx/carx
 desktop/src/tools/carx/carx2
 desktop/src/tools/carx/carx3
 desktop/src/tools/carx/carx4
+
+# Editors and IDEs
+.idea/
+.vscode/
+.fleet/
+.history/
+*.swp
+*.swo
+*~
+
+# Local tool state
+.claude/settings.local.json
+.venv/
+venv/
+node_modules/
+Thumbs.db
+
+# Keys and certificates: never commit these (desktop/release-signers holds public keys only)
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ecdsa*
+id_ed25519*
+*_signing
+*_signing.pub
