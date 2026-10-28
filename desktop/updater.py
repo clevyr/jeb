@@ -160,6 +160,7 @@ def build_tools(snap):
 # ---- gates ----
 
 def load_parity(snap):
+    os.environ.setdefault("JEB_MOD", MOD)     # parity finds the art through JEB_MOD; a snapshot has no mod/ beside it
     spec =importlib.util.spec_from_file_location("parity_snap", os.path.join(snap, "tools", "parity.py"))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
