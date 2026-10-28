@@ -265,7 +265,7 @@ Code runs from the clone and state lives outside it:
 - `~/.claude/jeb-creative`: the builder's changelog, run log, lock and output (unused while it's off).
 - `~/.claude/plugins/store/`: the plugin's state file, which the desktop reads.
 
-The installed app finds the plugin through the `JebMod` key in its `Info.plist`, written at build time. `JEB_MOD` overrides it, and a dev build falls back to the `mod/` folder next to `desktop/`.
+The installed app finds the plugin through the `JebMod` key in its `Info.plist`, written at build time. `JEB_MOD` overrides it, and a dev build falls back to the `mod/` folder next to `desktop/`. The bundle's icon (`Resources/Jeb.icns`) is generated at the same time from the mod's art (the app's `JEB_ICONSET` mode and `iconutil`); if that fails the bundle is built without one.
 
 Environment variables, mostly for tests (the install sets the paths itself):
 

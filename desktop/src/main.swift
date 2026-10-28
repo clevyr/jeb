@@ -25,9 +25,9 @@
 // Files: main.swift (entry point, windows, the one Story, pausing, reloads, stats),
 // Store.swift, Farm.swift, Live.swift, Story.swift (which place, the trips and their
 // lines), FarmScene.swift (the valley), Valley.swift, Strip.swift, Homestead.swift,
-// Camp.swift, Road.swift, Cast.swift, Art.swift, PixelArt.swift, StatusMenu.swift, UpdateNotifier.swift,
+// Camp.swift, Road.swift, Cast.swift, Art.swift, PixelArt.swift, StatusMenu.swift, UpdateNotifier.swift, IconExport.swift,
 // Heartbeat.swift (install hooks), Probe.swift, Bench.swift (also Save Screenshot's renderer; JEB_SHOT_DIR its folder).   Build: ./build.sh   Live: ./run-live.sh
-// JEB_MOD the mod folder (default the bundle's JebMod, else mod/ beside desktop/ from the executable); JEB_ART_PATH the art file (default the mod's); JEB_PID_FILE a file the running
+// JEB_MOD the mod folder (default the bundle's JebMod, else mod/ beside desktop/ from the executable); JEB_ART_PATH the art file (default the mod's); JEB_ICONSET=<dir> writes the app icon's .iconset PNGs there and exits (tools/bundle.sh; nothing else starts); JEB_PID_FILE a file the running
 // instance keeps its pid in. JEB_NO_PAUSE=1 turns off the occlusion pause (for
 // measuring); JEB_IDLE_SECONDS sets the idle pause (default 120 s without a change
 // to what the farm shows); JEB_FPS the frame rate asked for while something passes
@@ -639,6 +639,13 @@ func waitForArt() -> Never {
 }
 
 let artSource = ArtSource(path: artPath)
+// Icon export (tools/bundle.sh): write the .iconset's PNGs and exit. Before everything else that starts the
+// app (hand-over, windows, status item, timers, heartbeat), so it never touches a running instance.
+if let dir = env["JEB_ICONSET"] {
+    guard artSource.refresh(), let art = artSource.art else { log("icon export: no usable art at \(artPath)"); exit(1) }
+    if let problem = exportIconset(art: art, to: dir) { log("icon export: \(problem)"); exit(1) }
+    exit(0)
+}
 guard artSource.refresh(), let art = artSource.art else {
     log("no usable art at \(artPath)")
     waitForArt()
