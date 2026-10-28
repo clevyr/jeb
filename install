@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""./install [--dev] [--repin] [--add-path] [--dry-run]: set Jeb up from this clone.
+"""./install [--dev] [--repin] [--add-path] [--dry-run] [--verbose]: set Jeb up from this clone.
 
   release mode (default): the clone follows release tags signed by a pinned signer (the clone is moved to the newest
                           verified tag; a 6-hourly agent fetches new ones, verifies, gates them and switches). No local
@@ -11,6 +11,7 @@
                           asking (zsh ~/.zprofile, bash ~/.bash_profile, else ~/.profile; backup first). Without it a
                           terminal asks; otherwise the line to add is printed.
   --dev                   owner mode: runs from the working tree; local src edits ship through the update gates.
+  --verbose               every command and detail; by default one short line per step.
 
 Steps: preflight, `desktop/jebctl install` (first build through the gates, LaunchAgents, start), then the mod folder
 added to CLAUDE_CODE_PLUGIN_DIRS in ~/.claude/settings.json (backup first). --dry-run changes nothing.
@@ -23,6 +24,9 @@ MOD = os.path.join(CLONE, "mod")
 sys.path.insert(0, os.path.join(CLONE, "desktop"))
 import plugdirs
 
+
+
+VERBOSE = False
 
 
 def say(*a):
@@ -50,7 +54,8 @@ def preflight():
         fail("`claude` is not on PATH; install Claude Code first")
     if not os.path.isdir(MOD):
         fail(f"{MOD} not found; run ./install from a full clone")
-    say("preflight ok: macOS, Command Line Tools, swiftc, /usr/bin/python3, claude")
+    if VERBOSE:
+        say("preflight ok: macOS, Command Line Tools, swiftc, /usr/bin/python3, claude")
 
 
 def clone_check():
@@ -62,23 +67,42 @@ def clone_check():
 
 
 def main(argv):
+    global VERBOSE
     dry = "--dry-run" in argv
+    VERBOSE = "--verbose" in argv
     dev = "--dev" in argv
     repin = "--repin" in argv
     addp = "--add-path" in argv
-    bad = [a for a in argv if a not in ("--dry-run", "--dev", "--repin", "--add-path")]
+    bad = [a for a in argv if a not in ("--dry-run", "--dev", "--repin", "--add-path", "--verbose")]
     if bad:
         say(__doc__); return 2
-    say(f"Jeb install ({'dev' if dev else 'release'} mode{', dry run' if dry else ''}) from {CLONE}")
-    preflight()
-    if not dev:
-        clone_check()
-    cmd = ["/usr/bin/python3", "-I", os.path.join(CLONE, "desktop", "jebctl"), "install", "--mode", "dev" if dev else "release"] + (["--repin"] if repin and not dev else []) + (["--add-path"] if addp else []) + (["--dry-run"] if dry else [])
-    say("$ " + " ".join(cmd))
+    if VERBOSE:
+        say(f"Jeb install ({'dev' if dev else 'release'} mode{', dry run' if dry else ''}) from {CLONE}")
+    else:
+        say(f"Installing Jeb ({'dev' if dev else 'release'} mode{', dry run' if dry else ''})")
+        print("  checks ...", end=" ", flush=True)
+    try:
+        preflight()
+        if not dev:
+            clone_check()
+    except SystemExit:
+        if not VERBOSE:
+            say("failed")
+        raise
+    if not VERBOSE:
+        say("ok")
+    cmd = ["/usr/bin/python3", "-I", os.path.join(CLONE, "desktop", "jebctl"), "install", "--mode", "dev" if dev else "release"] + (["--repin"] if repin and not dev else []) + (["--add-path"] if addp else []) + (["--dry-run"] if dry else []) + (["--verbose"] if VERBOSE else [])
+    if VERBOSE:
+        say("$ " + " ".join(cmd))
     rc = subprocess.run(cmd).returncode
     if rc != 0:
         return rc       # settings untouched when a gate fails
-    plugdirs.edit(MOD, False, dry, say)
+    if not VERBOSE:
+        print("  Claude Code plugin ...", end=" ", flush=True)
+    act = plugdirs.edit(MOD, False, dry, say if VERBOSE else lambda *a: None)
+    if not VERBOSE:
+        say("would add" if dry and act in ("set", "append") else "ok")
+        say("Dry run only; nothing was changed." if dry else "Done. Start a new Claude Code session to load Jeb.")
     return 0
 
 

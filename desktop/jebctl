@@ -3,9 +3,10 @@
 
   status                  process, stamp, heartbeat age, last update result, versions
   doctor                  read-only health check: one line per check (ok / FIX with the fix), exit 1 on a problem
-  install [--mode dev|release] [--repin] [--add-path] [--dry-run]
-                          first build through the updater's compile, smoke and start gates (refuses if one
-                          fails; updates and releases keep all gates), the
+  install [--mode dev|release] [--repin] [--add-path] [--dry-run] [--verbose]
+                          one short line per step (--verbose: every command and detail). First build through
+                          the updater's compile, smoke and start gates (refuses if one fails; updates and
+                          releases keep all gates), the
                           LaunchAgents, hand over from a run-live.sh instance, then bootstrap. Mode is
                           stored in JEB_HOME/install-mode (default: the stored one, else dev).
                           dev: the update agent ships local src edits through the gates.
@@ -22,8 +23,9 @@
                           PATH: --add-path adds it to the shell profile (zsh ~/.zprofile, bash ~/.bash_profile,
                           else ~/.profile; JEB_PROFILE; backup first); without it a terminal asks, else the
                           line to add is printed. A different file already at that path is left alone.
-  uninstall [--purge] [--dry-run]
-                          bootout, remove the plists and the app; versions and logs stay unless --purge (removes everything in JEB_HOME);
+  uninstall [--purge] [--dry-run] [--verbose]
+                          one short line per step (--verbose: every command and detail). Bootout, remove the
+                          plists and the app; versions and logs stay unless --purge (removes everything in JEB_HOME);
                           also the ~/.local/bin/jebctl link (only if it points here) and the PATH lines install added
   follow [--gates-only] [--dry-run]
                           release mode: fetch tags, then take the newest unseen v* tag that is signed by a
@@ -98,19 +100,48 @@ PLUGIN_JSON = os.path.join(MOD, ".claude-plugin", "plugin.json")   # the release
 INITIAL_VERSION = "1.0.0"                                          # the first release, as release-please starts
 UID = os.getuid()
 DRY = False
+VERBOSE = True      # main() turns it off for install/uninstall unless --verbose; every other command keeps its output
+OPEN = False        # a step line ("  app ... ") is waiting for its result
 PATH = "/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin"
 
 
 def say(*a):
+    global OPEN
+    if OPEN:
+        print(flush=True); OPEN = False
     print(*a, flush=True)
 
 
+def detail(*a):
+    """Today's full output: shown only with --verbose (install/uninstall); say() is for what always shows."""
+    if VERBOSE:
+        say(*a)
+
+
+def lead(label):
+    """Default install/uninstall: open one step line, closed by fin() (or by whatever say() prints meanwhile)."""
+    global OPEN
+    if not VERBOSE:
+        print(f"  {label} ...", end=" ", flush=True); OPEN = True
+
+
+def fin(text):
+    global OPEN
+    if not VERBOSE:
+        print(text, flush=True); OPEN = False
+
+
+def line(label, text):
+    if not VERBOSE:
+        say(f"  {label} ... {text}")
+
+
 def sh(cmd, check=False, cwd=None, env=None):
-    say("$ " + " ".join(cmd))
+    detail("$ " + " ".join(cmd))
     if DRY:
         return 0
     r = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd, env=env)
-    if r.stdout.strip() or r.stderr.strip():
+    if (r.stdout.strip() or r.stderr.strip()) and (VERBOSE or (check and r.returncode != 0)):
         say((r.stdout + r.stderr).strip())
     if check and r.returncode != 0:
         raise SystemExit(f"failed: {' '.join(cmd)}")
@@ -279,13 +310,13 @@ def write_plists(dest, m):
         os.makedirs(dest, exist_ok=True)
     for label, d in plists(m).items():
         p = os.path.join(dest, label + ".plist")
-        say(f"plist {label}: JEB_MOD={d['EnvironmentVariables']['JEB_MOD']} JEB_SRC={d['EnvironmentVariables']['JEB_SRC']}")
+        detail(f"plist {label}: JEB_MOD={d['EnvironmentVariables']['JEB_MOD']} JEB_SRC={d['EnvironmentVariables']['JEB_SRC']}")
         if DRY:
             continue
         with open(p, "wb") as f:
             plistlib.dump(d, f)
         os.chmod(p, 0o644)
-        say("wrote " + p)
+        detail("wrote " + p)
 
 
 # ---- telemetry (written by watchdog.py) ----
@@ -592,9 +623,9 @@ def hand_over_from_legacy():
     if not procs:
         return None
     old = procs[0][0]
-    say(f"handing over from pid {old}")
+    detail(f"handing over from pid {old}")
     if DRY:
-        say(f"$ JEB_HANDOFF_FROM={old} JEB_START=manual {EXE}"); return None
+        detail(f"$ JEB_HANDOFF_FROM={old} JEB_START=manual {EXE}"); return None
     log = open(os.path.join(HOME, "run.log"), "ab")
     child = subprocess.Popen([EXE], env=dict(os.environ, JEB_HANDOFF_FROM=str(old), JEB_START="manual"), stdout=log, stderr=log, start_new_session=True)
     for _ in range(120):
@@ -602,7 +633,7 @@ def hand_over_from_legacy():
         try:
             os.kill(old, 0)
         except ProcessLookupError:
-            say(f"pid {child.pid} took over; pid {old} is gone")
+            detail(f"pid {child.pid} took over; pid {old} is gone")
             return child.pid
         if child.poll() is not None:
             raise SystemExit(f"the installed app exited ({child.returncode}) before taking over; nothing was loaded, the old instance runs on")
@@ -616,9 +647,9 @@ def pin_signers(repin):
         say("signers: no desktop/release-signers in this clone; " + ("a pinned file is kept" if os.path.exists(SIGNERS) else "updates stay off until one is pinned"))
         return
     if os.path.exists(SIGNERS) and not repin:
-        say(f"signers: {SIGNERS} is already pinned (--repin replaces it)")
+        detail(f"signers: {SIGNERS} is already pinned (--repin replaces it)")
         return
-    say(f"signers: pin {REPO_SIGNERS} -> {SIGNERS}")
+    detail(f"signers: pin {REPO_SIGNERS} -> {SIGNERS}")
     if DRY:
         return
     tmp = SIGNERS + ".tmp"
@@ -638,7 +669,7 @@ def select_release():
     else None: no pinned signer or no verified tag leaves the clone on the cloned commit (cmd_install then detaches it
     from its branch, so follow can move it once a verified tag appears)."""
     if DRY and not os.path.isfile(SIGNERS) and os.path.isfile(REPO_SIGNERS):
-        say("release: would fetch tags, verify them against the signers just pinned (newest first), then `git checkout --detach <sha>` of the newest verified one; with none it stays on the cloned commit")
+        detail("release: would fetch tags, verify them against the signers just pinned (newest first), then `git checkout --detach <sha>` of the newest verified one; with none it stays on the cloned commit")
         return None
     if not os.path.isfile(SIGNERS):
         say("release: no pinned signers, so no tag is trusted; staying on the cloned commit (updates stay off until a signer is pinned)")
@@ -648,7 +679,7 @@ def select_release():
     if git("status", "--porcelain", "-uno").stdout.strip():
         raise SystemExit("the clone has local changes, so it could not move to a release; commit or stash them, or use --mode dev")
     if DRY:
-        say("$ git fetch --tags origin")
+        detail("$ git fetch --tags origin")
     else:
         r = git("fetch", "--tags", "origin", timeout=180)
         if r.returncode != 0:
@@ -665,9 +696,9 @@ def select_release():
             save_rstate(rs)
             continue
         if sha == here:
-            say(f"clone is on {t} ({sha[:12]}), verified")
+            detail(f"clone is on {t} ({sha[:12]}), verified")
             return None
-        say(f"$ git checkout --detach {sha}   ({t}, signed by a pinned signer, on origin/{base})")
+        detail(f"$ git checkout --detach {sha}   ({t}, signed by a pinned signer, on origin/{base})")
         if DRY:
             return None
         r = git("checkout", "--detach", sha)
@@ -717,12 +748,12 @@ def link_jebctl():
     """Link ~/.local/bin/jebctl to this jebctl. True when it is (or, in a dry run, would be) ours."""
     p, st = link_path(), link_state()
     if st == "ours":
-        say(f"{p} already points here")
+        detail(f"{p} already points here")
         return True
     if st == "foreign":
         say(f"warning: {p} exists and is not a link to a Jeb jebctl; left alone, so `jebctl` is not set up (run {ME})")
         return False
-    say(f"link {p} -> {ME}" + (f" (replaces the link to {os.path.realpath(p)})" if st == "older" else ""))
+    detail(f"link {p} -> {ME}" + (f" (replaces the link to {os.path.realpath(p)})" if st == "older" else ""))
     if not DRY:
         os.makedirs(bin_dir(), mode=0o755, exist_ok=True)
         tmp = p + ".tmp"
@@ -766,7 +797,7 @@ def backup_profile(prof):
         n += 1
         dest = f"{base}-{n}.bak"
     shutil.copy2(prof, dest)
-    say("  backup: " + dest)
+    detail("  backup: " + dest)
 
 
 def add_to_profile():
@@ -774,7 +805,7 @@ def add_to_profile():
     if PATH_MARK in text.splitlines():
         say(f"{prof} already has the PATH line; open a new terminal")
         return
-    say(f"add to {prof}: {PATH_MARK} / {export_line()}")
+    detail(f"add to {prof}: {PATH_MARK} / {export_line()}")
     if DRY:
         return
     if text:
@@ -794,7 +825,7 @@ def remove_from_profile():
             i += 2 if i + 1 < len(lines) and lines[i + 1].startswith("export PATH=") else 1
         else:
             out.append(lines[i]); i += 1
-    say(f"remove the PATH lines from {prof}")
+    detail(f"remove the PATH lines from {prof}")
     if not DRY:
         backup_profile(prof)
         with open(prof, "w") as f:
@@ -804,7 +835,7 @@ def remove_from_profile():
 def path_step(add):
     d = bin_dir()
     if on_path(d):
-        say(f"{d} is on PATH")
+        detail(f"{d} is on PATH")
         return
     prof = profile_path()
     shown = d.replace(os.path.expanduser("~"), "~", 1)
@@ -822,15 +853,27 @@ def path_step(add):
 def unlink_jebctl():
     p = link_path()
     if os.path.islink(p) and is_me(p):
-        say(f"remove {p}")
+        detail(f"remove {p}")
         if not DRY:
             os.unlink(p)
+        line("jebctl command", "would remove" if DRY else "removed")
     elif os.path.lexists(p):
         say(f"{p} is not a link to this jebctl; left alone")
+    else:
+        line("jebctl command", "not installed")
     remove_from_profile()
 
 
 def cmd_install(args):
+    try:
+        install_steps(args)
+    except SystemExit:
+        if OPEN:
+            fin("failed")       # the message follows
+        raise
+
+
+def install_steps(args):
     m = mode()
     if "--mode" in args:
         try:
@@ -838,108 +881,128 @@ def cmd_install(args):
         except IndexError:
             m = ""
         if m not in ("dev", "release"):
-            raise SystemExit("usage: jebctl install [--mode dev|release] [--repin] [--add-path] [--dry-run]")
-    say(f"mode: {m}")
+            raise SystemExit("usage: jebctl install [--mode dev|release] [--repin] [--add-path] [--dry-run] [--verbose]")
+    detail(f"mode: {m}")
     back = None
     if m == "release":
         pin_signers("--repin" in args)        # from the cloned checkout, before any tag is looked at
         back = select_release()
-    app, pre = None, []
+    lead("app")
+    app, pre, tag = None, [], None
     if m == "release" and os.path.isfile(SIGNERS):
         on = release_tags("--points-at", "HEAD")
         if on and verify_tag(on[-1], base_branch())[1] is None:
+            tag = on[-1]
             if DRY:
-                say(f"app: would use {app_name(on[-1])} from the release in place of the compile when its hash matches the app-sha256 line in the tag; else the compile")
+                detail(f"app: would use {app_name(on[-1])} from the release in place of the compile when its hash matches the app-sha256 line in the tag; else the compile")
             else:
-                app = fetch_app(on[-1])
+                app = fetch_app(tag, detail)
                 pre = ["--prebuilt", app] if app else []
-    say("1. first build through the updater (compile, smoke, headless start)")
+    detail("1. first build through the updater (compile, smoke, headless start)")
+    t0 = time.time()
     if DRY:
-        say(f"$ python3 -I {CODE}/updater.py --force --no-watch --quick")
+        detail(f"$ python3 -I {CODE}/updater.py --force --no-watch --quick")
     else:
-        r = subprocess.run(["/usr/bin/python3", "-I", os.path.join(CODE, "updater.py"), "--force", "--no-watch", "--quick"] + pre, env=dict(os.environ, JEB_HOME=HOME, JEB_MOD=MOD, JEB_APP_DIR=APP_DIR))
+        r = subprocess.run(["/usr/bin/python3", "-I", os.path.join(CODE, "updater.py"), "--force", "--no-watch", "--quick"] + pre, env=dict(os.environ, JEB_HOME=HOME, JEB_MOD=MOD, JEB_APP_DIR=APP_DIR), **({} if VERBOSE else {"capture_output": True, "text": True}))
         if app:
             shutil.rmtree(os.path.dirname(os.path.dirname(app)), ignore_errors=True)
         if r.returncode != 0 or not os.path.isdir(APP):
             tail = open(os.path.join(HOME, "update.log")).read().splitlines()[-6:] if os.path.exists(os.path.join(HOME, "update.log")) else []
+            if not tail and not VERBOSE:
+                tail = (r.stdout + r.stderr).strip().splitlines()[-6:]
             if back:
                 g = git("checkout", "--detach", back)
                 tail.append(f"back on the cloned commit {back[:12]}" if g.returncode == 0 else f"COULD NOT go back to {back[:12]}: {g.stderr.strip()[:200]}")
             raise SystemExit("a gate failed; nothing installed.\n" + "\n".join(tail))
+    fin("skipped (dry run)" if DRY else f"ok (prebuilt {tag})" if app else f"ok (built, {time.time() - t0:.0f}s)")
     if not DRY:
         os.makedirs(HOME, mode=0o700, exist_ok=True)
         with open(MODE_FILE, "w") as f:
             f.write(m + "\n")
     if m == "release" and git("symbolic-ref", "-q", "HEAD").returncode == 0:
-        say("release: leaving the clone's branch so follow can move it: git checkout --detach HEAD")
+        detail("release: leaving the clone's branch so follow can move it: git checkout --detach HEAD")
         if not DRY:
             r = git("checkout", "--detach", "HEAD")
             if r.returncode != 0:
                 say(f"warning: could not detach the clone from its branch ({r.stderr.strip()[:200]}); follow will skip until it is")
-    say("2. plists")
+    lead("LaunchAgents")
+    detail("2. plists")
     write_plists(os.path.join(HOME, "launchd"), m)
     if os.path.exists(os.path.join(HOME, "quit")) and not DRY:
         os.unlink(os.path.join(HOME, "quit"))
-    say("3. hand the desktop over from any running instance")
+    detail("3. hand the desktop over from any running instance")
     hand_over_from_legacy()
-    say("4. LaunchAgents")
+    detail("4. LaunchAgents")
     mine = labels_for(m)
     for l in mine:
         sh(["cp", os.path.join(HOME, "launchd", l + ".plist"), os.path.join(AGENTS, l + ".plist")]) if DRY else (os.makedirs(AGENTS, exist_ok=True), shutil.copy2(os.path.join(HOME, "launchd", l + ".plist"), os.path.join(AGENTS, l + ".plist")))
     for l in ALL_LABELS:
         sh(["launchctl", "bootout", f"gui/{UID}/{l}"])      # a re-install: ignore "not loaded"
         if l not in mine:                                    # a mode switch: the other mode's agent goes
-            say(f"remove {os.path.join(AGENTS, l + '.plist')} (not part of {m} mode)")
+            detail(f"remove {os.path.join(AGENTS, l + '.plist')} (not part of {m} mode)")
             if not DRY and os.path.exists(os.path.join(AGENTS, l + ".plist")):
                 os.unlink(os.path.join(AGENTS, l + ".plist"))
     for l in ("com.jeb.desktop.update", "com.jeb.desktop.watchdog", "com.jeb.desktop", "com.jeb.desktop.release"):
         if l in mine:
             sh(["launchctl", "bootstrap", f"gui/{UID}", os.path.join(AGENTS, l + ".plist")], check=True)
+    fin("skipped (dry run)" if DRY else "ok")
+    lead("desktop")
+    up = False
     if not DRY:
         for _ in range(60):
             time.sleep(1)
             procs = running()
             if len(procs) == 1 and procs[0][2].startswith(APP):
+                up = True
                 break
-        cmd_status()
-    say("5. jebctl on PATH")
-    if link_jebctl():
+        if VERBOSE:
+            cmd_status()
+    fin("skipped (dry run)" if DRY else "running" if up else "not running yet; see `jebctl status`")
+    detail("5. jebctl on PATH")
+    st = link_state()
+    ok = link_jebctl()
+    line("jebctl command", "not set up" if not ok else "would link" if DRY and st != "ours" else "ok")
+    if ok:
         path_step("--add-path" in args)
 
 
 def cmd_uninstall(purge):
     if purge and os.path.realpath(HOME) in ("/", os.path.realpath(os.path.expanduser("~")), os.path.realpath(os.path.expanduser("~/.claude"))):
         raise SystemExit(f"refusing to purge {HOME}: JEB_HOME must be the desktop's own folder")      # purge empties it whole
+    lead("LaunchAgents and app")
     for l in ("com.jeb.desktop.release", "com.jeb.desktop.update", "com.jeb.desktop.watchdog", "com.jeb.desktop"):
         sh(["launchctl", "bootout", f"gui/{UID}/{l}"])
     for l in ALL_LABELS:
         p = os.path.join(AGENTS, l + ".plist")
-        say(f"remove {p}")
+        detail(f"remove {p}")
         if not DRY and os.path.exists(p):
             os.unlink(p)
     if not DRY:
         write_quit_marker()
         terminate_all()
-    say(f"remove {APP}")
+    detail(f"remove {APP}")
     if not DRY:
         shutil.rmtree(APP, ignore_errors=True)
         if os.path.exists(os.path.join(HOME, "quit")):
             os.unlink(os.path.join(HOME, "quit"))
+    fin("would remove" if DRY else "removed")
     if purge:
+        lead("desktop folder")
         # everything in HOME (the desktop's own 0700 folder), then the folder if it is empty; a symlink is unlinked, never followed
         for n in sorted(os.listdir(HOME)) if os.path.isdir(HOME) else []:
             p = os.path.join(HOME, n)
-            say(f"purge {p}")
+            detail(f"purge {p}")
             if not DRY:
                 shutil.rmtree(p, ignore_errors=True) if os.path.isdir(p) and not os.path.islink(p) else os.unlink(p)
-        say(f"purge {HOME}")
+        detail(f"purge {HOME}")
         if not DRY:
             try:
                 os.rmdir(HOME)
             except OSError:
                 pass
+        fin("would purge" if DRY else "purged")
     else:
-        say("kept versions and logs")
+        detail("kept versions and logs")
     unlink_jebctl()
 
 
@@ -1115,7 +1178,7 @@ def cmd_follow(gates_only):
     cur_sha = git("rev-parse", "HEAD").stdout.strip()
     rs = load_rstate()
     if DRY:
-        say("$ git fetch --tags origin")
+        detail("$ git fetch --tags origin")
     else:
         r = git("fetch", "--tags", "origin", timeout=180)
         if r.returncode != 0:
@@ -1379,10 +1442,11 @@ def cmd_quit():
 
 
 def main(argv):
-    global DRY
-    args = [a for a in argv if a != "--dry-run"]
-    DRY = len(args) != len(argv)
+    global DRY, VERBOSE
+    args = [a for a in argv if a not in ("--dry-run", "--verbose")]
+    DRY = "--dry-run" in argv
     cmd = args[0] if args else "status"
+    VERBOSE = "--verbose" in argv or cmd not in ("install", "uninstall")
     if cmd == "status": cmd_status()
     elif cmd == "doctor": return cmd_doctor()
     elif cmd == "plists": cmd_plists()

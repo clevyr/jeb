@@ -42,7 +42,7 @@ It checks you have everything, downloads the release, runs the install and a hea
     ./install
     desktop/jebctl doctor
 
-That clones the latest release (git will mention a "detached HEAD", which is expected). It has to be a git clone rather than a downloaded zip, because that's how Jeb updates itself. You can put it anywhere; the install remembers where. `./install --dry-run` shows every step without changing anything.
+That clones the latest release (git will mention a "detached HEAD", which is expected). It has to be a git clone rather than a downloaded zip, because that's how Jeb updates itself. You can put it anywhere; the install remembers where. `./install --dry-run` shows every step without changing anything. It prints one short line per step; add `--verbose` for every command and detail.
 
 The install:
 
@@ -136,7 +136,7 @@ Releases are signed tags, and installs only trust signers pinned on that machine
     cd ~/jeb
     ./uninstall
 
-This removes the LaunchAgents and the app, and takes this clone's `mod/` back out of `CLAUDE_CODE_PLUGIN_DIRS` (backing up your settings first). It keeps `~/.claude/jeb-desktop` unless you pass `--purge`, and keeps the plugin's state file unless you pass `--purge-farm`, which backs it up before removing it. The clone itself stays put. `--dry-run` shows what it would do.
+This removes the LaunchAgents and the app, and takes this clone's `mod/` back out of `CLAUDE_CODE_PLUGIN_DIRS` (backing up your settings first). It keeps `~/.claude/jeb-desktop` unless you pass `--purge`, and keeps the plugin's state file unless you pass `--purge-farm`, which backs it up before removing it. The clone itself stays put. `--dry-run` shows what it would do, and `--verbose` prints every command and detail.
 
 ## Contributing
 

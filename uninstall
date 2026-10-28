@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""./uninstall [--purge] [--purge-farm] [--dry-run]: remove Jeb's install (the clone itself stays).
+"""./uninstall [--purge] [--purge-farm] [--dry-run] [--verbose]: remove Jeb's install (the clone itself stays).
 
   jebctl uninstall: stops and removes the LaunchAgents (including the release agent) and the app. --purge also
                     deletes everything in the desktop's folder (JEB_HOME: versions, logs, state; passed through).
@@ -8,6 +8,7 @@
   settings.json:    this clone's mod/ entry is removed from CLAUDE_CODE_PLUGIN_DIRS (backup first).
   --purge-farm      also removes the farm file(s) ~/.claude/plugins/store/jeb_inline-*.json, after a backup.
                     Default: the farm is kept.
+  --verbose         every command and detail; by default one short line per step.
 Env overrides (tests): JEB_HOME, JEB_APP_DIR, JEB_LAUNCHAGENTS, JEB_SETTINGS, JEB_BACKUPS, JEB_STORE_DIR, JEB_BIN_DIR, JEB_PROFILE.
 """
 import glob, os, shutil, subprocess, sys, time
@@ -26,31 +27,41 @@ def main(argv):
     dry = "--dry-run" in argv
     purge = "--purge" in argv
     farm = "--purge-farm" in argv
-    if [a for a in argv if a not in ("--dry-run", "--purge", "--purge-farm")]:
+    verbose = "--verbose" in argv
+    if [a for a in argv if a not in ("--dry-run", "--purge", "--purge-farm", "--verbose")]:
         say(__doc__); return 2
-    say(f"Jeb uninstall{' (dry run)' if dry else ''} from {CLONE}")
-    cmd = ["/usr/bin/python3", "-I", os.path.join(CLONE, "desktop", "jebctl"), "uninstall"] + (["--purge"] if purge else []) + (["--dry-run"] if dry else [])
-    say("$ " + " ".join(cmd))
+    say(f"Jeb uninstall{' (dry run)' if dry else ''} from {CLONE}" if verbose else f"Uninstalling Jeb{' (dry run)' if dry else ''}")
+    cmd = ["/usr/bin/python3", "-I", os.path.join(CLONE, "desktop", "jebctl"), "uninstall"] + (["--purge"] if purge else []) + (["--dry-run"] if dry else []) + (["--verbose"] if verbose else [])
+    if verbose:
+        say("$ " + " ".join(cmd))
     rc = subprocess.run(cmd).returncode
     if rc != 0:
         say(f"the desktop part failed (exit {rc}); settings.json and the farm were left alone")
         return rc
-    plugdirs.edit(MOD, True, dry, say)
+    act = plugdirs.edit(MOD, True, dry, say if verbose else lambda *a: None)
+    if not verbose:
+        say("  plugin setting ... " + ("not set" if act == "absent" else "would remove" if dry else "removed"))
     store = os.environ.get("JEB_STORE_DIR") or os.path.expanduser("~/.claude/plugins/store")
     files = sorted(glob.glob(os.path.join(store, "jeb_inline-*.json")))
     if farm:
         for f in files:
-            say(f"farm {f}: back up, then remove")
+            if verbose:
+                say(f"farm {f}: back up, then remove")
             if not dry:
                 os.makedirs(plugdirs.backup_dir(), mode=0o700, exist_ok=True)
                 dest = os.path.join(plugdirs.backup_dir(), os.path.basename(f)[:-5] + "." + time.strftime("%Y%m%d-%H%M%S") + ".json")
                 shutil.copy2(f, dest)
-                say("  backup: " + dest)
+                if verbose:
+                    say("  backup: " + dest)
                 os.unlink(f)
         if not files:
-            say("no farm file found")
-    else:
+            say("no farm file found" if verbose else "  farm ... none found")
+        elif not verbose:
+            say("  farm ... " + ("would remove (backup first)" if dry else "removed (backed up first)"))
+    elif verbose:
         say(f"farm kept ({len(files)} file(s) in {store}); --purge-farm removes it")
+    else:
+        say(f"  farm ... kept ({len(files)} file(s)); --purge-farm removes it")
     say(f"the clone at {CLONE} was not removed")
     return rc
 
