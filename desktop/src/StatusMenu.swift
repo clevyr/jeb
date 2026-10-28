@@ -2,6 +2,12 @@
 // the desktop. The app stays an accessory (no Dock icon). The menu is built each
 // time it opens (menuNeedsUpdate), so nothing runs while it is closed.
 //
+// "Check for Updates" starts the update agent of the install mode (jebHome/install-mode: release runs
+// `jebctl follow`, dev the updater) with `launchctl kickstart`; the agents do the work and keep every gate.
+// Above it an info line: the last release tag and when it was checked (release-state.json), or the build stamp.
+// It reads "Checking for Updates…" while that agent's lock is held, "Updates Paused" with jebHome/updates-paused,
+// and is left out when the agent's plist is not installed (JEB_LAUNCHAGENTS overrides ~/Library/LaunchAgents).
+//
 // JEB_MENU_TEST=1 (testing only) also listens for the distributed notification
 // "com.jeb.desktop.menu-test" whose object is a menu item's title: the item's
 // action runs as if chosen, and the menu's state is logged. "status" only logs;
@@ -69,6 +75,22 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         menu.addItem(submenu("Frame rate", rates))
 
         menu.addItem(.separator())
+        if let agent = updateAgent() {
+            let info = NSMenuItem(title: updateInfoLine(agent.mode), action: nil, keyEquivalent: "")
+            info.isEnabled = false
+            menu.addItem(info)
+            let check = action("Check for Updates", #selector(checkForUpdates))
+            if FileManager.default.fileExists(atPath: jebHome + "/updates-paused") {
+                check.title = "Updates Paused"
+                check.isEnabled = false
+            } else if lockHeld(jebHome + "/" + agent.lock) {
+                check.title = "Checking for Updates…"
+                check.isEnabled = false
+            }
+            check.representedObject = agent.label
+            menu.addItem(check)
+            menu.addItem(.separator())
+        }
         menu.addItem(action("Reload art", #selector(reloadArt)))
         menu.addItem(action("Save Screenshot", #selector(saveScreenshot)))
         menu.addItem(action("Restart", #selector(restart)))
@@ -93,7 +115,59 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         return rate == .adaptive ? "Running · up to \(calmFps) fps calm, \(fps) passing (adaptive)" : "Running · up to \(fps) fps"
     }
 
+    // MARK: Updates
+
+    /// The install mode's update agent, or nil when its plist is not installed (a bare run-live.sh instance).
+    private func updateAgent() -> (mode: String, label: String, lock: String)? {
+        let mode = ((try? String(contentsOfFile: jebHome + "/install-mode", encoding: .utf8)) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let release = mode == "release"
+        let label = release ? "com.jeb.desktop.release" : "com.jeb.desktop.update"
+        let agents = env["JEB_LAUNCHAGENTS"] ?? NSHomeDirectory() + "/Library/LaunchAgents"
+        guard FileManager.default.fileExists(atPath: "\(agents)/\(label).plist") else { return nil }
+        return (release ? "release" : "dev", label, release ? "release.lock" : "updater.lock")
+    }
+
+    private func updateInfoLine(_ mode: String) -> String {
+        guard mode == "release" else { return "Dev build \(buildStamp)" }
+        let state = (try? Data(contentsOf: URL(fileURLWithPath: jebHome + "/release-state.json"))).flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
+        let last = state?["last"] as? [String: Any]
+        let tag = last?["result"] as? String == "ok" ? last?["tag"] as? String : nil
+        var line = "Version \(tag ?? "unknown")"
+        if let checked = (state?["checked"] as? NSNumber)?.doubleValue {
+            let minutes = max(0, Int((Date().timeIntervalSince1970 - checked) / 60))
+            line += " · checked " + (minutes < 1 ? "just now" : minutes < 60 ? "\(minutes) min ago" : "\(minutes / 60) h ago")
+        }
+        return line
+    }
+
+    /// True when another process holds the lock (a non-blocking flock, released at once; a missing file is not held).
+    private func lockHeld(_ path: String) -> Bool {
+        let fd = open(path, O_RDONLY)
+        guard fd >= 0 else { return false }
+        defer { close(fd) }
+        if flock(fd, LOCK_EX | LOCK_NB) == 0 {
+            flock(fd, LOCK_UN)
+            return false
+        }
+        return errno == EWOULDBLOCK
+    }
+
     // MARK: Actions
+
+    @objc private func checkForUpdates(_ sender: NSMenuItem) {
+        guard let label = sender.representedObject as? String else { return }
+        let target = "gui/\(getuid())/\(label)"
+        log("menu: check for updates (\(label))")
+        if env["JEB_MENU_TEST"] == "1" {
+            log("menu: would kickstart \(target)")
+            return
+        }
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+        task.arguments = ["kickstart", target]
+        task.terminationHandler = { p in log("menu: kickstart \(target) exited \(p.terminationStatus)") }
+        do { try task.run() } catch { log("menu: kickstart failed: \(error)") }
+    }
 
     @objc private func togglePause() {
         app.manualPause.toggle()

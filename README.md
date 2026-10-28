@@ -37,6 +37,7 @@ It adds an item to the menu bar with:
 - A status line showing whether it's running and at what frame rate, or why it's paused.
 - **Pause / Resume** to stop and start drawing.
 - **Frame rate**: Adaptive (the default, which slows down when nothing's moving), 60 fps or 30 fps.
+- **Check for Updates**, above Reload art, with a line showing the installed version and when Jeb last checked (a development install shows its build instead). It runs the update check now instead of waiting for the next one; the same checks apply. It reads "Checking for Updates…" while a check is running and "Updates Paused" after `jebctl pause-updates`.
 - **Reload art** to pick up new plugin art without restarting.
 - **Save Screenshot**, which saves a picture per screen to `~/Pictures/Jeb/` and shows it in Finder. It only saves what Jeb draws, never your other windows.
 - **Restart** to start a fresh copy.
