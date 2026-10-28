@@ -1,0 +1,73 @@
+FAIL  farm-day           [2.1 2.4 3.1 3.4 3.6 12.1 13.1] farm: 92 match; farm: band-only [('quilt-Y', 0, 249, 4)] desktop-only [('embers', 0, 172, -19)]; farm: 7 match
+FAIL  farm-built         [2.6 3.3 3.4 3.8 3.10 3.11 3.14 12.1 12.3] farm: band-only [] desktop-only [('embers', 0, 172, -19)]; farm: band-only [] desktop-only [('text:cloud:2', 0, 186, -19), ('text:cloud:2', 0, 188, -19), ('text:cloud:3', 0, 186, -19), ('text:cloud:3', 0, 188, -19), ('text:cloud:4', 0, 186, -19), ('text:cloud:4', 0, 188, -19), ('text:cloud:5', 0, 186, -19), ('text:cloud:5', 0, 188, -19)]
+FAIL  farm-night         [1.2 1.3 1.4 3.1] farm: band-only [] desktop-only [('firefly', 0, 170, 24)]; camp: band-only [('zz', 0, -88, 19), ('zz', 0, -84, 18), ('zz', 0, -80, 18)] desktop-only []
+FAIL  quilt-stitch       [13.1 13.2 13.3] farm: band-only [('quilt-Y', 0, 249, 4)] desktop-only []
+pass  pumpkin            [1.10] farm: 7 match
+pass  christmas          [1.9] farm: 0 match
+pass  thanksgiving       [1.11] farm: 1 match
+FAIL  groundhog          [1.12] farm: band-only [] desktop-only [('groundhog', 0, 362, 29)]
+pass  jeb-gate           [4.1 15.7] camp: 1 match
+pass  jeb-sip            [4.1 4.7 3.9] camp: 1 match
+pass  jeb-pose-read      [4.2] camp: 1 match
+pass  jeb-pose-still     [4.2 3.5] camp: 1 match; count fire: band 1 desktop 1 (want 1); count steam: band 1 desktop 1 (want 1)
+pass  jeb-think          [4.2 11.6] camp: 1 match
+pass  jeb-hoe            [4.2 11.8] camp: 1 match
+pass  jeb-sweep          [4.2 11.11] camp: 1 match
+pass  jeb-spooked        [4.3 4.6] camp: 2 match
+pass  jeb-pleased        [4.3] camp: 1 match
+pass  jeb-wink           [4.11] camp: 3 match
+pass  jeb-working        [4.3] camp: 1 match
+FAIL  jeb-banjo          [4.4] camp: band-only [('note', 0, -100, 18), ('note', 0, -100, 21), ('note', 0, -98, 18), ('note', 0, -92, 18), ('note', 0, -89, 18), ('note', 0, -88, 22), ('note', 0, -87, 18), ('note', 0, -84, 18), ('note', 0, -84, 21), ('note', 0, -80, 18), ('note', 0, -80, 21), ('note', 0, -78, 18), ('note', 0, -78, 21), ('note', 0, -76, 18), ('note', 0, -72, 18), ('note', 0, -72, 21)] desktop-only []
+pass  jeb-nap            [4.4 4.9] camp: 4 match
+pass  blue-chase         [4.4 4.9 3.10] camp: 2 match
+FAIL  blue-errand        [4.10] camp: band-only [('blue-run', 1, -68, 35)] desktop-only [('blue-run', 1, -40, 35)]
+FAIL  jeb-away           [4.8 7.1 3.9] camp: 3 match; farm: band-only [('dust', 0, 262, 40), ('truck-bales', 0, 220, 26)] desktop-only [('dust', 0, 240, 40), ('truck-bales', 0, 198, 26)]
+FAIL  truck-home         [7.1 7.2] farm: band-only [('blue-wag', 0, 172, 25), ('dust', 0, 158, 40), ('truck-empty', 0, 168, 26)] desktop-only [('blue-wag', 0, 192, 25), ('dust', 0, 178, 40), ('truck-empty', 0, 188, 26)]; camp: 0 match
+FAIL  truck-butter       [7.1] farm: band-only [('dust', 0, 314, 40), ('dust', 1, 292, 40), ('icon-apple_butter', 0, 298, 28)] desktop-only [('dust', 0, 293, 40), ('dust', 1, 271, 40)]
+FAIL  puff               [4.11] farm: band-only [] desktop-only [('dust', 0, 419, 40)]
+pass  hands              [5.1 2.5] count hand-work-2: band 1 desktop 1 (want 1); count hand-work-4: band 1 desktop 1 (want 1); text text:yellow:+3: band 2 desktop 1
+pass  workflow           [5.2] count hand-work-1: band 3 desktop 3 (want 3); text text:yellow:+4: band 2 desktop 1
+pass  mates              [5.6] count opal: band 1 desktop 1 (want 1); count hand-work: band 1 desktop 1 (want 1)
+pass  lanterns           [6.2] lanterns: band 2 (others) desktop 3 (camps)
+FAIL  visit-arrive       [7.3] camp: band-only [] desktop-only [('dust', 0, -136, 40), ('rig-store', 0, -126, 28)]
+pass  visit-deal         [7.3 7.5 4.9] camp: 4 match
+FAIL  visit-opal         [7.3 7.4] camp: band-only [] desktop-only [('opal', 0, -106, 12)]
+pass  visit-tractor      [7.3] count rig-tractor: band 1 desktop 1 (want 1)
+pass  visit-mail         [7.4] camp: 2 match
+FAIL  ev-revenuer        [8.1 3.4] farm: band-only [('revenuer', 0, 122, 33)] desktop-only [('revenuer', 0, 123, 33)]; camp: 1 match
+pass  ev-neighbor        [8.2] camp: 2 match
+FAIL  ev-neighbor-walk   [8.2] camp: band-only [] desktop-only [('opal', 0, -95, 19)]
+pass  ev-bear            [8.3] farm: 1 match; camp: 2 match
+pass  ev-whistlepig      [8.4 2.7] farm: 1 match
+pass  ev-mothman         [8.5] farm: 0 match
+FAIL  ev-bugs            [8.6] count firefly: band 5 desktop 6 (want 9)
+pass  ev-bells           [8.7] farm: 18 match
+pass  ev-storm           [8.8] farm: 1 match
+FAIL  ev-turkeys         [8.10] farm: band-only [('turkey', 0, 187, 35), ('turkey', 1, 169, 35)] desktop-only [('turkey', 0, 189, 35), ('turkey', 1, 171, 35)]
+pass  ev-parachute       [8.11] farm: 1 match
+pass  ev-track           [8.12] camp: 2 match
+pass  ev-hornworm        [8.13] camp: 2 match
+pass  ev-applebutter     [8.14] camp: 1 match
+pass  story-1            [A1] camp: 1 match
+pass  story-2            [A2] camp: 1 match
+pass  story-3            [A3] camp: 1 match
+pass  story-4            [A4] camp: 1 match
+pass  story-5            [A5] camp: 1 match
+FAIL  drops              [9.3 9.4 9.5 9.9 9.10] farm: 3 match; count art:lantern-fox: band 0 desktop 0 (want 1)
+FAIL  festival           [9.8] farm: band-only [] desktop-only [('embers', 0, 172, -19)]
+pass  looks-monday       [C1 C3 C5 C6 C7 C8 C9 C17] farm: 10 match
+pass  looks-saturday     [C2 C11 C20] farm: 4 match; camp: 2 match
+pass  looks-sunday       [C19 C22] farm: 1 match; camp: 2 match
+pass  looks-dusk         [C4 C12 C21] farm: 9 match
+pass  looks-postcard     [C23] farm: 1 match
+pass  looks-night        [C10 C14 C15 C16] farm: 7 match
+pass  looks-coffee       [C18] farm: 1 match
+pass  looks-cake         [C24] farm: 1 match
+FAIL  looks-snow         [C13] farm: band-only [] desktop-only [('drift-flake', 0, 299, 34)]
+FAIL  bubble             [11.1] bubble lines ['Picked every last one. Lord', "willin', they'll keep."]: differ
+FAIL  bubble-dim         [11.2] bubble lines ['Quiet day on the ridge.']: differ
+FAIL  cows               [11.1 appendix-b] count cow: band 1 desktop 2 (want 2); text text:white:#42: band 1 desktop 1; text text:white:#7: band 0 desktop 1
+pass  rain               [2.8] count cloud-dark: band 1 desktop 1 (want 1)
+pass  rain-all           [2.8] count cloud-dark: band 3 desktop 3 (want 3)
+pass  dry                [2.9] dry soil: see pixel probe; band soil_dry pixels 4
+-- 49 of 72 fixtures pass

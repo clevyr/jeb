@@ -1,0 +1,115 @@
+#!/usr/bin/python3
+"""./release [--dry-run] | ./release setup [--dry-run]: cut a Jeb release from this clone (owner side, local, no CI).
+
+  ./release setup         create desktop/release-signers (ssh allowed_signers format) from git's user.email and
+                          the public key of user.signingkey, when it does not exist; else show its fingerprints
+                          and whether the configured key is in it. Needs gpg.format ssh. Commit and push the
+                          file before the first release: installs pin it on first install.
+  ./release               `desktop/jebctl release --parity` (clean tree on the default branch, mod checks, dev
+                          build, parity gate, signed tag vYYYY.MM.DD[.N]); on success asks
+                          `Push <base> and <tag> to origin? [y/N]` and pushes only on y. Without a terminal it
+                          prints the push command instead.
+  --dry-run               change nothing: no file, tag or push.
+"""
+import os, subprocess, sys
+
+CLONE = os.path.dirname(os.path.abspath(__file__))
+CODE = os.path.join(CLONE, "desktop")
+SIGNERS = os.path.join(CODE, "release-signers")
+
+
+def say(*a):
+    print(*a, flush=True)
+
+
+def fail(msg):
+    raise SystemExit("release: " + msg)
+
+
+def git(*a):
+    return subprocess.run(["git", "-C", CLONE] + list(a), capture_output=True, text=True)
+
+
+def cfg(key):
+    return git("config", "--get", key).stdout.strip()
+
+
+def public_key():
+    """(email, 'ssh-... base64') from git config; exits with the config commands to run when something is missing."""
+    email, key, fmt = cfg("user.email"), cfg("user.signingkey"), cfg("gpg.format")
+    if fmt != "ssh" or not key or not email:
+        fail("signing is not set up for SSH. Run (with your own key and email):\n"
+             "  git config gpg.format ssh\n"
+             "  git config user.signingkey ~/.ssh/id_ed25519.pub\n"
+             "  git config user.email you@example.com")
+    if key.startswith("key::"):
+        text = key[5:]
+    else:
+        path = os.path.expanduser(key)
+        if not path.endswith(".pub") and os.path.exists(path + ".pub"):
+            path += ".pub"
+        try:
+            text = open(path).read()
+        except OSError:
+            fail(f"cannot read the public key {path} named by user.signingkey")
+    f = text.split()
+    if len(f) < 2 or not f[0].startswith(("ssh-", "ecdsa-", "sk-")):
+        fail("user.signingkey is not an SSH public key (a .pub file, a private key with a .pub beside it, or key::ssh-...)")
+    return email, f[0] + " " + f[1]
+
+
+def fingerprint(line):
+    r = subprocess.run(["ssh-keygen", "-lf", "-"], input=line, capture_output=True, text=True)
+    return r.stdout.strip() or "unreadable"
+
+
+def setup(dry):
+    email, key = public_key()
+    if os.path.exists(SIGNERS):
+        lines = [l for l in open(SIGNERS).read().splitlines() if l.strip() and not l.startswith("#")]
+        say(f"{SIGNERS} exists:")
+        for l in lines:
+            say("  " + fingerprint(" ".join(l.split()[-2:])))
+        say("configured key is " + ("in it" if any(key in l for l in lines) else "NOT in it (a release signed with it will not verify; see `jebctl install --repin`)"))
+        return 0
+    line = f'{email} namespaces="git" {key}'
+    say(f"{'would write' if dry else 'writing'} {SIGNERS}:\n  {line}\n  {fingerprint(key)}")
+    if not dry:
+        fd = os.open(SIGNERS, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+        with os.fdopen(fd, "w") as f:
+            f.write(line + "\n")
+        os.chmod(SIGNERS, 0o644)
+    say("Commit and push desktop/release-signers before the first release; installs pin it on first install.")
+    return 0
+
+
+def release(dry):
+    cmd = ["/usr/bin/python3", "-I", os.path.join(CODE, "jebctl"), "release", "--parity"] + (["--dry-run"] if dry else [])
+    say("$ " + " ".join(cmd))
+    rc = subprocess.run(cmd).returncode
+    if rc != 0 or dry:
+        return rc
+    tags = git("tag", "--list", "v*", "--points-at", "HEAD").stdout.split()
+    if not tags:
+        fail("no release tag at HEAD after the release; nothing to push")
+    tag, base = sorted(tags)[-1], git("branch", "--show-current").stdout.strip()
+    push = f"git push origin {base} {tag}"
+    if not (sys.stdin.isatty() and sys.stdout.isatty()):
+        say("no terminal; not pushing. To publish, run:\n  " + push)
+        return 0
+    if input(f"Push {base} and {tag} to origin? [y/N] ").strip().lower() != "y":
+        say("not pushed. To publish, run:\n  " + push)
+        return 0
+    return subprocess.run(["git", "-C", CLONE, "push", "origin", base, tag]).returncode
+
+
+def main(argv):
+    dry = "--dry-run" in argv
+    rest = [a for a in argv if a != "--dry-run"]
+    if rest not in ([], ["setup"]):
+        say(__doc__); return 2
+    return setup(dry) if rest else release(dry)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

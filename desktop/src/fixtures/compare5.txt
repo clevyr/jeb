@@ -1,0 +1,73 @@
+pass  farm-day           [2.1 2.4 3.1 3.4 3.6 12.1 13.1] pixels 0,0-250,48: 99.3% of 2417 the same; farm: 92 match; farm: 26 match; farm: 7 match
+pass  farm-built         [2.6 3.3 3.4 3.8 3.10 3.11 3.14 12.1 12.3] pixels 0,0-250,48: 99.6% of 2628 the same; farm: 28 match; farm: 0 match
+pass  farm-night         [1.2 1.3 1.4 3.1] farm: 4 match; camp: 4 match
+pass  quilt-stitch       [13.1 13.2 13.3] farm: 8 match
+pass  pumpkin            [1.10] farm: 7 match
+pass  christmas          [1.9] farm: 0 match
+pass  thanksgiving       [1.11] farm: 1 match
+pass  groundhog          [1.12] farm: 0 match
+pass  jeb-gate           [4.1 15.7] camp: 1 match
+pass  jeb-sip            [4.1 4.7 3.9] camp: 1 match
+pass  jeb-pose-read      [4.2] camp: 1 match
+pass  jeb-pose-still     [4.2 3.5] camp: 1 match; count fire: band 1 desktop 1 (want 1); count steam: band 1 desktop 1 (want 1)
+pass  jeb-think          [4.2 11.6] camp: 1 match
+pass  jeb-hoe            [4.2 11.8] camp: 1 match
+pass  jeb-sweep          [4.2 11.11] camp: 1 match
+pass  jeb-spooked        [4.3 4.6] camp: 2 match
+pass  jeb-pleased        [4.3] camp: 1 match
+pass  jeb-wink           [4.11] camp: 3 match
+pass  jeb-working        [4.3] camp: 1 match
+pass  jeb-banjo          [4.4] camp: 3 match
+pass  jeb-nap            [4.4 4.9] camp: 4 match
+pass  blue-chase         [4.4 4.9 3.10] camp: 2 match
+pass  blue-errand        [4.10] camp: 1 match
+pass  jeb-away           [4.8 7.1 3.9] camp: 3 match; farm: 2 match
+pass  truck-home         [7.1 7.2] farm: 5 match; camp: 0 match
+pass  truck-butter       [7.1] farm: 3 match
+pass  puff               [4.11] farm: 1 match
+pass  hands              [5.1 2.5] count hand-work-2: band 1 desktop 1 (want 1); count hand-work-4: band 1 desktop 1 (want 1); text text:yellow:+3: band 2 desktop 1
+pass  workflow           [5.2] count hand-work-1: band 3 desktop 3 (want 3); text text:yellow:+4: band 2 desktop 1
+pass  mates              [5.6] count opal: band 1 desktop 1 (want 1); count hand-work: band 1 desktop 1 (want 1)
+pass  lanterns           [6.2] lanterns: band 2 (others) desktop 3 (camps)
+pass  visit-arrive       [7.3] rig-store along the way: band at 102 found, desktop at 23 found
+pass  visit-deal         [7.3 7.5 4.9] camp: 4 match
+pass  visit-opal         [7.3 7.4] opal along the way: band at 128 found, desktop at 49 found
+pass  visit-tractor      [7.3] count rig-tractor: band 1 desktop 1 (want 1)
+pass  visit-mail         [7.4] camp: 2 match
+pass  ev-revenuer        [8.1 3.4] farm: 2 match; camp: 1 match
+pass  ev-neighbor        [8.2] camp: 2 match
+pass  ev-neighbor-walk   [8.2] opal along the way: band at 122 found, desktop at 56 found
+pass  ev-bear            [8.3] farm: 1 match; camp: 2 match
+pass  ev-whistlepig      [8.4 2.7] farm: 1 match
+pass  ev-mothman         [8.5] farm: 0 match
+pass  ev-bugs            [8.6] farm: 5 match
+pass  ev-bells           [8.7] farm: 18 match
+pass  ev-storm           [8.8] farm: 1 match
+pass  ev-turkeys         [8.10] farm: 2 match
+pass  ev-parachute       [8.11] farm: 1 match
+pass  ev-track           [8.12] camp: 2 match
+pass  ev-hornworm        [8.13] camp: 2 match
+pass  ev-applebutter     [8.14] camp: 1 match
+pass  story-1            [A1] camp: 1 match
+pass  story-2            [A2] camp: 1 match
+pass  story-3            [A3] camp: 1 match
+pass  story-4            [A4] camp: 1 match
+pass  story-5            [A5] camp: 1 match
+pass  drops              [9.3 9.4 9.5 9.9 9.10] farm: 2 match; pixels 2,0-160,40: 100.0% of 942 the same
+pass  dirt               [9.8] farm: 10 match; tinted dirt: band 1895 px, desktop 9574 px
+pass  looks-monday       [C1 C3 C5 C6 C7 C8 C9 C17] farm: 10 match
+pass  looks-saturday     [C2 C11 C20] farm: 4 match; camp: 2 match
+pass  looks-sunday       [C19 C22] farm: 1 match; camp: 2 match
+pass  looks-dusk         [C4 C12 C21] farm: 9 match
+pass  looks-postcard     [C23] farm: 1 match
+pass  looks-night        [C10 C14 C15 C16] farm: 7 match
+pass  looks-coffee       [C18] farm: 1 match
+pass  looks-cake         [C24] farm: 1 match
+pass  looks-snow         [C13] farm: 8 match
+pass  bubble             [11.1] bubble: band 11 chars ['Picked', 'every las..']; desktop 30 chars ['Picked every last one. Lord', "willin', they'll keep."]
+pass  bubble-dim         [11.2] bubble: band 11 chars ['Quiet day', 'on the..']; desktop 30 chars ['Quiet day on the ridge.']
+pass  cows               [11.1 appendix-b] count cow: band 1 desktop 2 (as fit); text text:white:#42: band 1 desktop 1
+pass  rain               [2.8] count cloud-dark: band 1 desktop 1 (want 1)
+pass  rain-all           [2.8] count cloud-dark: band 3 desktop 3 (want 3)
+pass  dry                [2.9] band soil_dry pixels 4, camp tobacco soil_dry pixels 2
+-- 72 of 72 fixtures pass

@@ -1,0 +1,31 @@
+{
+  "name": "jeb",
+  "version": "0.4.0",
+  "description": "Jeb's link to the Jeb desktop app: watches your sessions without changing anything and keeps the farm and the anonymous live records the desktop shows",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "creativity": {
+      "type": "boolean",
+      "title": "Creative drops",
+      "description": "Three times each weekday (9:00, 12:00 and 15:00, Monday to Friday) Jeb gets a small surprise: a happening, a saying, a bit of decor or an almanac line, and over the days longer stories and pictures. Claude Haiku writes them (at most six short calls a day) from Jeb's own farm and his past surprises only, never anything from your work, prompts, code, files or tickets. Off, or with no model, Jeb writes them himself.",
+      "default": true
+    },
+    "talk": {
+      "type": "string",
+      "title": "How much Jeb talks",
+      "description": "chatty: every line Jeb has. ambient: a line on a busy stretch at most every ten minutes, plus the first line of a turn, deliveries, harvests, refused commands and test verdicts after a failure. silent: the bubble keeps its last line. Jeb also hushes while Claude writes a long answer and for five minutes after a failed test or lint run.",
+      "options": [
+        "chatty",
+        "ambient",
+        "silent"
+      ],
+      "default": "ambient"
+    },
+    "hookReactions": {
+      "type": "boolean",
+      "title": "Hook reactions",
+      "description": "Let Jeb react to a resumed or forked session, a settings hook refusing a command, subagents and teammates stopping, and compaction. Off by default: where a security plugin runs ahead of Jeb these hooks are skipped and Claude Code notes it on every load.",
+      "default": false
+    }
+  }
+}
