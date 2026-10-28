@@ -103,6 +103,26 @@ def sh(cmd, check=False, cwd=None, env=None):
     return r.returncode
 
 
+def step(label, cmd, cwd=None, env=None, tty=False):
+    """One release step on one line; its output is shown only when it fails (tty: let it talk to the terminal)."""
+    if DRY:
+        say(f"  {label}: skipped (dry run)")
+        return
+    if tty:
+        say(f"  {label} ...")
+    else:
+        print(f"  {label} ...", end=" ", flush=True)
+    t = time.time()
+    r = subprocess.run(cmd, cwd=cwd, env=env, **({} if tty else {"capture_output": True, "text": True}))
+    if r.returncode != 0:
+        if not tty:
+            say("failed")
+            say("\n".join((r.stdout + r.stderr).strip().splitlines()[-30:]))
+        raise SystemExit(f"{label} failed")
+    if not tty:
+        say(f"ok ({time.time() - t:.0f}s)")
+
+
 def mode():
     try:
         m = open(MODE_FILE).read().strip()
@@ -967,7 +987,20 @@ def release_plan(last):
 
 
 def cmd_release(args):
-    sh(["git", "-C", CLONE, "rev-parse", "--git-dir"], check=True)
+    """Ctrl-C stops it cleanly; what it says depends on how far it got."""
+    done = []
+    try:
+        release_steps(args, done)
+    except KeyboardInterrupt:
+        print(flush=True)
+        if "commit" in done:
+            raise SystemExit("release: stopped after the release commit, before the tag; run it again to tag it")
+        raise SystemExit("release: stopped; nothing was written")
+
+
+def release_steps(args, done):
+    if git("rev-parse", "--git-dir").returncode != 0:
+        raise SystemExit("not a git clone: " + CLONE)
     if git("status", "--porcelain").stdout.strip():
         raise SystemExit("the tree is not clean (commit or stash first)")
     base = base_branch()
@@ -1008,32 +1041,33 @@ def cmd_release(args):
         version = f"{major}.{minor}.{patch}"
     tag = f"v{version}"
     say(f"releasing {tag}" + (f" (last release {last})" if last else " (first release)"))
-    say("1. mod checks")
-    sh(["claude", "plugin", "validate", "mod"], check=True, cwd=CLONE)
-    sh(["claude", "plugin", "test", "mod"], check=True, cwd=CLONE)
-    say("2. dev build")
-    sh(["./build.sh"], check=True, cwd=SRC, env=dict(os.environ, JEB_OUT="JebDesktop.dev"))
+    step("validate plugin", ["claude", "plugin", "validate", "mod"], cwd=CLONE)
+    step("test plugin", ["claude", "plugin", "test", "mod"], cwd=CLONE)
+    step("dev build", ["./build.sh"], cwd=SRC, env=dict(os.environ, JEB_OUT="JebDesktop.dev"))
     if "--parity" in args:
-        say("3. parity gate (on a snapshot, so the tracked fixtures stay untouched)")
         if DRY:
-            say("$ updater.gate_parity(snapshot of src)")
+            say("  parity: skipped (dry run)")
         else:
+            # on a snapshot, so the tracked fixtures stay untouched
+            print("  parity ...", end=" ", flush=True)
             u = load_updater()
             snap = os.path.join(HOME, "build", "release-check")
             shutil.rmtree(snap, ignore_errors=True)
             os.makedirs(os.path.dirname(snap), exist_ok=True)
-            u.snapshot(SRC, snap)
-            shutil.copy2(os.path.join(SRC, "JebDesktop.dev"), snap)
-            why = u.build_tools(snap)
-            if why:
-                raise SystemExit("could not build the parity helpers: " + why)
-            ok, why = u.gate_parity(snap)
-            say(f"parity: {why}")
-            shutil.rmtree(snap, ignore_errors=True)
+            try:
+                u.snapshot(SRC, snap)
+                shutil.copy2(os.path.join(SRC, "JebDesktop.dev"), snap)
+                why = u.build_tools(snap)
+                if why:
+                    say("failed")
+                    raise SystemExit("could not build the parity helpers: " + why)
+                ok, why = u.gate_parity(snap)
+            finally:
+                shutil.rmtree(snap, ignore_errors=True)
+            say(f"{'ok' if ok else 'failed'} ({why})")
             if not ok:
                 raise SystemExit("parity gate failed; no tag")
     if version != file_version:
-        say(f"{'would write' if DRY else 'writing'} version {version} to {PLUGIN_JSON} and commit it")
         if not DRY:
             text = open(PLUGIN_JSON).read()
             new = re.sub(r'("version"\s*:\s*")[^"]*(")', lambda m: m.group(1) + version + m.group(2), text, count=1)
@@ -1041,8 +1075,9 @@ def cmd_release(args):
                 raise SystemExit(f"could not write the version into {PLUGIN_JSON}; no commit, no tag")
             with open(PLUGIN_JSON, "w") as f:
                 f.write(new)
-        sh(["git", "-C", CLONE, "commit", "-m", f"chore(release): {tag}", "--", PLUGIN_JSON], check=True)
-    sh(["git", "-C", CLONE, "tag", "-s", tag, "-m", f"Jeb {tag}"], check=True)
+        step(f"commit chore(release): {tag}", ["git", "-C", CLONE, "commit", "-q", "-m", f"chore(release): {tag}", "--", PLUGIN_JSON])
+        done.append("commit")
+    step(f"sign tag {tag} (asks for the key's passphrase)", ["git", "-C", CLONE, "tag", "-s", tag, "-m", f"Jeb {tag}"], tty=True)
     notes = notes or "Maintenance release."
     if DRY:
         say("release notes:\n" + notes)
@@ -1050,8 +1085,8 @@ def cmd_release(args):
         path = os.path.join(CLONE, git("rev-parse", "--git-path", f"jeb-release-notes-{tag}.md").stdout.strip())
         with open(path, "w") as f:
             f.write(notes + "\n")
-        say(f"release notes: {path}")
-    say(f"{'would tag' if DRY else 'tagged'} {tag} (local only; never pushed by jebctl). To publish it, run:\n  git push origin {base} {tag}")
+    if not os.environ.get("JEB_RELEASE_WRAPPED"):
+        say(f"{'would tag' if DRY else 'tagged'} {tag} (local only; never pushed by jebctl). To publish it, run:\n  git push origin {base} {tag}")
 
 
 def cmd_rollback():

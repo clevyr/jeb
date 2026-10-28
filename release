@@ -24,7 +24,7 @@
                           a terminal they print those commands instead.
   --dry-run               change nothing: no file, tag or push.
 """
-import os, shutil, subprocess, sys
+import os, shutil, signal, subprocess, sys
 
 CLONE = os.path.dirname(os.path.abspath(__file__))
 CODE = os.path.join(CLONE, "desktop")
@@ -131,8 +131,12 @@ def no_private_keys():
 def release(dry, bump):
     no_private_keys()
     cmd = ["/usr/bin/python3", "-I", os.path.join(CODE, "jebctl"), "release", "--parity", "--bump", bump] + (["--dry-run"] if dry else [])
-    say("$ " + " ".join(cmd))
-    rc = subprocess.run(cmd).returncode
+    # jebctl gets the Ctrl-C and says how far it got; this side just waits for it
+    old = signal.signal(signal.SIGINT, lambda *a: None)
+    try:
+        rc = subprocess.run(cmd, env=dict(os.environ, JEB_RELEASE_WRAPPED="1")).returncode
+    finally:
+        signal.signal(signal.SIGINT, old)
     if rc != 0 or dry:
         return rc
     tags = git("tag", "--list", "v*", "--points-at", "HEAD").stdout.split()
@@ -169,4 +173,8 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except KeyboardInterrupt:
+        print()
+        sys.exit("release: stopped")
