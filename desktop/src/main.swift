@@ -26,7 +26,7 @@
 // Store.swift, Farm.swift, Live.swift, Story.swift (which place, the trips and their
 // lines), FarmScene.swift (the valley), Valley.swift, Strip.swift, Homestead.swift,
 // Camp.swift, Road.swift, Cast.swift, Art.swift, PixelArt.swift, StatusMenu.swift,
-// Heartbeat.swift (install hooks), Probe.swift, Bench.swift.   Build: ./build.sh   Live: ./run-live.sh
+// Heartbeat.swift (install hooks), Probe.swift, Bench.swift (also Save Screenshot's renderer; JEB_SHOT_DIR its folder).   Build: ./build.sh   Live: ./run-live.sh
 // JEB_MOD the mod folder (default the bundle's JebMod, else mod/ beside desktop/ from the executable); JEB_ART_PATH the art file (default the mod's); JEB_PID_FILE a file the running
 // instance keeps its pid in. JEB_NO_PAUSE=1 turns off the occlusion pause (for
 // measuring); JEB_IDLE_SECONDS sets the idle pause (default 120 s without a change
@@ -530,6 +530,9 @@ final class App {
         }
     }
 
+    /// Save Screenshot and SIGUSR2: the paths of the PNGs saved (Bench.swift).
+    func screenshots() throws -> [String] { try saveScreenshots(art: art, farm: source.farm, live: source.live, story: story) }
+
     /// A new frame rate: new scenes, whose animations ask for it.
     func applyRateToViews() { windows.forEach { $0.replaceScene(art: art) } }
 
@@ -607,6 +610,7 @@ func waitForArt() -> Never {
     beat.start()
     log("waiting for art at \(artPath)")
     var signalSources: [DispatchSourceSignal] = []
+    signal(SIGUSR2, SIG_IGN) // a screenshot request has nothing to draw here (and must not kill it)
     for sig in [SIGTERM, SIGINT, SIGUSR1] {
         signal(sig, SIG_IGN)
         let source = DispatchSource.makeSignalSource(signal: sig, queue: .main)
@@ -677,5 +681,19 @@ for sig in [SIGTERM, SIGINT, SIGUSR1] {
     source.resume()
     signalSources.append(source)
 }
+
+// SIGUSR2 (`jebctl screenshot`): save like the menu, then list the paths in JEB_HOME/screenshot-last (tmp + rename).
+signal(SIGUSR2, SIG_IGN)
+let shotSource = DispatchSource.makeSignalSource(signal: SIGUSR2, queue: .main)
+shotSource.setEventHandler {
+    do {
+        let paths = try desktop.screenshots()
+        ensurePrivateDir(jebHome)
+        writePrivate(paths.joined(separator: "\n") + "\n", to: jebHome + "/screenshot-last")
+        log("signal: screenshot saved \(paths.count) file(s)")
+    } catch { log("signal: screenshot failed: \(error)") }
+}
+shotSource.resume()
+signalSources.append(shotSource)
 
 app.run()

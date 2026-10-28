@@ -70,6 +70,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
 
         menu.addItem(.separator())
         menu.addItem(action("Reload art", #selector(reloadArt)))
+        menu.addItem(action("Save Screenshot", #selector(saveScreenshot)))
         menu.addItem(action("Restart", #selector(restart)))
         menu.addItem(.separator())
         menu.addItem(action("Quit Jeb Desktop", #selector(quit)))
@@ -108,6 +109,14 @@ final class StatusMenu: NSObject, NSMenuDelegate {
 
     @objc private func reloadArt() {
         if app.artSource.reload() { app.useNewArt(); log("menu: art reloaded") } else { log("menu: art not reloaded (see above)") }
+    }
+
+    @objc private func saveScreenshot() {
+        do {
+            let paths = try app.screenshots()
+            log("menu: screenshot saved \(paths.count) file(s)")
+            if let last = paths.last { NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: last)]) }
+        } catch { log("menu: screenshot failed: \(error)") }
     }
 
     @objc private func restart() {

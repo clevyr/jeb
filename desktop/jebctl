@@ -33,6 +33,13 @@
                           test mod`, a dev build (and the parity gate with --parity), then a local signed tag
                           vYYYY.MM.DD[.N]. Prints the push command; never pushes
   rollback                put the newest saved version back (the running app hands over by itself)
+  screenshot [--dry-run]  save what the running app draws (SIGUSR2; one PNG per screen into ~/Pictures/Jeb, or
+                          JEB_SHOT_DIR) and print the paths (from JEB_HOME/screenshot-last). Needs exactly one
+                          running JebDesktop whose build has it; waits up to 10 s
+  screenshot --fixture NAME [--out DIR] [--hour H]
+                          headless, never touches the running app: the parity fixture NAME rendered by the
+                          installed binary (JEB_BIN overrides) with the bench, to <DIR>/NAME.png (default: the
+                          current directory); --hour fixes the hour of day. screenshot --list: the fixture names
   pause-updates | resume-updates
   start | quit            quit writes the marker the watchdog honours; start clears it
   update-now              the updater without the 60 s debounce (still gated)
@@ -343,6 +350,103 @@ def cmd_status():
     say("saved versions: " + (", ".join(v[:-4] for v in vs) or "none"))
     say("agents installed: " + ", ".join(f"{l.split('.')[-1]}={'yes' if os.path.exists(os.path.join(AGENTS, l + '.plist')) else 'no'}" for l in labels_for(mode())))
     say(release_line())
+
+
+def fixtures():
+    """The parity fixtures (src/tools/parity.py): (list of fixture dicts, store_of)."""
+    os.environ["JEB_MOD"] = MOD
+    spec = importlib.util.spec_from_file_location("parity", os.path.join(SRC, "tools", "parity.py"))
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m.F, m.store_of
+
+
+def screenshot_live():
+    procs = running()
+    if len(procs) != 1:
+        say(f"screenshot: need exactly one running JebDesktop, found {len(procs)}")
+        return 1
+    pid, _, path = procs[0]
+    if beat_files().get(pid, (0, False))[1]:
+        say(f"screenshot: pid {pid} is still waiting to take over; try again in a moment")
+        return 1
+    try:
+        has = b"screenshot-last" in open(path, "rb").read()
+    except OSError:
+        has = False
+    if not has:  # an older build has no SIGUSR2 handler, and the signal would end it
+        say(f"screenshot: pid {pid} runs a build without screenshots (not signalled); it will after the next update")
+        return 1
+    last = os.path.join(HOME, "screenshot-last")
+    say(f"signal pid {pid} (SIGUSR2) and wait up to 10 s for {last}")
+    if DRY:
+        return 0
+    t0 = time.time()
+    os.kill(pid, signal.SIGUSR2)
+    while time.time() - t0 < 10:
+        try:
+            if os.path.getmtime(last) > t0:
+                say(open(last).read().strip())
+                return 0
+        except OSError:
+            pass
+        time.sleep(0.1)
+    say("screenshot: no answer within 10 s (see the app's log for `signal: screenshot failed`)")
+    return 1
+
+
+def screenshot_fixture(name, out, hour):
+    import tempfile
+    fs, store_of = fixtures()
+    f = next((x for x in fs if x["name"] == name), None)
+    if f is None:
+        say(f"screenshot: no fixture {name!r} (`jebctl screenshot --list`)")
+        return 1
+    exe = os.path.abspath(os.environ.get("JEB_BIN") or EXE)
+    if not os.access(exe, os.X_OK):
+        say(f"screenshot: no binary at {exe}")
+        return 1
+    dest = os.path.join(os.path.abspath(out or "."), name + ".png")
+    say(f"render fixture {name} with {exe} to {dest}")
+    if DRY:
+        return 0
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    tmp = tempfile.mkdtemp(prefix="jeb-shot-")
+    try:
+        store = os.path.join(tmp, "store.json")
+        json.dump(store_of(f)[0], open(store, "w"))
+        env = dict(os.environ, JEB_BENCH="0.01", JEB_BENCH_FREEZE="1", JEB_BENCH_SCALE="1", JEB_BENCH_PNG=dest, JEB_STORE_PATH=store, JEB_HOME=tmp,
+                   JEB_HEARTBEAT_DIR=os.path.join(tmp, "heartbeat"), JEB_MOD=MOD, JEB_NOW=str(f["now"]), JEB_PLACE=f["place"], **f["env"])
+        if f["since"] is not None: env["JEB_PLACE_SINCE"] = str(f["since"])
+        if hour is not None: env["JEB_HOUR"] = str(hour)
+        r = subprocess.run([exe], capture_output=True, text=True, env=env)
+        if r.returncode != 0 or not os.path.isfile(dest):
+            say(f"screenshot: the render failed (exit {r.returncode})")
+            return 1
+        say(dest)
+        return 0
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def cmd_screenshot(args):
+    if "--list" in args:
+        say("\n".join(f["name"] for f in fixtures()[0]))
+        return 0
+    if "--fixture" not in args:
+        return screenshot_live()
+    def opt(flag):
+        return args[args.index(flag) + 1] if flag in args and args.index(flag) + 1 < len(args) else None
+    name, hour = opt("--fixture"), opt("--hour")
+    try:
+        hour is None or float(hour)
+    except ValueError:
+        say("screenshot: --hour takes a number (0 to 24)")
+        return 2
+    if not name:
+        say("screenshot: --fixture needs a name (`jebctl screenshot --list`)")
+        return 2
+    return screenshot_fixture(name, opt("--out"), hour)
 
 
 def cmd_doctor():
@@ -912,6 +1016,7 @@ def main(argv):
     elif cmd == "release": cmd_release(args[1:])
     elif cmd == "uninstall": cmd_uninstall("--purge" in args)
     elif cmd == "rollback": cmd_rollback()
+    elif cmd == "screenshot": return cmd_screenshot(args[1:])
     elif cmd == "pause-updates":
         open(os.path.join(HOME, "updates-paused"), "w").close(); say("updates paused")
     elif cmd == "resume-updates":

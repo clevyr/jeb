@@ -287,16 +287,22 @@ for f in F:
     if f["name"] in CAMP_FIXTURES: f["place"] = "fx00"
 
 
+def store_of(f):
+    """The store a fixture draws from (and its farm)."""
+    farm = copy.deepcopy(BASE)
+    farm.update(copy.deepcopy(f["farm"]))
+    store = {"farm": farm}
+    for i, r in enumerate(f["live"]):
+        store[f"live:fx{i:02d}"] = r
+    if f.get("areas") is not None: store["areas"] = f["areas"]
+    return store, farm
+
+
 def gen():
     os.makedirs(FIX, exist_ok=True)
     out = []
     for f in F:
-        farm = copy.deepcopy(BASE)
-        farm.update(copy.deepcopy(f["farm"]))
-        store = {"farm": farm}
-        for i, r in enumerate(f["live"]):
-            store[f"live:fx{i:02d}"] = r
-        if f.get("areas") is not None: store["areas"] = f["areas"]
+        store, farm = store_of(f)
         json.dump(store, open(os.path.join(FIX, f["name"] + ".store.json"), "w"))
         out.append({"name": f["name"], "now": f["now"], "farm": farm, "live": f["live"]})
     test = os.path.join(HERE, "modcopy", "tests", "zz-parity.test.tsx")
