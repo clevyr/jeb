@@ -22,13 +22,14 @@ Walk the user through installing Jeb from the clevyr/jeb repo. Be brief and plai
    `tag=$(gh release view --repo clevyr/jeb --json tagName --jq .tagName)` then
    `git clone --branch "$tag" https://github.com/clevyr/jeb.git ~/jeb`.
    A "detached HEAD" note is expected. It must be a git clone, not a downloaded archive, because updates use git. If the clone already exists, use it as it is.
-3. Explain briefly what `./install` changes, then run it from the clone with no flags (`--dev` is only for people working on Jeb itself):
+3. Explain briefly what `./install` changes. Ask the user whether `./install` may add `~/.local/bin` to their shell profile if it is not on PATH already (a backup is saved first). If yes run `./install --add-path` from the clone, otherwise `./install` (`--dev` is only for people working on Jeb itself):
    - installs the desktop app in `~/Applications`, using the release's prebuilt app when it can and building from source otherwise;
    - adds LaunchAgents in `~/Library/LaunchAgents` that keep it running and following releases;
-   - adds the clone's `mod/` folder to `CLAUDE_CODE_PLUGIN_DIRS` in `~/.claude/settings.json`, after saving a backup.
+   - adds the clone's `mod/` folder to `CLAUDE_CODE_PLUGIN_DIRS` in `~/.claude/settings.json`, after saving a backup;
+   - links `jebctl` into `~/.local/bin`, and with `--add-path` adds that folder to PATH in the shell profile.
    The install takes a minute or two.
 4. If it fails, read the error and explain the fix in plain words. Never edit the repo's code to make it pass.
-5. On success run `desktop/jebctl doctor` from the clone and explain any `FIX` line. Then tell the user to start a NEW Claude Code session so the plugin loads, and that the desktop fills in once a session has run.
+5. On success run `desktop/jebctl doctor` from the clone (the full path, since this shell's PATH is not refreshed yet) and explain any `FIX` line. Tell the user a new terminal gives them plain `jebctl`. Then tell the user to start a NEW Claude Code session so the plugin loads, and that the desktop fills in once a session has run.
 
 ## Rules
 

@@ -3,10 +3,12 @@
 
   jebctl uninstall: stops and removes the LaunchAgents (including the release agent) and the app. --purge also
                     deletes everything in the desktop's folder (JEB_HOME: versions, logs, state; passed through).
+  jebctl link:      ~/.local/bin/jebctl is removed when it points at this clone, and the two PATH lines `./install` added to
+                    the shell profile (backup first).
   settings.json:    this clone's mod/ entry is removed from CLAUDE_CODE_PLUGIN_DIRS (backup first).
   --purge-farm      also removes the farm file(s) ~/.claude/plugins/store/jeb_inline-*.json, after a backup.
                     Default: the farm is kept.
-Env overrides (tests): JEB_HOME, JEB_APP_DIR, JEB_LAUNCHAGENTS, JEB_SETTINGS, JEB_BACKUPS, JEB_STORE_DIR.
+Env overrides (tests): JEB_HOME, JEB_APP_DIR, JEB_LAUNCHAGENTS, JEB_SETTINGS, JEB_BACKUPS, JEB_STORE_DIR, JEB_BIN_DIR, JEB_PROFILE.
 """
 import glob, os, shutil, subprocess, sys, time
 

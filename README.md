@@ -21,7 +21,7 @@ Jeb installs from a release. The easy way is to let Claude do it. Paste this int
     Install Jeb for me from github.com/clevyr/jeb. First make sure the GitHub CLI is installed and signed in
     (gh auth status) and run gh auth setup-git. Then clone the latest release into ~/jeb (or use it if it is
     already there) and follow the jeb-install skill in that clone's .claude/skills/jeb-install/SKILL.md:
-    check the requirements, run ./install with no flags, run desktop/jebctl doctor, and explain anything
+    check the requirements, run ./install, run desktop/jebctl doctor, and explain anything
     that fails.
 
 It checks you have everything, downloads the release, runs the install and a health check, and tells you in plain words if something needs fixing. Once it's done, start a new Claude Code session so the plugin loads.
@@ -50,6 +50,7 @@ The install:
 2. Pins the release signers and moves the clone to the newest signed release (see [Updates](#updates)). It needs a clean clone for this.
 3. Gets the app (the release's prebuilt one when it can, see [Updates](#updates); otherwise it builds from source), runs a quick set of checks (compile, smoke test, headless start), then installs the LaunchAgents and starts it. If a check fails, the clone goes back to where it was and nothing gets installed.
 4. Adds the clone's `mod/` folder to `CLAUDE_CODE_PLUGIN_DIRS` in `~/.claude/settings.json`. It backs that file up to `~/.claude/backups/jeb/` first and leaves your other entries alone. Running it twice is harmless.
+5. Links `jebctl` into `~/.local/bin` so you can type plain `jebctl` from any folder. If that folder isn't on your PATH it offers to add it to your shell profile (`./install --add-path` adds it without asking); open a new terminal afterwards.
 
 The farm will look pretty empty until you've run a session with the plugin loaded.
 
@@ -67,7 +68,7 @@ It adds an item to the menu bar with:
 - **Reload art** to pick up new plugin art without restarting.
 - **Save Screenshot**, which saves a PNG per screen to `~/Pictures/Jeb/` and shows it in Finder. It only saves what Jeb draws, never your other windows, so it doesn't need Screen Recording permission.
 - **Restart** to start a fresh copy that takes over from the old one.
-- **Quit Jeb Desktop**, which stops it until you next log in or run `desktop/jebctl start`.
+- **Quit Jeb Desktop**, which stops it until you next log in or run `jebctl start`.
 
 ![jeb-banjo](docs/screenshots/jeb-banjo.png)
 
@@ -75,30 +76,30 @@ It adds an item to the menu bar with:
 
 From the clone:
 
-    desktop/jebctl status            # app, heartbeat, mode, last update, LaunchAgents
-    desktop/jebctl doctor            # health check, one ok/FIX line per check
-    desktop/jebctl start             # start it again after Quit
-    desktop/jebctl quit              # same as Quit in the menu
-    desktop/jebctl pause-updates     # stop following releases
-    desktop/jebctl resume-updates
-    desktop/jebctl rollback          # go back to the previous version
-    desktop/jebctl screenshot        # same as Save Screenshot, prints the paths
+    jebctl status            # app, heartbeat, mode, last update, LaunchAgents
+    jebctl doctor            # health check, one ok/FIX line per check
+    jebctl start             # start it again after Quit
+    jebctl quit              # same as Quit in the menu
+    jebctl pause-updates     # stop following releases
+    jebctl resume-updates
+    jebctl rollback          # go back to the previous version
+    jebctl screenshot        # same as Save Screenshot, prints the paths
 
-`desktop/jebctl screenshot --fixture <name> [--out <dir>] [--hour <h>]` renders one of the test scenes to `<dir>/<name>.png` without touching the running app. `--list` shows the scene names. That's how the screenshots in this README were made (scaled up 3x with `desktop/src/tools/up <in> <out> 3`).
+`jebctl screenshot --fixture <name> [--out <dir>] [--hour <h>]` renders one of the test scenes to `<dir>/<name>.png` without touching the running app. `--list` shows the scene names. That's how the screenshots in this README were made (scaled up 3x with `desktop/src/tools/up <in> <out> 3`).
 
 ![jeb-idle](docs/art/jeb-idle.gif) ![jeb-hoe](docs/art/jeb-hoe.gif) ![jeb-sip](docs/art/jeb-sip.gif) ![jeb-banjo](docs/art/jeb-banjo.gif) ![blue-run](docs/art/blue-run.gif) ![cow](docs/art/cow.gif) ![hen](docs/art/hen.gif) ![owl](docs/art/owl.gif) ![fire](docs/art/fire.gif)
 
 ## Troubleshooting
 
-Run `desktop/jebctl doctor` first. Every `FIX` line tells you what to do.
+Run `jebctl doctor` first. Every `FIX` line tells you what to do.
 
-**Nothing on the desktop and no menu bar item.** It was quit, or it isn't running. Run `desktop/jebctl start`. If the LaunchAgents are gone, run `./install` again.
+**Nothing on the desktop and no menu bar item.** It was quit, or it isn't running. Run `jebctl start`. If the LaunchAgents are gone, run `./install` again.
 
 **A menu bar item that says "Waiting for art".** The app can't find the plugin's art (`mod/hooks/pixel-art.ts`), usually because the clone moved or was deleted. It checks every 30 seconds and carries on once the file is back. If you moved the clone, run `./install` from the new spot.
 
 **The desktop is empty.** Start a new Claude Code session. The plugin only loads in sessions started after the install, and `doctor` will tell you whether it's registered and has written any state yet.
 
-**Updates stopped.** `desktop/jebctl status` shows the last release check and any failed tags. Updates skip a clone with local changes or one that's on a branch, so commit or stash your changes, or run `./install` again. If the fetch is failing, check `gh auth status` and run `gh auth setup-git`. `doctor` also tells you if updates are paused.
+**Updates stopped.** `jebctl status` shows the last release check and any failed tags. Updates skip a clone with local changes or one that's on a branch, so commit or stash your changes, or run `./install` again. If the fetch is failing, check `gh auth status` and run `gh auth setup-git`. `doctor` also tells you if updates are paused.
 
 **An update failed.** The previous version keeps running and the failed release isn't retried. `update.log` and `release.log` say why.
 
@@ -147,7 +148,7 @@ You need everything from [What you need](#what-you-need). Then work from a clone
     cd ~/jeb-dev
     ./install --dev
 
-Dev mode runs straight from your working tree and doesn't follow releases. The update agent watches `desktop/src` and, once your edits have been quiet for a minute, builds them, runs the full checks and swaps the new app in if they pass. Run `desktop/jebctl pause-updates` while you're in the middle of something and `resume-updates` when you want it shipped. A build that fails a check isn't tried again; if the failure was a fluke, `desktop/jebctl retry-update` runs every check on it once more and ships it if they all pass. If you already have a release install, run `./uninstall` in that clone first so there's only one.
+Dev mode runs straight from your working tree and doesn't follow releases. The update agent watches `desktop/src` and, once your edits have been quiet for a minute, builds them, runs the full checks and swaps the new app in if they pass. Run `jebctl pause-updates` while you're in the middle of something and `resume-updates` when you want it shipped. A build that fails a check isn't tried again; if the failure was a fluke, `desktop/jebctl retry-update` runs every check on it once more and ships it if they all pass. If you already have a release install, run `./uninstall` in that clone first so there's only one.
 
 Make your changes on a branch and open a pull request against `main`.
 
@@ -156,7 +157,7 @@ Make your changes on a branch and open a pull request against `main`.
     cd desktop/src
     JEB_OUT=JebDesktop.dev ./build.sh
 
-Don't launch `JebDesktop.dev` directly: a new copy takes over from the running app. Look at your changes through the tools instead. `desktop/jebctl screenshot --fixture <name>` renders a test scene with your build (set `JEB_BIN=desktop/src/JebDesktop.dev`), and the checks below run it offscreen.
+Don't launch `JebDesktop.dev` directly: a new copy takes over from the running app. Look at your changes through the tools instead. `jebctl screenshot --fixture <name>` renders a test scene with your build (set `JEB_BIN=desktop/src/JebDesktop.dev`), and the checks below run it offscreen.
 
 To run every check the updater runs (compile, smoke, parity, a scripted day, headless start) on a snapshot of your source without installing anything:
 
@@ -247,4 +248,5 @@ Environment variables, mostly for tests (the install sets the paths itself):
 - `JEB_BUNDLE_MOD`: the folder written into the bundle's `JebMod` key (default `JEB_MOD`). Release updates point it at the clone's `mod/`, since the staged copy is deleted afterwards.
 - `JEB_APP_DIR`: where `JebDesktop.app` goes (default `~/Applications`).
 - `JEB_LAUNCHAGENTS`: where the LaunchAgent plists go (default `~/Library/LaunchAgents`).
+- `JEB_BIN_DIR`: where `./install` links `jebctl` (default `~/.local/bin`). `JEB_PROFILE`: the shell profile it adds that folder to (default `~/.zprofile`, `~/.bash_profile` or `~/.profile` by `$SHELL`).
 - `JEB_SETTINGS`, `JEB_BACKUPS`, `JEB_STORE_DIR`: the settings file, its backups and the store folder, for `./install`, `./uninstall` and `jebctl doctor`.

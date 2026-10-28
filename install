@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""./install [--dev] [--repin] [--dry-run]: set Jeb up from this clone.
+"""./install [--dev] [--repin] [--add-path] [--dry-run]: set Jeb up from this clone.
 
   release mode (default): the clone follows release tags signed by a pinned signer (the clone is moved to the newest
                           verified tag; a 6-hourly agent fetches new ones, verifies, gates them and switches). No local
@@ -7,11 +7,14 @@
                           Updates only follow tags signed by a pinned signer: desktop/release-signers is copied to
                           ~/.claude/jeb-desktop/release-signers on the first install and never replaced by a later tag.
   --repin                 replace the pinned signers with this clone's desktop/release-signers (key rotation).
+  --add-path              if ~/.local/bin (where `jebctl` is linked) is not on PATH, add it to the shell profile without
+                          asking (zsh ~/.zprofile, bash ~/.bash_profile, else ~/.profile; backup first). Without it a
+                          terminal asks; otherwise the line to add is printed.
   --dev                   owner mode: runs from the working tree; local src edits ship through the update gates.
 
 Steps: preflight, `desktop/jebctl install` (first build through the gates, LaunchAgents, start), then the mod folder
 added to CLAUDE_CODE_PLUGIN_DIRS in ~/.claude/settings.json (backup first). --dry-run changes nothing.
-Env overrides (tests): JEB_HOME, JEB_APP_DIR, JEB_LAUNCHAGENTS, JEB_SETTINGS, JEB_BACKUPS.
+Env overrides (tests): JEB_HOME, JEB_APP_DIR, JEB_LAUNCHAGENTS, JEB_SETTINGS, JEB_BACKUPS, JEB_BIN_DIR, JEB_PROFILE.
 """
 import os, shutil, subprocess, sys
 
@@ -62,14 +65,15 @@ def main(argv):
     dry = "--dry-run" in argv
     dev = "--dev" in argv
     repin = "--repin" in argv
-    bad = [a for a in argv if a not in ("--dry-run", "--dev", "--repin")]
+    addp = "--add-path" in argv
+    bad = [a for a in argv if a not in ("--dry-run", "--dev", "--repin", "--add-path")]
     if bad:
         say(__doc__); return 2
     say(f"Jeb install ({'dev' if dev else 'release'} mode{', dry run' if dry else ''}) from {CLONE}")
     preflight()
     if not dev:
         clone_check()
-    cmd = ["/usr/bin/python3", "-I", os.path.join(CLONE, "desktop", "jebctl"), "install", "--mode", "dev" if dev else "release"] + (["--repin"] if repin and not dev else []) + (["--dry-run"] if dry else [])
+    cmd = ["/usr/bin/python3", "-I", os.path.join(CLONE, "desktop", "jebctl"), "install", "--mode", "dev" if dev else "release"] + (["--repin"] if repin and not dev else []) + (["--add-path"] if addp else []) + (["--dry-run"] if dry else [])
     say("$ " + " ".join(cmd))
     rc = subprocess.run(cmd).returncode
     if rc != 0:

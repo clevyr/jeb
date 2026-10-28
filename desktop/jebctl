@@ -3,7 +3,7 @@
 
   status                  process, stamp, heartbeat age, last update result, versions
   doctor                  read-only health check: one line per check (ok / FIX with the fix), exit 1 on a problem
-  install [--mode dev|release] [--repin] [--dry-run]
+  install [--mode dev|release] [--repin] [--add-path] [--dry-run]
                           first build through the updater's compile, smoke and start gates (refuses if one
                           fails; updates and releases keep all gates), the
                           LaunchAgents, hand over from a run-live.sh instance, then bootstrap. Mode is
@@ -18,8 +18,13 @@
                           no verified tag it stays on the cloned commit. --repin replaces the pin (key rotation).
                           The release's prebuilt app is used in place of the compile when it checks out
                           (see follow); every gate still runs.
+                          Last, `jebctl` is linked into ~/.local/bin (JEB_BIN_DIR). When that folder is not on
+                          PATH: --add-path adds it to the shell profile (zsh ~/.zprofile, bash ~/.bash_profile,
+                          else ~/.profile; JEB_PROFILE; backup first); without it a terminal asks, else the
+                          line to add is printed. A different file already at that path is left alone.
   uninstall [--purge] [--dry-run]
-                          bootout, remove the plists and the app; versions and logs stay unless --purge (removes everything in JEB_HOME)
+                          bootout, remove the plists and the app; versions and logs stay unless --purge (removes everything in JEB_HOME);
+                          also the ~/.local/bin/jebctl link (only if it points here) and the PATH lines install added
   follow [--gates-only] [--dry-run]
                           release mode: fetch tags, then take the newest unseen v* tag that is signed by a
                           pinned signer (JEB_HOME/release-signers; none pinned: nothing happens) and whose
@@ -66,7 +71,8 @@
                           covered 0.1; RSS 60 MB; footprint 120 MB). Default: the last day, all stamps
 
 JEB_HOME (state root), JEB_SRC (the app source, default src/ beside this script), JEB_APP_DIR (default
-~/Applications), JEB_LAUNCHAGENTS (default ~/Library/LaunchAgents) override the defaults, mostly for tests.
+~/Applications), JEB_LAUNCHAGENTS (default ~/Library/LaunchAgents), JEB_BIN_DIR (default ~/.local/bin), JEB_PROFILE and
+JEB_BACKUPS override the defaults, mostly for tests.
 The mod path rendered into the plists (JEB_MOD) is mod/ beside desktop/, from this script's own location.
 """
 import fcntl, glob, hashlib, importlib.util, json, os, plistlib, re, shutil, signal, subprocess, sys, tarfile, time
@@ -77,7 +83,7 @@ AGENTS = os.environ.get("JEB_LAUNCHAGENTS") or os.path.expanduser("~/Library/Lau
 APP = os.path.join(APP_DIR, "JebDesktop.app")
 EXE = os.path.join(APP, "Contents", "MacOS", "JebDesktop")
 VERSIONS = os.path.join(HOME, "versions")
-CODE = os.path.dirname(os.path.abspath(__file__))
+CODE = os.path.dirname(os.path.realpath(__file__))      # realpath: `jebctl` may run through the ~/.local/bin link
 CLONE = os.path.dirname(CODE)
 MOD = os.path.join(CLONE, "mod")
 SRC = os.environ.get("JEB_SRC") or os.path.join(CODE, "src")
@@ -505,6 +511,13 @@ def cmd_doctor():
     check(os.access("/usr/bin/python3", os.X_OK), "/usr/bin/python3", "run: xcode-select --install")
     check(bool(shutil.which("claude")), "claude on PATH", "install Claude Code")
     check(bool(shutil.which("git")), "git", "run: xcode-select --install")
+    w = shutil.which("jebctl")
+    if not w:
+        check(False, "jebctl on PATH", "open a new terminal, or add ~/.local/bin to PATH (./install --add-path)")
+    elif is_me(w):
+        check(True, f"jebctl on PATH ({w})")
+    else:
+        check(False, f"jebctl on PATH is {w}", f"it runs {os.path.realpath(w)}, not this clone's {ME}; remove it or put {bin_dir()} first on PATH")
     # An install from before install-mode was recorded runs as dev, like mode() says.
     m = mode()
     say(f"ok    install mode: {m}" + ("" if os.path.isfile(MODE_FILE) else " (not recorded; dev is assumed)"))
@@ -665,6 +678,158 @@ def select_release():
     return None
 
 
+# ---- jebctl on PATH ----
+
+ME = os.path.join(CODE, "jebctl")                        # CODE is already a realpath
+PATH_MARK = "# added by Jeb's ./install"
+
+
+def bin_dir():
+    return os.environ.get("JEB_BIN_DIR") or os.path.expanduser("~/.local/bin")
+
+
+def link_path():
+    return os.path.join(bin_dir(), "jebctl")
+
+
+def is_me(path):
+    """Same file as this jebctl (samefile: the clone may be reached as ~/Projects or ~/projects)."""
+    try:
+        return os.path.samefile(path, ME)
+    except OSError:
+        return False
+
+
+def link_state():
+    """none | ours | older (a link to another Jeb clone's desktop/jebctl) | foreign (anything else: leave it)."""
+    p = link_path()
+    if not os.path.lexists(p):
+        return "none"
+    if not os.path.islink(p):
+        return "foreign"
+    r = os.path.realpath(p)
+    if is_me(p):
+        return "ours"
+    return "older" if os.path.basename(r) == "jebctl" and os.path.basename(os.path.dirname(r)) == "desktop" else "foreign"
+
+
+def link_jebctl():
+    """Link ~/.local/bin/jebctl to this jebctl. True when it is (or, in a dry run, would be) ours."""
+    p, st = link_path(), link_state()
+    if st == "ours":
+        say(f"{p} already points here")
+        return True
+    if st == "foreign":
+        say(f"warning: {p} exists and is not a link to a Jeb jebctl; left alone, so `jebctl` is not set up (run {ME})")
+        return False
+    say(f"link {p} -> {ME}" + (f" (replaces the link to {os.path.realpath(p)})" if st == "older" else ""))
+    if not DRY:
+        os.makedirs(bin_dir(), mode=0o755, exist_ok=True)
+        tmp = p + ".tmp"
+        if os.path.lexists(tmp):
+            os.unlink(tmp)
+        os.symlink(ME, tmp)
+        os.replace(tmp, p)
+    return True
+
+
+def on_path(d):
+    want = os.path.realpath(d)
+    return any(e and os.path.realpath(os.path.expanduser(e)) == want for e in os.environ.get("PATH", "").split(os.pathsep))
+
+
+def profile_path():
+    if os.environ.get("JEB_PROFILE"):
+        return os.environ["JEB_PROFILE"]
+    sh_ = os.path.basename(os.environ.get("SHELL", ""))
+    return os.path.expanduser({"zsh": "~/.zprofile", "bash": "~/.bash_profile"}.get(sh_, "~/.profile"))
+
+
+def export_line():
+    d = bin_dir()
+    return 'export PATH="$HOME/.local/bin:$PATH"' if d == os.path.expanduser("~/.local/bin") else f'export PATH="{d}:$PATH"'
+
+
+def read_profile(prof):
+    try:
+        return open(prof).read()
+    except FileNotFoundError:
+        return ""
+
+
+def backup_profile(prof):
+    bk = os.environ.get("JEB_BACKUPS") or os.path.expanduser("~/.claude/backups/jeb")
+    os.makedirs(bk, mode=0o700, exist_ok=True)
+    base = os.path.join(bk, os.path.basename(prof) + "." + time.strftime("%Y%m%d-%H%M%S"))
+    dest, n = base + ".bak", 1
+    while os.path.exists(dest):      # never overwrite an earlier backup from the same second
+        n += 1
+        dest = f"{base}-{n}.bak"
+    shutil.copy2(prof, dest)
+    say("  backup: " + dest)
+
+
+def add_to_profile():
+    prof, text = profile_path(), read_profile(profile_path())
+    if PATH_MARK in text.splitlines():
+        say(f"{prof} already has the PATH line; open a new terminal")
+        return
+    say(f"add to {prof}: {PATH_MARK} / {export_line()}")
+    if DRY:
+        return
+    if text:
+        backup_profile(prof)
+    with open(prof, "a") as f:
+        f.write(("" if not text or text.endswith("\n") else "\n") + PATH_MARK + "\n" + export_line() + "\n")
+    say("open a new terminal for `jebctl` to work")
+
+
+def remove_from_profile():
+    prof, lines = profile_path(), read_profile(profile_path()).splitlines(keepends=True)
+    if not any(l.rstrip("\n") == PATH_MARK for l in lines):
+        return
+    out, i = [], 0
+    while i < len(lines):
+        if lines[i].rstrip("\n") == PATH_MARK:
+            i += 2 if i + 1 < len(lines) and lines[i + 1].startswith("export PATH=") else 1
+        else:
+            out.append(lines[i]); i += 1
+    say(f"remove the PATH lines from {prof}")
+    if not DRY:
+        backup_profile(prof)
+        with open(prof, "w") as f:
+            f.write("".join(out))
+
+
+def path_step(add):
+    d = bin_dir()
+    if on_path(d):
+        say(f"{d} is on PATH")
+        return
+    prof = profile_path()
+    shown = d.replace(os.path.expanduser("~"), "~", 1)
+    if add:
+        add_to_profile()
+    elif sys.stdin.isatty() and sys.stdout.isatty() and not DRY:
+        if input(f"Add {shown} to your PATH in {prof}? [y/N] ").strip().lower() in ("y", "yes"):
+            add_to_profile()
+        else:
+            say(f"not added; to add it later, put this in {prof}: {export_line()}")
+    else:
+        say(f"{shown} is not on PATH; add this line to {prof} (or run ./install --add-path):\n  {export_line()}")
+
+
+def unlink_jebctl():
+    p = link_path()
+    if os.path.islink(p) and is_me(p):
+        say(f"remove {p}")
+        if not DRY:
+            os.unlink(p)
+    elif os.path.lexists(p):
+        say(f"{p} is not a link to this jebctl; left alone")
+    remove_from_profile()
+
+
 def cmd_install(args):
     m = mode()
     if "--mode" in args:
@@ -673,7 +838,7 @@ def cmd_install(args):
         except IndexError:
             m = ""
         if m not in ("dev", "release"):
-            raise SystemExit("usage: jebctl install [--mode dev|release] [--repin] [--dry-run]")
+            raise SystemExit("usage: jebctl install [--mode dev|release] [--repin] [--add-path] [--dry-run]")
     say(f"mode: {m}")
     back = None
     if m == "release":
@@ -737,6 +902,9 @@ def cmd_install(args):
             if len(procs) == 1 and procs[0][2].startswith(APP):
                 break
         cmd_status()
+    say("5. jebctl on PATH")
+    if link_jebctl():
+        path_step("--add-path" in args)
 
 
 def cmd_uninstall(purge):
@@ -772,6 +940,7 @@ def cmd_uninstall(purge):
                 pass
     else:
         say("kept versions and logs")
+    unlink_jebctl()
 
 
 # ---- releases ----
