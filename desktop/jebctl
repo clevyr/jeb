@@ -652,6 +652,7 @@ def pin_signers(repin):
     detail(f"signers: pin {REPO_SIGNERS} -> {SIGNERS}")
     if DRY:
         return
+    os.makedirs(HOME, mode=0o700, exist_ok=True)     # a fresh Mac has no HOME yet
     tmp = SIGNERS + ".tmp"
     try:
         os.unlink(tmp)
