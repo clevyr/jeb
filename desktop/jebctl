@@ -49,6 +49,8 @@
   pause-updates | resume-updates
   start | quit            quit writes the marker the watchdog honours; start clears it
   update-now              the updater without the 60 s debounce (still gated)
+  retry-update            the updater with --force: build the current src again even if that build was
+                          rejected or updates are paused, through every gate; ships only if all pass
   plists                  (re)write the LaunchAgent plists into launchd/ only
   perf [--days N] [--stamp S]
                           the watchdog's telemetry (telemetry/*.csv, a row per ~30 s): per stamp and class
@@ -1104,8 +1106,9 @@ def main(argv):
         os.path.exists(p) and os.unlink(p); say("updates on")
     elif cmd == "start": cmd_start()
     elif cmd == "quit": cmd_quit()
-    elif cmd == "update-now":
-        sys.exit(subprocess.run(["/usr/bin/python3", "-I", os.path.join(CODE, "updater.py"), "--now"], env=dict(os.environ, JEB_HOME=HOME, JEB_MOD=MOD, JEB_APP_DIR=APP_DIR)).returncode)
+    elif cmd in ("update-now", "retry-update"):
+        flag = "--now" if cmd == "update-now" else "--force"
+        sys.exit(subprocess.run(["/usr/bin/python3", "-I", os.path.join(CODE, "updater.py"), flag], env=dict(os.environ, JEB_HOME=HOME, JEB_MOD=MOD, JEB_APP_DIR=APP_DIR)).returncode)
     else:
         say(__doc__); return 2
     return 0
