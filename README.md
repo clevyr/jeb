@@ -6,7 +6,7 @@ Jeb is a little farm that lives on your Mac's desktop and keeps track of your Cl
 
 It's internal to Clevyr. The repo is private and proprietary (see [LICENSE](LICENSE)), so please don't share it outside the company.
 
-**Latest release:** [github.com/clevyr/jeb/releases/latest](https://github.com/clevyr/jeb/releases/latest). You don't need to download anything from that page yourself: the install below picks up the newest release, and Jeb keeps itself up to date after that.
+**Latest release:** [github.com/clevyr/jeb/releases/latest](https://github.com/clevyr/jeb/releases/latest). The app download, `JebDesktop-<version>-macos.zip`, is listed under **Assets** at the bottom of that page. You don't need to download it yourself: the install below picks up the newest release, and Jeb keeps itself up to date after that.
 
 ![farm-day](docs/screenshots/farm-day.png)
 
