@@ -12,8 +12,8 @@
   ./release               the usual way. Picks the bump from the Conventional Commits since the last tag, as
                           release-please does (`!` or a BREAKING CHANGE footer: major, feat: minor, fix/perf/revert:
                           patch; nothing releasable: refuses), writes release notes from them, then runs
-                          `desktop/jebctl release --parity --bump auto`. The first release (no tag yet) ships
-                          the version already in mod/.claude-plugin/plugin.json.
+                          `desktop/jebctl release --parity --bump auto`. The first release (no tag yet) is
+                          1.0.0. The version always comes from the tags; plugin.json only records it.
   ./release patch|minor|major
                           the same with the bump forced. A new version is written to plugin.json and
                           committed (chore(release): v<version>) only after every check passes.

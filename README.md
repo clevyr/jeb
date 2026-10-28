@@ -210,11 +210,11 @@ From a clean checkout of `main`, one command cuts a release and puts it on GitHu
 
     ./release
 
-It works out the version the way release-please does, from the [commit messages](#commit-messages-and-versions) since the last release: any breaking change makes it a major release, otherwise any `feat` makes it minor, otherwise any `fix`, `perf` or `revert` makes it a patch. If there's nothing releasable it says so and stops. The release notes are built from the same commits, grouped into breaking changes, features and fixes. The very first release uses the version already in `mod/.claude-plugin/plugin.json`.
+It works out the version the way release-please does, from the [commit messages](#commit-messages-and-versions) since the last release: any breaking change makes it a major release, otherwise any `feat` makes it minor, otherwise any `fix`, `perf` or `revert` makes it a patch. If there's nothing releasable it says so and stops. The release notes are built from the same commits, grouped into breaking changes, features and fixes. The very first release is 1.0.0. The version always comes from the release tags and the commits, never from a number you set; the release writes it into `mod/.claude-plugin/plugin.json` for the record.
 
 Add `--dry-run` to see the version and notes it would use without changing anything. To force a level, pass it: `./release patch`, `./release minor` or `./release major`.
 
-It validates and tests the plugin, does a dev build and runs the parity checks. Only if all of that passes does it write the new version to `plugin.json` (the one place the version lives), commit it as `chore(release): v<version>` and make a signed `v<version>` tag. A failed check leaves nothing behind. It then asks once, and on `y` pushes the branch and tag and publishes the GitHub release with those notes, which is what new installs clone. That last step needs `gh` signed in. If the release can't be created, the tag is still pushed and it prints the command to retry.
+It validates and tests the plugin, does a dev build and runs the parity checks. Only if all of that passes does it write the new version to `plugin.json`, commit it as `chore(release): v<version>` and make a signed `v<version>` tag. A failed check leaves nothing behind. It then asks once, and on `y` pushes the branch and tag and publishes the GitHub release with those notes, which is what new installs clone. That last step needs `gh` signed in. If the release can't be created, the tag is still pushed and it prints the command to retry.
 
 It doesn't use release-please itself because that tool creates tags on GitHub's side, unsigned, and installs only follow tags signed by a pinned key.
 

@@ -31,11 +31,10 @@
                           owner side: the clone is clean and on the default branch, a signing key is
                           configured (user.signingkey), then `claude plugin validate mod`, `claude plugin
                           test mod`, a dev build (and the parity gate with --parity), then a local signed tag
-                          v<version> (SemVer, from mod/.claude-plugin/plugin.json; it must be newer than the
-                          last release tag). --bump raises that part of the newer of plugin.json's version and
-                          the last tag (auto: the level from the Conventional Commits since the last tag, as
-                          release-please does; refuses when none is releasable; no tag yet: plugin.json as is)
-                          and, only once every check has passed, writes it to plugin.json and commits it
+                          v<version>. The version comes from the tags, as release-please does: no tag yet is
+                          1.0.0; else the last tag raised by --bump (default auto: the level from the
+                          Conventional Commits since it; refuses when none is releasable). Only once every
+                          check has passed is it written to mod/.claude-plugin/plugin.json and committed
                           ("chore(release): v<version>") before tagging. Release notes from the same commits go
                           to .git/jeb-release-notes-<tag>.md. Prints the push command; never pushes
   rollback                put the newest saved version back (the running app hands over by itself)
@@ -81,7 +80,8 @@ RELEASE_LOG = os.path.join(HOME, "release.log")
 SIGNERS = os.path.join(HOME, "release-signers")             # pinned at install; follow trusts no other key
 REPO_SIGNERS = os.path.join(CODE, "release-signers")        # shipped in the repo (ssh allowed_signers format)
 TAG_RE = re.compile(r"v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")    # SemVer releases; pre-release tags are never followed
-PLUGIN_JSON = os.path.join(MOD, ".claude-plugin", "plugin.json")   # its "version" is the release version
+PLUGIN_JSON = os.path.join(MOD, ".claude-plugin", "plugin.json")   # the release writes its "version"; tags are the source
+INITIAL_VERSION = "1.0.0"                                          # the first release, as release-please starts
 UID = os.getuid()
 DRY = False
 PATH = "/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin"
@@ -976,36 +976,37 @@ def cmd_release(args):
     cur = git("branch", "--show-current").stdout.strip()
     if cur != base:
         raise SystemExit(f"releases are cut from {base}; this clone is on {cur or 'a detached HEAD'}")
-    bump = args[args.index("--bump") + 1] if "--bump" in args and args.index("--bump") + 1 < len(args) else None
-    if "--bump" in args and bump not in ("auto", "patch", "minor", "major"):
+    bump = "auto"
+    if "--bump" in args:
+        i = args.index("--bump") + 1
+        bump = args[i] if i < len(args) else ""
+    if bump not in ("auto", "patch", "minor", "major"):
         raise SystemExit("--bump takes auto, patch, minor or major")
-    if not bump and release_tags("--points-at", "HEAD"):
+    if release_tags("--points-at", "HEAD"):
         raise SystemExit("HEAD already carries a release tag: " + ", ".join(release_tags("--points-at", "HEAD")))
     try:
-        version = json.load(open(PLUGIN_JSON)).get("version")
+        file_version = json.load(open(PLUGIN_JSON)).get("version")
     except (OSError, ValueError, AttributeError) as e:
-        raise SystemExit(f"cannot read the version from {PLUGIN_JSON}: {e}")
-    tag = f"v{version}"
-    if not isinstance(version, str) or not tag_key(tag):
-        raise SystemExit(f"{PLUGIN_JSON} version {version!r} is not MAJOR.MINOR.PATCH")
+        raise SystemExit(f"cannot read {PLUGIN_JSON}: {e}")
     tags = release_tags()
     last = tags[-1] if tags else None
-    file_version, auto = version, bump == "auto"
-    level, notes = release_plan(last) if last else (None, "First release.")
-    if bump == "auto" and last:
-        if not level:
-            raise SystemExit(f"no feat, fix, perf, revert or breaking commits since {last}, so nothing to release "
-                             "(commit subjects follow Conventional Commits; pass patch, minor or major to release anyway)")
-        bump = level
-    elif bump == "auto":
-        bump = None                                   # first release: plugin.json's version as it is
-    if bump:
-        bumped = {"major": lambda a, b, c: (a + 1, 0, 0), "minor": lambda a, b, c: (a, b + 1, 0),
-                  "patch": lambda a, b, c: (a, b, c + 1)}[bump](*(max(tag_key(tag), tag_key(last)) if last else tag_key(tag)))
-        version, tag = "%d.%d.%d" % bumped, "v%d.%d.%d" % bumped
-        say(f"bump: {bump}" + (f" (from the commits since {last})" if auto else ""))
-    if last and tag_key(tag) <= tag_key(last):
-        raise SystemExit(f"version {version} is not newer than the last release {last}: bump it in {PLUGIN_JSON} and commit first")
+    if not last:
+        version, notes = INITIAL_VERSION, "First release."
+        say(f"no release tag yet: starting at {version}" + ("" if bump == "auto" else f" (--bump {bump} applies from the next release)"))
+    else:
+        level, notes = release_plan(last)
+        if bump == "auto":
+            if not level:
+                raise SystemExit(f"no feat, fix, perf, revert or breaking commits since {last}, so nothing to release "
+                                 "(commit subjects follow Conventional Commits; pass patch, minor or major to release anyway)")
+            say(f"bump: {level} (from the commits since {last})")
+            bump = level
+        else:
+            say(f"bump: {bump} (forced)")
+        major, minor, patch = tag_key(last)
+        major, minor, patch = {"major": (major + 1, 0, 0), "minor": (major, minor + 1, 0), "patch": (major, minor, patch + 1)}[bump]
+        version = f"{major}.{minor}.{patch}"
+    tag = f"v{version}"
     say(f"releasing {tag}" + (f" (last release {last})" if last else " (first release)"))
     say("1. mod checks")
     sh(["claude", "plugin", "validate", "mod"], check=True, cwd=CLONE)
