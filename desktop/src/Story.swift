@@ -146,7 +146,7 @@ final class Story {
 
     init(now: Date = nowDate()) {
         arrivedAt = now
-        if let p = env["JEB_STORY_PATH"] { path = p } else { path = env["JEB_BENCH"] == nil ? NSHomeDirectory() + "/.claude/jeb-desktop/story.json" : nil }
+        if let p = env["JEB_STORY_PATH"] { path = p } else { path = env["JEB_BENCH"] == nil ? jebHome + "/story.json" : nil }
         load()
     }
 
@@ -456,7 +456,7 @@ final class Story {
         let tmp = path + ".tmp"
         let dir = (path as NSString).deletingLastPathComponent
         try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
-        if dir == NSHomeDirectory() + "/.claude/jeb-desktop" || dir == jebHome { chmod(dir, 0o700) } // the desktop's own state folder only
+        if dir == jebHome { chmod(dir, 0o700) } // the desktop's own state folder only
         guard FileManager.default.createFile(atPath: tmp, contents: Data(body.utf8), attributes: [.posixPermissions: 0o600]) else { return }
         rename(tmp, path) // one rename: a reader never sees half a file
     }

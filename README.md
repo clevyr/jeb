@@ -105,7 +105,7 @@ The install:
 4. Adds the clone's `mod/` folder to `CLAUDE_CODE_PLUGIN_DIRS` in `~/.claude/settings.json`. It backs that file up to `~/.claude/backups/jeb/` first and leaves your other entries alone. Running it twice is harmless.
 5. Links `jebctl` into `~/.local/bin` so you can type plain `jebctl` from any folder. If that folder isn't on your PATH it offers to add it to your shell profile (`./install --add-path` adds it without asking); open a new terminal afterwards.
 
-`./uninstall` keeps `~/.claude/jeb-desktop` unless you pass `--purge`, and keeps the plugin's state file unless you pass `--purge-farm`, which backs it up before removing it. It also takes this clone's `mod/` back out of `CLAUDE_CODE_PLUGIN_DIRS` (backing up your settings first) and removes the `jebctl` link. `--dry-run` shows what it would do, and `--verbose` prints every command and detail.
+`./uninstall` keeps `~/Library/Application Support/Jeb` unless you pass `--purge`, and keeps the plugin's state file unless you pass `--purge-farm`, which backs it up before removing it. It also takes this clone's `mod/` back out of `CLAUDE_CODE_PLUGIN_DIRS` (backing up your settings first) and removes the `jebctl` link. `--dry-run` shows what it would do, and `--verbose` prints every command and detail.
 
 ## Commands
 
@@ -134,7 +134,7 @@ Run `jebctl doctor` first. Every `FIX` line tells you what to do.
 
 **An update failed.** The previous version keeps running and the failed release isn't retried. `update.log` and `release.log` say why.
 
-All the logs live in `~/.claude/jeb-desktop/`: `update.log` for builds and checks, `release.log` for release checks and `watchdog.log` for restarts.
+All the logs live in `~/Library/Application Support/Jeb/` (older installs stay at `~/.claude/jeb-desktop` until `jebctl migrate` or the next update moves them; the old path then links to the new one): `update.log` for builds and checks, `release.log` for release checks and `watchdog.log` for restarts.
 
 ![rain](docs/screenshots/rain.png)
 
@@ -144,7 +144,7 @@ Jeb uses [Semantic Versioning](https://semver.org): releases are tags like `v1.4
 
 1. It runs `git fetch --tags origin` with your own credentials.
 2. It looks at each newer tag, newest first. A tag has to be signed by a pinned signer and point at a commit on the default branch. One that fails is logged and skipped, so a bad tag can't block the real ones.
-3. The first good tag is exported (`git archive <sha>`) into `~/.claude/jeb-desktop/staging/<tag>/`, refusing anything that isn't a plain file or folder or that would land outside it. The new build then goes through the full checks: compile, smoke, parity, a scripted day and a headless start.
+3. The first good tag is exported (`git archive <sha>`) into `~/Library/Application Support/Jeb/staging/<tag>/`, refusing anything that isn't a plain file or folder or that would land outside it. The new build then goes through the full checks: compile, smoke, parity, a scripted day and a headless start.
 4. If everything passes, the clone moves to that commit (open sessions reload the plugin) and the new app replaces the old one. If the new app crashes or stops reporting in the next few minutes, the old one comes back and that tag is never tried again.
 
 Each release carries a prebuilt app, so the checks in step 3 don't wait on a compile. Before building, the update downloads `JebDesktop-<tag>-macos.zip` from the GitHub release with `gh` and uses it only if its SHA-256 matches the `app-sha256` line in the signed tag message and it includes your Mac's architecture. If there's no such line (an older release), `gh` is missing, the download fails or the hash doesn't match, it builds from source instead, so an update never depends on the download. Either way the checks run on this Mac and the app is bundled and signed locally.
@@ -156,7 +156,7 @@ Updates leave the clone alone if it has local changes or is on a branch. `jebctl
 Releases are signed tags, and installs only trust signers pinned on that machine, so a tag pushed by anyone else is ignored.
 
 - `desktop/release-signers` lists the allowed signers (`ssh-keygen` allowed_signers format, namespace `git`).
-- The install copies it to `~/.claude/jeb-desktop/release-signers` (mode 0600) if there isn't one already. Later tags and pulls can't replace it, so trust is fixed at install time.
+- The install copies it to `~/Library/Application Support/Jeb/release-signers` (mode 0600) if there isn't one already. Later tags and pulls can't replace it, so trust is fixed at install time.
 - To rotate keys, update `desktop/release-signers` in a release, then run `./install --repin` on each machine.
 - With no signer pinned, installs don't update at all. `status` and `doctor` show whether one is pinned.
 
@@ -258,7 +258,7 @@ No work names, paths or text ever leave a session. The plugin keeps an area key 
 
 Code runs from the clone and state lives outside it:
 
-- `~/.claude/jeb-desktop`: logs, installed versions, heartbeat, telemetry, updater and release state, staging.
+- `~/Library/Application Support/Jeb`: logs, installed versions, heartbeat, telemetry, updater and release state, staging.
 - `~/.claude/jeb-creative`: the builder's changelog, run log, lock and output (unused while it's off).
 - `~/.claude/plugins/store/`: the plugin's state file, which the desktop reads.
 
@@ -266,7 +266,7 @@ The installed app finds the plugin through the `JebMod` key in its `Info.plist`,
 
 Environment variables, mostly for tests (the install sets the paths itself):
 
-- `JEB_HOME`: desktop state folder (default `~/.claude/jeb-desktop`).
+- `JEB_HOME`: desktop state folder (default `~/Library/Application Support/Jeb`).
 - `JEB_SRC`: app source for `jebctl` and `updater.py` (default `desktop/src`).
 - `JEB_MOD`: the plugin folder, used to find `hooks/pixel-art.ts`.
 - `JEB_BUNDLE_MOD`: the folder written into the bundle's `JebMod` key (default `JEB_MOD`). Release updates point it at the clone's `mod/`, since the staged copy is deleted afterwards.

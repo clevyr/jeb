@@ -29,7 +29,22 @@ before_swap hook (the release checkout) that runs after the gates and the bundle
 """
 import argparse, concurrent.futures, fcntl, glob, hashlib, importlib.util, json, os, plistlib, re, shutil, subprocess, sys, tempfile, time, ctypes
 
-HOME = os.environ.get("JEB_HOME") or os.path.expanduser("~/.claude/jeb-desktop")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import jebhome
+
+HOME = jebhome.resolve()
+LOG = STATE = None
+
+
+def set_home(home):
+    """(Re)derive the paths that hang off the state folder; called at import and after a migration."""
+    global HOME, LOG, STATE
+    HOME = home
+    LOG = os.path.join(HOME, "update.log")
+    STATE = os.path.join(HOME, "updater-state.json")
+
+
+set_home(HOME)
 QUIET = 60
 WATCH_SECS = 600
 HEALTHY_SECS = 180      # a new build that has run this long, awake and not waiting, is accepted early
@@ -37,7 +52,6 @@ NO_BEAT_SECS = 240      # no heartbeat of the new stamp by then: nothing picked 
 STALE = 10
 KEEP_VERSIONS = 3
 STORE = os.path.expanduser("~/.claude/plugins/store/jeb_inline-129385bc4c17.json")
-LOG = os.path.join(HOME, "update.log")
 MOD = os.environ.get("JEB_MOD") or os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "mod")
 
 
@@ -80,7 +94,6 @@ def newest_mtime(src):
 
 # ---- state ----
 
-STATE = os.path.join(HOME, "updater-state.json")
 
 def load_state():
     try:
@@ -147,7 +160,7 @@ def build_tools(snap):
 # ---- gates ----
 
 def load_parity(snap):
-    spec = importlib.util.spec_from_file_location("parity_snap", os.path.join(snap, "tools", "parity.py"))
+    spec =importlib.util.spec_from_file_location("parity_snap", os.path.join(snap, "tools", "parity.py"))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -366,6 +379,9 @@ def watch_new_build(stamp, secs, runlog_offset):
 # ---- main ----
 
 def main(argv=None, before_swap=None):
+    # before the lock: migrate takes it too; paused updates leave the folder where it is
+    if not os.path.exists(os.path.join(HOME, "updates-paused")) and jebhome.migrate(log) in ("moved", "failed"):
+        set_home(jebhome.resolve())
     ap = argparse.ArgumentParser()
     ap.add_argument("--src", default=os.environ.get("JEB_SRC") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
     ap.add_argument("--app-dir", default=os.environ.get("JEB_APP_DIR") or os.path.expanduser("~/Applications"))

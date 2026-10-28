@@ -16,7 +16,10 @@ logged and never changes the exit status. --sample-only runs just that.
 """
 import argparse, datetime, json, os, re, signal, subprocess, sys, time
 
-HOME = os.environ.get("JEB_HOME") or os.path.expanduser("~/.claude/jeb-desktop")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import jebhome
+
+HOME = jebhome.resolve()
 LOG = os.path.join(HOME, "watchdog.log")
 QUIET_MARKER = os.path.join(HOME, "quit")
 BEATS = os.path.join(HOME, "heartbeat")

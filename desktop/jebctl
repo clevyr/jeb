@@ -2,6 +2,8 @@
 """jebctl: install, supervise and update the desktop (phase 6). Exactly one JebDesktop at all times.
 
   status                  process, stamp, heartbeat age, last update result, versions
+  migrate                 move the state folder from ~/.claude/jeb-desktop to ~/Library/Application Support/Jeb
+                          (install, follow and the updater do this on their own; the old path stays as a link)
   doctor                  read-only health check: one line per check (ok / FIX with the fix), exit 1 on a problem
   install [--mode dev|release] [--repin] [--add-path] [--dry-run] [--verbose]
                           one short line per step (--verbose: every command and detail). First build through
@@ -79,21 +81,34 @@ The mod path rendered into the plists (JEB_MOD) is mod/ beside desktop/, from th
 """
 import fcntl, glob, hashlib, importlib.util, json, os, plistlib, re, shutil, signal, subprocess, sys, tarfile, time
 
-HOME = os.environ.get("JEB_HOME") or os.path.expanduser("~/.claude/jeb-desktop")
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import jebhome
+
+HOME = jebhome.resolve()
 APP_DIR = os.environ.get("JEB_APP_DIR") or os.path.expanduser("~/Applications")
 AGENTS = os.environ.get("JEB_LAUNCHAGENTS") or os.path.expanduser("~/Library/LaunchAgents")
 APP = os.path.join(APP_DIR, "JebDesktop.app")
 EXE = os.path.join(APP, "Contents", "MacOS", "JebDesktop")
-VERSIONS = os.path.join(HOME, "versions")
 CODE = os.path.dirname(os.path.realpath(__file__))      # realpath: `jebctl` may run through the ~/.local/bin link
 CLONE = os.path.dirname(CODE)
 MOD = os.path.join(CLONE, "mod")
 SRC = os.environ.get("JEB_SRC") or os.path.join(CODE, "src")
 ALL_LABELS = ("com.jeb.desktop", "com.jeb.desktop.watchdog", "com.jeb.desktop.update", "com.jeb.desktop.release")
-MODE_FILE = os.path.join(HOME, "install-mode")
-RELEASE_STATE = os.path.join(HOME, "release-state.json")
-RELEASE_LOG = os.path.join(HOME, "release.log")
-SIGNERS = os.path.join(HOME, "release-signers")             # pinned at install; follow trusts no other key
+VERSIONS = MODE_FILE = RELEASE_STATE = RELEASE_LOG = SIGNERS = None
+
+
+def set_home(home):
+    """(Re)derive the paths that hang off the state folder; called at import and after a migration."""
+    global HOME, VERSIONS, MODE_FILE, RELEASE_STATE, RELEASE_LOG, SIGNERS
+    HOME = home
+    VERSIONS = os.path.join(HOME, "versions")
+    MODE_FILE = os.path.join(HOME, "install-mode")
+    RELEASE_STATE = os.path.join(HOME, "release-state.json")
+    RELEASE_LOG = os.path.join(HOME, "release.log")
+    SIGNERS = os.path.join(HOME, "release-signers")         # pinned at install; follow trusts no other key
+
+
+set_home(HOME)
 REPO_SIGNERS = os.path.join(CODE, "release-signers")        # shipped in the repo (ssh allowed_signers format)
 TAG_RE = re.compile(r"v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")    # SemVer releases; pre-release tags are never followed
 PLUGIN_JSON = os.path.join(MOD, ".claude-plugin", "plugin.json")   # the release writes its "version"; tags are the source
@@ -592,7 +607,8 @@ def cmd_doctor():
         last = (json.load(open(os.path.join(HOME, "updater-state.json"))).get("last") or {}).get("result")
     except (OSError, ValueError, AttributeError):
         last = None
-    check(last not in ("rolled-back", "rejected", "rollback-failed", "swap-failed"), f"last update result: {last or 'none'}", "see ~/.claude/jeb-desktop/update.log; run: jebctl status")
+    check(last not in ("rolled-back", "rejected", "rollback-failed", "swap-failed"), f"last update result: {last or 'none'}", f"see {os.path.join(HOME, 'update.log')}; run: jebctl status")
+    say(f"ok    state folder: {HOME}" + (" (older location; run: jebctl migrate)" if HOME == jebhome.old_path() and not os.environ.get("JEB_HOME") else ""))
     say("ok    " + ("gh available: updates use the release's prebuilt app" if shutil.which("gh") else "gh not on PATH (optional): updates build from source"))
     if m == "release":
         check(os.path.isfile(SIGNERS), "release signers pinned", "run: ./install --repin (needs desktop/release-signers in the clone)")
@@ -865,6 +881,19 @@ def unlink_jebctl():
     remove_from_profile()
 
 
+def migrate_home():
+    """Move the old state folder to ~/Library/Application Support/Jeb (once), then follow it. Returns the status."""
+    r = jebhome.migrate(say, DRY)
+    if r in ("moved", "failed"):
+        set_home(jebhome.resolve())
+    return r
+
+
+def cmd_migrate():
+    r = migrate_home()
+    say({"n/a": "nothing to move: " + HOME + " is the state folder", "busy": "an update is running; try again shortly"}.get(r, r))
+
+
 def cmd_install(args):
     try:
         install_steps(args)
@@ -875,6 +904,7 @@ def cmd_install(args):
 
 
 def install_steps(args):
+    migrate_home()      # first: everything below reads and writes the state folder
     m = mode()
     if "--mode" in args:
         try:
@@ -968,7 +998,7 @@ def install_steps(args):
 
 
 def cmd_uninstall(purge):
-    if purge and os.path.realpath(HOME) in ("/", os.path.realpath(os.path.expanduser("~")), os.path.realpath(os.path.expanduser("~/.claude"))):
+    if purge and os.path.realpath(HOME) in ("/", os.path.realpath(os.path.expanduser("~")), os.path.realpath(os.path.expanduser("~/.claude")), os.path.realpath(os.path.expanduser("~/Library/Application Support"))):
         raise SystemExit(f"refusing to purge {HOME}: JEB_HOME must be the desktop's own folder")      # purge empties it whole
     lead("LaunchAgents and app")
     for l in ("com.jeb.desktop.release", "com.jeb.desktop.update", "com.jeb.desktop.watchdog", "com.jeb.desktop"):
@@ -1004,6 +1034,11 @@ def cmd_uninstall(purge):
         fin("would purge" if DRY else "purged")
     else:
         detail("kept versions and logs")
+    old = jebhome.old_path()
+    if os.path.islink(old) and os.path.realpath(old) == os.path.realpath(HOME):
+        detail(f"remove the link {old}")
+        if not DRY:
+            os.unlink(old)
     unlink_jebctl()
 
 
@@ -1158,6 +1193,8 @@ def fetch_app(tag, log=say):
 
 
 def cmd_follow(gates_only):
+    if not os.path.exists(os.path.join(HOME, "updates-paused")):
+        migrate_home()      # before the lock below: migrate takes release.lock itself
     os.makedirs(HOME, mode=0o700, exist_ok=True)
     lock = open(os.path.join(HOME, "release.lock"), "w")
     try:
@@ -1450,6 +1487,7 @@ def main(argv):
     VERBOSE = "--verbose" in argv or cmd not in ("install", "uninstall")
     if cmd == "status": cmd_status()
     elif cmd == "doctor": return cmd_doctor()
+    elif cmd == "migrate": cmd_migrate()
     elif cmd == "plists": cmd_plists()
     elif cmd == "perf": cmd_perf(args[1:])
     elif cmd == "install": cmd_install(args[1:])

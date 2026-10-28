@@ -12,8 +12,8 @@ description: Diagnose a Jeb install on this Mac (app, LaunchAgents, plugin regis
    - `desktop/jebctl resume-updates` (updates are paused);
    - `./install` (missing app, LaunchAgents or plugin registration; run with no flags).
    Do not run anything else to fix a problem without the user's approval.
-4. If more detail is needed, read `~/.claude/jeb-desktop/update.log` and `~/.claude/jeb-desktop/watchdog.log`. Point to logs by path only.
-5. Never read or quote `~/.claude/jeb-desktop/run.log` beyond lines containing "no usable art", "exited", "ROLLBACK" or "REJECTED".
+4. If more detail is needed, read `~/Library/Application Support/Jeb/update.log` and `~/Library/Application Support/Jeb/watchdog.log`. Older installs may still be at `~/.claude/jeb-desktop` until migrated (`desktop/jebctl migrate`); the doctor's "state folder" line says which is in use. Point to logs by path only.
+5. Never read or quote `~/Library/Application Support/Jeb/run.log` (or `~/.claude/jeb-desktop/run.log`) beyond lines containing "no usable art", "exited", "ROLLBACK" or "REJECTED".
 
 ## Rules
 

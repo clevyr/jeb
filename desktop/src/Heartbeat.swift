@@ -1,7 +1,8 @@
 // The install's supervision hooks (phase 6): a heartbeat file per running instance, the
 // quit marker, and how a start by launchd tells a login from a watchdog restart.
 //
-// Everything lives in JEB_HOME (default ~/.claude/jeb-desktop):
+// Everything lives in JEB_HOME (default ~/Library/Application Support/Jeb; an install not yet migrated
+// keeps ~/.claude/jeb-desktop, which jebctl, the updater and the watchdog move on their next run):
 //   heartbeat/<pid>   rewritten every 2 s by a plain run-loop timer, paused or not: JSON with
 //                     the pid, the build stamp, whether this instance is still waiting to
 //                     take over from an older one, and the time. Removed on a clean exit.
@@ -13,7 +14,16 @@
 
 import Foundation
 
-let jebHome = env["JEB_HOME"] ?? NSHomeDirectory() + "/.claude/jeb-desktop"
+let jebHome: String = {
+    if let h = env["JEB_HOME"] { return h }
+    let new = NSHomeDirectory() + "/Library/Application Support/Jeb"
+    let old = NSHomeDirectory() + "/.claude/jeb-desktop"
+    let fm = FileManager.default
+    if fm.fileExists(atPath: new) { return new }
+    // the old folder counts only as a real directory (after a move it is a symlink to the new one)
+    if let t = try? fm.attributesOfItem(atPath: old)[.type] as? FileAttributeType, t == .typeDirectory { return old }
+    return new
+}()
 let quitMarkerPath = jebHome + "/quit"
 let startReasonPath = jebHome + "/start-reason"
 let heartbeatDir = env["JEB_HEARTBEAT_DIR"] ?? jebHome + "/heartbeat"

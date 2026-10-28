@@ -5,7 +5,7 @@
                           verified tag; a 6-hourly agent fetches new ones, verifies, gates them and switches). No local
                           edits expected.
                           Updates only follow tags signed by a pinned signer: desktop/release-signers is copied to
-                          ~/.claude/jeb-desktop/release-signers on the first install and never replaced by a later tag.
+                          ~/Library/Application Support/Jeb/release-signers on the first install and never replaced by a later tag.
   --repin                 replace the pinned signers with this clone's desktop/release-signers (key rotation).
   --add-path              if ~/.local/bin (where `jebctl` is linked) is not on PATH, add it to the shell profile without
                           asking (zsh ~/.zprofile, bash ~/.bash_profile, else ~/.profile; backup first). Without it a
