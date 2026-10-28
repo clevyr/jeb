@@ -27,11 +27,17 @@
                           only on a pass check the SHA out here and install the build, watch it, roll back
                           (checkout of the previous SHA and bundle) on failure. Skips if the clone is dirty
                           or not on a v* tag. --gates-only stops after the gates. Log: JEB_HOME/release.log
-  release [--parity] [--dry-run]
+  release [--bump auto|patch|minor|major] [--parity] [--dry-run]
                           owner side: the clone is clean and on the default branch, a signing key is
                           configured (user.signingkey), then `claude plugin validate mod`, `claude plugin
                           test mod`, a dev build (and the parity gate with --parity), then a local signed tag
-                          vYYYY.MM.DD[.N]. Prints the push command; never pushes
+                          v<version> (SemVer, from mod/.claude-plugin/plugin.json; it must be newer than the
+                          last release tag). --bump raises that part of the newer of plugin.json's version and
+                          the last tag (auto: the level from the Conventional Commits since the last tag, as
+                          release-please does; refuses when none is releasable; no tag yet: plugin.json as is)
+                          and, only once every check has passed, writes it to plugin.json and commits it
+                          ("chore(release): v<version>") before tagging. Release notes from the same commits go
+                          to .git/jeb-release-notes-<tag>.md. Prints the push command; never pushes
   rollback                put the newest saved version back (the running app hands over by itself)
   screenshot [--dry-run]  save what the running app draws (SIGUSR2; one PNG per screen into ~/Pictures/Jeb, or
                           JEB_SHOT_DIR) and print the paths (from JEB_HOME/screenshot-last). Needs exactly one
@@ -72,7 +78,8 @@ RELEASE_STATE = os.path.join(HOME, "release-state.json")
 RELEASE_LOG = os.path.join(HOME, "release.log")
 SIGNERS = os.path.join(HOME, "release-signers")             # pinned at install; follow trusts no other key
 REPO_SIGNERS = os.path.join(CODE, "release-signers")        # shipped in the repo (ssh allowed_signers format)
-TAG_RE = re.compile(r"v(\d{4})\.(\d\d)\.(\d\d)(?:\.(\d+))?")
+TAG_RE = re.compile(r"v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")    # SemVer releases; pre-release tags are never followed
+PLUGIN_JSON = os.path.join(MOD, ".claude-plugin", "plugin.json")   # its "version" is the release version
 UID = os.getuid()
 DRY = False
 PATH = "/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin"
@@ -116,7 +123,7 @@ def git(*a, **kw):
 
 def tag_key(t):
     m = TAG_RE.fullmatch(t)
-    return (int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4) or 0)) if m else None
+    return (int(m.group(1)), int(m.group(2)), int(m.group(3))) if m else None
 
 
 def release_tags(*args):
@@ -928,6 +935,35 @@ def cmd_follow(gates_only):
     return 0 if rc in (0, 2, 3) else 1
 
 
+CC_RE = re.compile(r"(\w+)(?:\([^)]*\))?(!)?:\s*(.+)")    # Conventional Commits subject: type(scope)!: text
+NOTE_GROUPS = [("breaking", "Breaking changes"), ("feat", "Features"), ("fix", "Fixes"), ("perf", "Performance"), ("revert", "Reverts")]
+
+
+def release_plan(last):
+    """(level or None, notes markdown) from the Conventional Commits since tag `last` (release-please rules):
+    a `!` or a BREAKING CHANGE footer is major, feat is minor, fix/perf/revert are patch, anything else none."""
+    out = git("log", "--no-merges", "--format=%h%x00%s%x00%b%x1e", f"{last}..HEAD").stdout
+    groups, level = {k: [] for k, _ in NOTE_GROUPS}, None
+    rank = {"patch": 1, "minor": 2, "major": 3}
+    for entry in filter(None, (e.strip("\n") for e in out.split("\x1e"))):
+        sha, subject, body = (entry.split("\x00") + ["", ""])[:3]
+        m = CC_RE.fullmatch(subject.strip())
+        if not m:
+            continue
+        kind, bang, text = m.group(1).lower(), m.group(2), m.group(3)
+        footer = re.search(r"^BREAKING[ -]CHANGE:\s*(.+)", body, re.M)
+        breaking = bool(bang or footer)
+        this = "major" if breaking else {"feat": "minor", "fix": "patch", "perf": "patch", "revert": "patch"}.get(kind)
+        if this and (not level or rank[this] > rank[level]):
+            level = this
+        if breaking:
+            groups["breaking"].append(f"- {footer.group(1).strip() if footer else text} ({sha})")
+        if kind in groups:
+            groups[kind].append(f"- {text} ({sha})")
+    notes = "\n\n".join(f"### {title}\n\n" + "\n".join(groups[k]) for k, title in NOTE_GROUPS if groups[k])
+    return level, notes
+
+
 def cmd_release(args):
     sh(["git", "-C", CLONE, "rev-parse", "--git-dir"], check=True)
     if git("status", "--porcelain").stdout.strip():
@@ -938,8 +974,37 @@ def cmd_release(args):
     cur = git("branch", "--show-current").stdout.strip()
     if cur != base:
         raise SystemExit(f"releases are cut from {base}; this clone is on {cur or 'a detached HEAD'}")
-    if release_tags("--points-at", "HEAD"):
+    bump = args[args.index("--bump") + 1] if "--bump" in args and args.index("--bump") + 1 < len(args) else None
+    if "--bump" in args and bump not in ("auto", "patch", "minor", "major"):
+        raise SystemExit("--bump takes auto, patch, minor or major")
+    if not bump and release_tags("--points-at", "HEAD"):
         raise SystemExit("HEAD already carries a release tag: " + ", ".join(release_tags("--points-at", "HEAD")))
+    try:
+        version = json.load(open(PLUGIN_JSON)).get("version")
+    except (OSError, ValueError, AttributeError) as e:
+        raise SystemExit(f"cannot read the version from {PLUGIN_JSON}: {e}")
+    tag = f"v{version}"
+    if not isinstance(version, str) or not tag_key(tag):
+        raise SystemExit(f"{PLUGIN_JSON} version {version!r} is not MAJOR.MINOR.PATCH")
+    tags = release_tags()
+    last = tags[-1] if tags else None
+    file_version, auto = version, bump == "auto"
+    level, notes = release_plan(last) if last else (None, "First release.")
+    if bump == "auto" and last:
+        if not level:
+            raise SystemExit(f"no feat, fix, perf, revert or breaking commits since {last}, so nothing to release "
+                             "(commit subjects follow Conventional Commits; pass patch, minor or major to release anyway)")
+        bump = level
+    elif bump == "auto":
+        bump = None                                   # first release: plugin.json's version as it is
+    if bump:
+        bumped = {"major": lambda a, b, c: (a + 1, 0, 0), "minor": lambda a, b, c: (a, b + 1, 0),
+                  "patch": lambda a, b, c: (a, b, c + 1)}[bump](*(max(tag_key(tag), tag_key(last)) if last else tag_key(tag)))
+        version, tag = "%d.%d.%d" % bumped, "v%d.%d.%d" % bumped
+        say(f"bump: {bump}" + (f" (from the commits since {last})" if auto else ""))
+    if last and tag_key(tag) <= tag_key(last):
+        raise SystemExit(f"version {version} is not newer than the last release {last}: bump it in {PLUGIN_JSON} and commit first")
+    say(f"releasing {tag}" + (f" (last release {last})" if last else " (first release)"))
     say("1. mod checks")
     sh(["claude", "plugin", "validate", "mod"], check=True, cwd=CLONE)
     sh(["claude", "plugin", "test", "mod"], check=True, cwd=CLONE)
@@ -964,10 +1029,25 @@ def cmd_release(args):
             shutil.rmtree(snap, ignore_errors=True)
             if not ok:
                 raise SystemExit("parity gate failed; no tag")
-    today = time.strftime("v%Y.%m.%d")
-    same = [t for t in release_tags() if t == today or t.startswith(today + ".")]
-    tag = today if not same else f"{today}.{max(tag_key(t)[3] for t in same) + 1}"
+    if version != file_version:
+        say(f"{'would write' if DRY else 'writing'} version {version} to {PLUGIN_JSON} and commit it")
+        if not DRY:
+            text = open(PLUGIN_JSON).read()
+            new = re.sub(r'("version"\s*:\s*")[^"]*(")', lambda m: m.group(1) + version + m.group(2), text, count=1)
+            if json.loads(new).get("version") != version:
+                raise SystemExit(f"could not write the version into {PLUGIN_JSON}; no commit, no tag")
+            with open(PLUGIN_JSON, "w") as f:
+                f.write(new)
+        sh(["git", "-C", CLONE, "commit", "-m", f"chore(release): {tag}", "--", PLUGIN_JSON], check=True)
     sh(["git", "-C", CLONE, "tag", "-s", tag, "-m", f"Jeb {tag}"], check=True)
+    notes = notes or "Maintenance release."
+    if DRY:
+        say("release notes:\n" + notes)
+    else:
+        path = os.path.join(CLONE, git("rev-parse", "--git-path", f"jeb-release-notes-{tag}.md").stdout.strip())
+        with open(path, "w") as f:
+            f.write(notes + "\n")
+        say(f"release notes: {path}")
     say(f"{'would tag' if DRY else 'tagged'} {tag} (local only; never pushed by jebctl). To publish it, run:\n  git push origin {base} {tag}")
 
 

@@ -1,17 +1,30 @@
 #!/usr/bin/python3
-"""./release [--dry-run] | ./release setup [--dry-run]: cut a Jeb release from this clone (owner side, local, no CI).
+"""./release [patch|minor|major] [--dry-run] | ./release setup [--dry-run]: cut a Jeb release from this clone (owner side, local, no CI).
 
-  ./release setup         create desktop/release-signers (ssh allowed_signers format) from git's user.email and
-                          the public key of user.signingkey, when it does not exist; else show its fingerprints
-                          and whether the configured key is in it. Needs gpg.format ssh. Commit and push the
-                          file before the first release: installs pin it on first install.
-  ./release               `desktop/jebctl release --parity` (clean tree on the default branch, mod checks, dev
-                          build, parity gate, signed tag vYYYY.MM.DD[.N]); on success asks
-                          `Push <base> and <tag> to origin? [y/N]` and pushes only on y. Without a terminal it
-                          prints the push command instead.
+  ./release setup         one-time signing setup. When this clone has no SSH signing key configured, makes
+                          ~/.ssh/jeb_signing (ed25519; ssh-keygen asks for a passphrase) unless it exists and
+                          points this clone's git at it (gpg.format ssh, user.signingkey = the private key, so
+                          signing needs no ssh-agent; git asks for the passphrase once per release). Then creates
+                          desktop/release-signers (ssh allowed_signers format) from git's user.email and that
+                          public key when it does not exist; else shows its fingerprints and whether the
+                          configured key is in it. Commit and push the file before the first release: installs
+                          pin it on first install.
+  ./release               the usual way. Picks the bump from the Conventional Commits since the last tag, as
+                          release-please does (`!` or a BREAKING CHANGE footer: major, feat: minor, fix/perf/revert:
+                          patch; nothing releasable: refuses), writes release notes from them, then runs
+                          `desktop/jebctl release --parity --bump auto`. The first release (no tag yet) ships
+                          the version already in mod/.claude-plugin/plugin.json.
+  ./release patch|minor|major
+                          the same with the bump forced. A new version is written to plugin.json and
+                          committed (chore(release): v<version>) only after every check passes.
+                          Both run jebctl's checks (clean tree on the default branch, mod checks, dev build,
+                          parity gate) before anything is written, then the signed tag v<version>. On success
+                          they ask once, then push <base> and <tag> and publish the GitHub release with those
+                          notes (`gh release create <tag> --verify-tag --notes-file ...`), only on y. Without
+                          a terminal they print those commands instead.
   --dry-run               change nothing: no file, tag or push.
 """
-import os, subprocess, sys
+import os, shutil, subprocess, sys
 
 CLONE = os.path.dirname(os.path.abspath(__file__))
 CODE = os.path.join(CLONE, "desktop")
@@ -63,7 +76,32 @@ def fingerprint(line):
     return r.stdout.strip() or "unreadable"
 
 
+KEY = os.path.expanduser("~/.ssh/jeb_signing")
+
+
+def configure(dry):
+    """Make ~/.ssh/jeb_signing when missing and point this clone's git at it, unless signing is already set up."""
+    if cfg("gpg.format") == "ssh" and cfg("user.signingkey"):
+        return
+    if not cfg("user.email"):
+        fail("git has no user.email; run: git config --global user.email you@example.com")
+    if not os.path.exists(KEY):
+        say(f"{'would create' if dry else 'creating'} the signing key {KEY} (pick a passphrase and keep it, and back the key up)")
+        if not dry:
+            os.makedirs(os.path.dirname(KEY), mode=0o700, exist_ok=True)
+            if subprocess.run(["ssh-keygen", "-t", "ed25519", "-C", cfg("user.email"), "-f", KEY]).returncode != 0:
+                fail("ssh-keygen failed; nothing configured")
+    for key, value in (("gpg.format", "ssh"), ("user.signingkey", KEY)):
+        say(f"$ git config {key} {value}")
+        if not dry and git("config", key, value).returncode != 0:
+            fail(f"could not set {key}")
+
+
 def setup(dry):
+    configure(dry)
+    if dry and not (cfg("gpg.format") == "ssh" and cfg("user.signingkey")):
+        say("would then write desktop/release-signers from that key")
+        return 0
     email, key = public_key()
     if os.path.exists(SIGNERS):
         lines = [l for l in open(SIGNERS).read().splitlines() if l.strip() and not l.startswith("#")]
@@ -83,8 +121,16 @@ def setup(dry):
     return 0
 
 
-def release(dry):
-    cmd = ["/usr/bin/python3", "-I", os.path.join(CODE, "jebctl"), "release", "--parity"] + (["--dry-run"] if dry else [])
+def no_private_keys():
+    """Refuse when any tracked file holds a private key (release-signers is public keys only)."""
+    hits = git("grep", "-l", "-I", "-E", "-e", "-----BEGIN [A-Z ]*PRIVATE KEY-----").stdout.split()
+    if hits:
+        fail("a tracked file holds a private key; remove it from git before releasing: " + ", ".join(hits))
+
+
+def release(dry, bump):
+    no_private_keys()
+    cmd = ["/usr/bin/python3", "-I", os.path.join(CODE, "jebctl"), "release", "--parity", "--bump", bump] + (["--dry-run"] if dry else [])
     say("$ " + " ".join(cmd))
     rc = subprocess.run(cmd).returncode
     if rc != 0 or dry:
@@ -92,23 +138,34 @@ def release(dry):
     tags = git("tag", "--list", "v*", "--points-at", "HEAD").stdout.split()
     if not tags:
         fail("no release tag at HEAD after the release; nothing to push")
-    tag, base = sorted(tags)[-1], git("branch", "--show-current").stdout.strip()
-    push = f"git push origin {base} {tag}"
+    tag, base = max(tags, key=lambda t: [int(x) if x.isdigit() else -1 for x in t[1:].split(".")]), git("branch", "--show-current").stdout.strip()
+    notes = os.path.join(CLONE, git("rev-parse", "--git-path", f"jeb-release-notes-{tag}.md").stdout.strip())
+    publish = ["gh", "release", "create", tag, "--verify-tag", "--title", tag] + (["--notes-file", notes] if os.path.isfile(notes) else ["--generate-notes"])
+    push = f"git push origin {base} {tag}\n  " + " ".join(publish)
     if not (sys.stdin.isatty() and sys.stdout.isatty()):
         say("no terminal; not pushing. To publish, run:\n  " + push)
         return 0
-    if input(f"Push {base} and {tag} to origin? [y/N] ").strip().lower() != "y":
+    if input(f"Push {base} and {tag} to origin and publish the GitHub release? [y/N] ").strip().lower() != "y":
         say("not pushed. To publish, run:\n  " + push)
         return 0
-    return subprocess.run(["git", "-C", CLONE, "push", "origin", base, tag]).returncode
+    rc = subprocess.run(["git", "-C", CLONE, "push", "origin", base, tag]).returncode
+    if rc != 0:
+        return rc
+    if not shutil.which("gh"):
+        say("pushed, but gh is not installed. To publish the GitHub release, run:\n  " + " ".join(publish))
+        return 1
+    rc = subprocess.run(publish, cwd=CLONE).returncode
+    if rc != 0:
+        say("pushed, but the GitHub release was not created. Installs still follow the tag. To retry, run:\n  " + " ".join(publish))
+    return rc
 
 
 def main(argv):
     dry = "--dry-run" in argv
     rest = [a for a in argv if a != "--dry-run"]
-    if rest not in ([], ["setup"]):
+    if rest not in ([], ["setup"], ["patch"], ["minor"], ["major"]):
         say(__doc__); return 2
-    return setup(dry) if rest else release(dry)
+    return setup(dry) if rest == ["setup"] else release(dry, rest[0] if rest else "auto")
 
 
 if __name__ == "__main__":
