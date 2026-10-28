@@ -1,11 +1,12 @@
 """Build the Jeb logo (standard library only).
 
-  python logo.py PIXEL_ART_TS OUT_DIR
+  python logo.py PIXEL_ART_TS OUT_DIR [ICON_PNG]
 
 reads the runtime sprite data the mod uses (hooks/pixel-art.ts): Jeb playing the
 banjo with Blue at his side, and a pixel wordmark beside them. Writes
 OUT_DIR/logo.svg (animated, crisp at any size) and OUT_DIR/logo.png (first
-frame, 8x).
+frame, 8x). With ICON_PNG, also writes the plugin icon there: the pair alone,
+first frame, square with a small margin, 12x (528 px).
 """
 
 from __future__ import annotations
@@ -36,6 +37,8 @@ LETTERS = {
 }
 LETTER_SCALE = 3
 GAP = 6
+ICON_PAD = 2
+ICON_SCALE = 12
 
 
 def load_frames(ts: str, name: str) -> list[Grid]:
@@ -149,16 +152,32 @@ def png(grid: Grid, k: int) -> bytes:
     return b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', ihdr) + chunk(b'IDAT', zlib.compress(bytes(raw), 9)) + chunk(b'IEND', b'')
 
 
+def icon(ts: str) -> Grid:
+    """The cast alone (first frame), centred on a square with ICON_PAD around it."""
+    cast = [(load_frames(ts, name)[0], x) for name, x, _ in CAST]
+    w = max(x + len(f[0]) for f, x in cast)
+    h = max(len(f) for f, _ in cast)
+    side = max(w, h) + 2 * ICON_PAD
+    grid = blank(side, side)
+    x0, y0 = (side - w) // 2, (side - h) // 2
+    for f, x in cast:
+        paste(grid, f, x0 + x, y0 + h - len(f))
+    return grid
+
+
 def main() -> None:
     out = Path(sys.argv[2])
     out.mkdir(parents=True, exist_ok=True)
-    width, height, word, layers = compose(Path(sys.argv[1]).read_text())
+    ts = Path(sys.argv[1]).read_text()
+    width, height, word, layers = compose(ts)
     (out / 'logo.svg').write_text(svg(width, height, word, layers))
     still = blank(width, height)
     for grids, _ in layers:
         paste(still, grids[0], 0, 0)
     paste(still, word, 0, 0)
     (out / 'logo.png').write_bytes(png(still, PNG_SCALE))
+    if len(sys.argv) > 3:
+        Path(sys.argv[3]).write_bytes(png(icon(ts), ICON_SCALE))
 
 
 if __name__ == '__main__':

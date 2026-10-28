@@ -181,7 +181,7 @@ The sprites come from `mod/art/src/build.py`, which needs Pillow (`python3 -m pi
 
     python3 mod/art/src/build.py mod/art/out mod/hooks/pixel-art.ts
 
-That rewrites `mod/hooks/pixel-art.ts` and writes previews to `mod/art/out/` (not tracked). Rebuild the logo with `python3 mod/art/src/logo.py mod/hooks/pixel-art.ts docs`.
+That rewrites `mod/hooks/pixel-art.ts` and writes previews to `mod/art/out/` (not tracked). Rebuild the logo and the plugin icon with `python3 mod/art/src/logo.py mod/hooks/pixel-art.ts docs mod/.claude-plugin/icon.png`.
 
 ### Commit messages and versions
 
