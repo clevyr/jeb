@@ -24,7 +24,9 @@ path written into the bundle's Info.plist instead of JEB_MOD; `jebctl follow` se
 --src, --app-dir, --versions-dir, --force, --no-watch, --watch-secs N, --gates-only (stop after
 the gates: nothing bundled, swapped or recorded as built), --quick (first install: only the compile, smoke and start
 gates; parity and the scripted day are logged as skipped; the rest is unchanged), --prebuilt PATH (copy that
-binary in place of running build.sh; `jebctl` passes the release's verified one; every gate still runs on it). `jebctl follow` calls main() with a
+binary in place of running build.sh; `jebctl` passes the release's verified one; every gate still runs on it; the release's detect and
+png2raw beside that binary are copied into the snapshot's tools/ in place of compiling them), --no-compile (release mode: never run
+build.sh or swiftc; no prebuilt, or a missing helper, is rejected with a plain reason). `jebctl follow` calls main() with a
 before_swap hook (the release checkout) that runs after the gates and the bundle, before the swap.
 
 Progress for the menu bar: while it holds the lock it keeps jebHome/update-status.json current (phase, step i of N, started,
@@ -36,9 +38,11 @@ com.jeb.desktop.update-finished so the app can announce the run without polling.
 """
 import argparse, concurrent.futures, fcntl, glob, hashlib, importlib.util, json, os, plistlib, re, shutil, subprocess, sys, tempfile, time, ctypes
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import jebhome
+jebhome.pin_python()        # a bundle's code runs on the bundle's Python, through ~/.jeb/current when started from there
 
+jebhome.use_dev_dir()       # before anything runs git or xcrun: fall back to the Command Line Tools if Xcode's license blocks
 HOME = jebhome.resolve()
 LOG = STATE = None
 
@@ -57,9 +61,9 @@ WATCH_SECS = 600
 HEALTHY_SECS = 180      # a new build that has run this long, awake and not waiting, is accepted early
 NO_BEAT_SECS = 240      # no heartbeat of the new stamp by then: nothing picked it up
 STALE = 10
-KEEP_VERSIONS = 3
+KEEP_VERSIONS = 1 if os.path.isfile(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "bundle.json")) else 3      # a release bundle keeps one spare app: one version on disk
 STORE = os.path.expanduser("~/.claude/plugins/store/jeb_inline-129385bc4c17.json")
-MOD = os.environ.get("JEB_MOD") or os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "mod")
+MOD = os.environ.get("JEB_MOD") or os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "mod")
 
 
 def log(msg):
@@ -166,7 +170,7 @@ def record(st, result, why, stamp=None, h=None):
 def clean_env(**extra):
     env = {k: v for k, v in os.environ.items() if not k.startswith("JEB_") or k in ("JEB_MOD", "JEB_SRC", "JEB_BUNDLE_MOD")}
     env.setdefault("JEB_MOD", MOD)
-    env["PATH"] = "/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin"
+    env["PATH"] = jebhome.SYS_PATH + os.pathsep + jebhome.tools_dir()
     env.update(extra)
     return env
 
@@ -191,9 +195,30 @@ def snapshot(src, dest):
 
 
 GATE_TOOLS = {      # compiled helpers the parity gate runs; not in git, so a fresh clone builds them (cwd = the snapshot root)
-    "detect": ["swiftc", "-O", "tools/detect-src/main.swift", "Art.swift", "PixelArt.swift", "Farm.swift", "-o", "tools/detect"],
+    "detect": ["swiftc", "-O", "tools/detect-src/main.swift", "Art.swift", "PixelArt.swift", "Farm.swift", "Holiday.swift", "-o", "tools/detect"],
     "png2raw": ["swiftc", "-O", "tools/png2raw.swift", "-o", "tools/png2raw"],
 }
+
+def build_universal_tools(src, dest):
+    """Release side: compiles each GATE_TOOLS helper for arm64 and x86_64 from the source tree and lipos them into dest/<name>.
+    Returns an error text or None."""
+    os.makedirs(dest, exist_ok=True)
+    for n, cmd in GATE_TOOLS.items():
+        parts = []
+        for arch in ("arm64", "x86_64"):
+            out = os.path.join(dest, f"{n}.{arch}")
+            c = cmd[:-1] + [out]        # the last argument is the -o target
+            rc, o, err = run(c + ["-target", f"{arch}-apple-macos12"], src, 300)
+            if rc != 0:
+                return f"{n} ({arch}): {tail(err or o, 3)}"
+            parts.append(out)
+        rc, o, err = run(["lipo", "-create", "-output", os.path.join(dest, n)] + parts, src, 60)
+        if rc != 0:
+            return f"{n} (lipo): {tail(err or o, 3)}"
+        for p in parts:
+            os.unlink(p)
+    return None
+
 
 def build_tools(snap):
     """Compiles the gate helpers that the snapshot lacks (the owner's tree has them prebuilt). Returns an error text or None."""
@@ -432,7 +457,7 @@ def main(argv=None, before_swap=None):
     if not os.path.exists(os.path.join(HOME, "updates-paused")) and jebhome.migrate(log) in ("moved", "failed"):
         set_home(jebhome.resolve())
     ap = argparse.ArgumentParser()
-    ap.add_argument("--src", default=os.environ.get("JEB_SRC") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
+    ap.add_argument("--src", default=os.environ.get("JEB_SRC") or os.path.join(os.path.dirname(os.path.realpath(__file__)), "src"))
     ap.add_argument("--app-dir", default=os.environ.get("JEB_APP_DIR") or os.path.expanduser("~/Applications"))
     ap.add_argument("--versions-dir", default=os.path.join(HOME, "versions"))
     ap.add_argument("--force", action="store_true", help="skip the debounce, the pause marker and the seen-hash checks")
@@ -442,6 +467,7 @@ def main(argv=None, before_swap=None):
     ap.add_argument("--gates-only", action="store_true", help="stop after the gates; nothing is bundled or swapped")
     ap.add_argument("--quick", action="store_true", help="first install: compile, smoke and start gates only (parity and day skipped)")
     ap.add_argument("--prebuilt", help="use this binary instead of compiling the snapshot (a verified release asset)")
+    ap.add_argument("--no-compile", action="store_true", help="release mode: never compile; reject when the prebuilt app or its helpers are missing")
     a = ap.parse_args(argv)
     os.makedirs(HOME, mode=0o700, exist_ok=True)
     lock = open(os.path.join(HOME, "updater.lock"), "w")
@@ -515,13 +541,24 @@ def update(a, before_swap):
         try:
             shutil.copy2(a.prebuilt, binary)
             os.chmod(binary, 0o755)
+            for n in GATE_TOOLS:        # the release's helpers sit beside its binary
+                h = os.path.join(os.path.dirname(os.path.abspath(a.prebuilt)), n)
+                if os.path.isfile(h):
+                    shutil.copy2(h, os.path.join(snap, "tools", n))
+                    os.chmod(os.path.join(snap, "tools", n), 0o755)
             rc, out, err = 0, "", ""
         except OSError as e:
             rc, out, err = 1, "", f"cannot copy the prebuilt binary: {e}"
+    elif a.no_compile:
+        return reject("compile", "this release's app could not be downloaded, and Jeb does not compile on this Mac; it will try again later")
     else:
         rc, out, err = run(["sh", "build.sh"], snap, 900, clean_env(JEB_OUT="JebDesktop.dev"))
     if rc != 0 or not os.path.exists(binary):
         return reject("compile", tail(err or out, 4))
+    if a.no_compile:
+        miss = [n for n in GATE_TOOLS if not os.path.exists(os.path.join(snap, "tools", n))]
+        if miss:
+            return reject("tools", f"this release's app download lacks the check tools ({', '.join(miss)}), and Jeb does not compile on this Mac; a newer release will fix it")
     why = build_tools(snap)
     if why:
         return reject("tools", why)

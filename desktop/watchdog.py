@@ -16,8 +16,9 @@ logged and never changes the exit status. --sample-only runs just that.
 """
 import argparse, datetime, json, os, re, signal, subprocess, sys, time
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import jebhome
+jebhome.pin_python()
 
 HOME = jebhome.resolve()
 LOG = os.path.join(HOME, "watchdog.log")
@@ -26,7 +27,7 @@ BEATS = os.path.join(HOME, "heartbeat")
 TEL = os.path.join(HOME, "telemetry")
 LABEL = "com.jeb.desktop"
 APP_EXE = os.path.join(os.environ.get("JEB_APP_DIR") or os.path.expanduser("~/Applications"), "JebDesktop.app", "Contents", "MacOS", "JebDesktop")
-SRC = os.environ.get("JEB_SRC") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "src")
+SRC = os.environ.get("JEB_SRC") or os.path.join(os.path.dirname(os.path.realpath(__file__)), "src")
 STALE = 5
 DRY = False
 

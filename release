@@ -20,31 +20,35 @@
                           Both run jebctl's checks (clean tree on the default branch, mod checks, universal
                           release build, parity gate) before anything is written, then the signed tag
                           v<version>, whose message carries the SHA-256 of the app zip. On success they ask
-                          once, then push <base> and <tag> and publish the GitHub release with those notes and
-                          the zip (`gh release create <tag> --verify-tag --notes-file ... <zip>`), only on y.
-                          Installs use that zip only when it matches the hash in the signed tag. Without a
-                          terminal they print those commands instead.
-  ./release smoke [TAG]   sandboxed end-to-end check of a published release; never touches the real install. TAG
-                          defaults to the newest v* tag on origin (a vX.Y.Z-rc.N tag only when it is the newest or
-                          named). Under <git dir>/jeb-smoke/<TAG>/ (an earlier one is moved to old-<time>), with a
-                          fake HOME, it clones origin for real (your gh and git config are passed through, so the
-                          download path is genuinely exercised) and installs with this tree's `jebctl install
-                          --mode release --no-agents` run on that clone (JEB_CLONE): no LaunchAgent, launchctl or
-                          PATH change anywhere. So it tests the tag's app, mod, updater and gates with the current
-                          tree's install logic; the tag's own ./install is not run (older tags lack --no-agents).
-                          A: fresh install must use the release's prebuilt app (a build from source fails the
-                          smoke), pass codesign, point JebMod at the clone and use the new state folder.
-                          B: an existing install in the old state folder (~/.claude/jeb-desktop) must migrate to
-                          the new one, leave a link, and have its plists rewritten. Then `jebctl doctor` runs
-                          read-only (JEB_NO_LAUNCHCTL=1) against A and its output is shown. Exit 1 on any failure.
-                          JEB_SMOKE_ORIGIN overrides the origin URL (tests).
+                          once, then push <base> and <tag> and publish the GitHub release with those notes and the assets
+                          (`gh release create <tag> --verify-tag --notes-file ... <assets>`), only on y; it refuses when the app zip
+                          is missing. Assets: Jeb-<tag>-macos-arm64.zip and -x86_64.zip (the bundles teammates install: tree,
+                          prebuilt app, pinned Python), Jeb-<tag>-manifest.json and its .sig (signed with the tag's key in the
+                          `jeb-release` namespace), and the older JebDesktop-<tag>-macos.zip (JebDesktop plus the universal detect and
+                          png2raw; installs from the git clone use it when it matches the hash in the signed tag; kept during the
+                          transition). Without a terminal they print those commands instead.
+  ./release bundle --tag vX.Y.Z --out DIR [--ref REF] [--from-tree] [--app DIR] [--key K] [--signers F]
+                          builds the release bundles without releasing: Jeb-<tag>-macos-arm64.zip and -x86_64.zip (the tracked tree
+                          from `git archive REF` (default HEAD), or with --from-tree the working tree's files; the prebuilt app from
+                          --app (default .git/jeb-release-<tag>/stage); python-build-standalone, pinned and pruned; bundle.json), then
+                          Jeb-<tag>-manifest.json signed with --key (default user.signingkey) in the `jeb-release` namespace and verified
+                          against the bundle's own desktop/release-signers (--signers replaces that file, for tests with a throwaway key).
+  ./release smoke [TAG]   sandboxed end-to-end check of a published release; never touches the real install. TAG defaults to the
+                          newest published release. Under <git dir>/jeb-smoke/<TAG>/ (an earlier one is moved to old-<time>), with a
+                          fake HOME, it downloads the manifest, its signature and this Mac's zip with your gh, verifies them against
+                          desktop/release-signers, unpacks into <home>/.jeb/versions/<TAG> and runs the bundle's own
+                          `python/bin/python3 -I install --no-agents` (no LaunchAgent, launchctl or PATH change anywhere). It checks
+                          the prebuilt app was used, codesign, that JebMod and the settings entry are <home>/.jeb/current/mod, that
+                          current resolves and that versions/ holds one folder. Then `jebctl doctor` runs read-only
+                          (JEB_NO_LAUNCHCTL=1) and its output is shown. Exit 1 on any failure. JEB_SMOKE_REPO overrides owner/name.
   --dry-run               change nothing: no file, tag or push (smoke: prints the plan).
 """
-import json, os, plistlib, pwd, re, shutil, signal, subprocess, sys, time
+import glob, hashlib, json, os, plistlib, pwd, re, shutil, signal, subprocess, sys, tempfile, time
 
-CLONE = os.path.dirname(os.path.abspath(__file__))
+CLONE = os.path.dirname(os.path.realpath(__file__))
 CODE = os.path.join(CLONE, "desktop")
 SIGNERS = os.path.join(CODE, "release-signers")
+REPO = "clevyr/jeb"
 
 
 def say(*a):
@@ -126,7 +130,7 @@ def setup(dry):
             say("  " + fingerprint(" ".join(l.split()[-2:])))
         say("configured key is " + ("in it" if any(key in l for l in lines) else "NOT in it (a release signed with it will not verify; see `jebctl install --repin`)"))
         return 0
-    line = f'{email} namespaces="git" {key}'
+    line = f'{email} namespaces="git,jeb-release" {key}'
     say(f"{'would write' if dry else 'writing'} {SIGNERS}:\n  {line}\n  {fingerprint(key)}")
     if not dry:
         fd = os.open(SIGNERS, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
@@ -161,7 +165,14 @@ def release(dry, bump):
     tag, base = max(tags, key=lambda t: [int(x) if x.isdigit() else -1 for x in t[1:].split(".")]), git("branch", "--show-current").stdout.strip()
     notes = os.path.join(CLONE, git("rev-parse", "--git-path", f"jeb-release-notes-{tag}.md").stdout.strip())
     zp = os.path.join(CLONE, git("rev-parse", "--git-path", f"jeb-release-{tag}").stdout.strip(), f"JebDesktop-{tag}-macos.zip")
-    publish = ["gh", "release", "create", tag, "--verify-tag", "--title", tag] + (["--notes-file", notes] if os.path.isfile(notes) else ["--generate-notes"]) + ([zp] if os.path.isfile(zp) else [])
+    if not os.path.isfile(zp):
+        fail(f"the app zip {zp} is missing, so no release is published (installs never compile); remove the local tag and run ./release again")
+    adir = os.path.dirname(zp)
+    try:
+        extra = make_bundles(tag, "HEAD", os.path.join(adir, "stage"), os.path.join(adir, "bundles"), signing_key())
+    except SystemExit as e:
+        fail(f"{e}\nthe signed tag {tag} exists locally but nothing was pushed or published; remove it (git tag -d {tag}) and run ./release again, or fix the problem and run ./release bundle --tag {tag} --out <dir>")
+    publish = ["gh", "release", "create", tag, "--verify-tag", "--title", tag] + (["--notes-file", notes] if os.path.isfile(notes) else ["--generate-notes"]) + [zp] + extra
     push = f"git push origin {base} {tag}\n  " + " ".join(publish)
     if not (sys.stdin.isatty() and sys.stdout.isatty()):
         say("no terminal; not pushing. To publish, run:\n  " + push)
@@ -181,63 +192,302 @@ def release(dry, bump):
     return rc
 
 
-# ---- smoke ----
+# ---- bundles: Jeb-<tag>-macos-<arch>.zip (the tree, the prebuilt app, a pruned Python) and the signed manifest ----
 
-SMOKE_TAG_RE = re.compile(r"v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-rc\.(0|[1-9]\d*))?")    # pre-release tags are for smoke only; installs never follow them
+# python-build-standalone, pinned: a release at least two weeks old, install_only_stripped, CPython 3.12. Bump the tag, the filenames
+# and the hashes together (the hashes come from the release's SHA256SUMS).
+PBS_TAG = "20261013"
+PBS_PY = "3.12.15+" + PBS_TAG
+PBS = {
+    "arm64": ("cpython-3.12.15+20261013-aarch64-apple-darwin-install_only_stripped.tar.gz",
+              "9866e11cf2ae9caa1e671383786f248859a52dd8bfb702fb4c0dc2c65f1d36de"),
+    "x86_64": ("cpython-3.12.15+20261013-x86_64-apple-darwin-install_only_stripped.tar.gz",
+               "d09998f85752b646873a8a6bc7eea442a0d251b1c8d2413aa8ea06ef131c3335"),
+}
+PBS_CACHE = os.path.expanduser("~/Library/Caches/jeb-release")
+TREE = ("install", "uninstall", "LICENSE", "desktop", "mod", ".claude/skills")       # what a bundle copies from the repo, beside app/ and python/ (the skills: the doctor guide the README points at)
+PRUNE = ("lib/python3.*/test", "lib/python3.*/idlelib", "lib/python3.*/tkinter", "lib/python3.*/turtledemo", "lib/python3.*/ensurepip",
+         "lib/python3.*/site-packages/pip*", "lib/python3.*/lib-dynload/_tkinter*", "lib/tcl*", "lib/tk*", "lib/itcl*", "lib/thread*",
+         "include", "share", "lib/pkgconfig", "lib/libtcl*", "lib/libtk*")
+
+
+def sha256_of(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def rosetta():
+    return subprocess.run(["/usr/bin/arch", "-x86_64", "/usr/bin/true"], capture_output=True).returncode == 0
+
+
+def local_imports():
+    """Top-level module names that jebctl, updater, watchdog, parity, day, jebhome and plugdirs import, minus Jeb's own modules."""
+    import ast
+    files = [os.path.join(CODE, n) for n in ("jebctl", "updater.py", "watchdog.py", "jebhome.py", "plugdirs.py")] + \
+            [os.path.join(CODE, "src", "tools", n) for n in ("parity.py", "day.py")]
+    own = {os.path.splitext(n)[0] for d in (CODE, os.path.join(CODE, "src", "tools")) for n in os.listdir(d)}
+    names = set()
+    for f in files:
+        for node in ast.walk(ast.parse(open(f).read())):
+            if isinstance(node, ast.Import):
+                names.update(a.name.split(".")[0] for a in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+                names.add(node.module.split(".")[0])
+    return sorted(names - own)
+
+
+def fetch_python(arch, dest):
+    """Unpack the pinned, pruned python-build-standalone for arch into dest/python (cached in ~/Library/Caches/jeb-release). Checks the
+    download's SHA-256, never modifies a Mach-O (so upstream signatures stay valid), verifies every Mach-O's
+    signature (an unsigned x86_64 one is noted, not refused) and imports every stdlib module Jeb's scripts use. Returns a warning string when the import test could not run, else None."""
+    import tarfile
+    import fnmatch
+    name, want = PBS[arch]
+    os.makedirs(PBS_CACHE, exist_ok=True)
+    tgz = os.path.join(PBS_CACHE, name)
+    if not (os.path.isfile(tgz) and sha256_of(tgz) == want):
+        url = f"https://github.com/astral-sh/python-build-standalone/releases/download/{PBS_TAG}/" + name.replace("+", "%2B")
+        say(f"  downloading {name}")
+        if subprocess.run(["curl", "-fsSL", "--retry", "3", "-o", tgz + ".part", url]).returncode != 0:
+            fail(f"could not download {url}")
+        os.replace(tgz + ".part", tgz)
+    if sha256_of(tgz) != want:
+        os.unlink(tgz)
+        fail(f"{name} does not match the pinned SHA-256; discarded")
+    with tarfile.open(tgz) as t:
+        if hasattr(tarfile, "data_filter"):
+            t.extractall(dest, filter="data")
+        else:
+            for m in t.getmembers():       # no data filter before 3.9.17: refuse anything that leaves dest
+                if m.name.startswith("/") or ".." in m.name.split("/") or (m.issym() and (m.linkname.startswith("/") or ".." in m.linkname.split("/"))):
+                    fail(f"{name} holds an unsafe path: {m.name}")
+            t.extractall(dest)
+    py = os.path.join(dest, "python")
+    if not os.path.isfile(os.path.join(py, "bin", "python3")):
+        fail(f"{name} has no python/bin/python3")
+    for pat in PRUNE:
+        for p in glob.glob(os.path.join(py, pat)):
+            shutil.rmtree(p) if os.path.isdir(p) and not os.path.islink(p) else os.unlink(p)
+    sys.path.insert(0, CODE)
+    import jebhome
+    bad, unsigned = [], 0
+    for dirpath, dirs, names in os.walk(py):
+        for n in names:
+            p = os.path.join(dirpath, n)
+            if os.path.islink(p) or not os.path.isfile(p):
+                continue
+            if not jebhome.macho_archs(p):
+                continue
+            r = subprocess.run(["codesign", "--verify", p], capture_output=True, text=True)
+            if r.returncode == 0:
+                continue
+            if arch == "x86_64" and "not signed at all" in r.stderr:
+                unsigned += 1       # python-build-standalone does not sign its Intel builds; Intel and Rosetta run unsigned code
+            else:
+                bad.append(os.path.relpath(p, py))
+    if bad:
+        fail(f"{arch} Python: codesign --verify failed for {', '.join(bad[:5])}{' ...' if len(bad) > 5 else ''}")
+    if unsigned:
+        say(f"  note: {unsigned} x86_64 Mach-O files are unsigned upstream (none has an invalid signature)")
+    if arch == "x86_64" and not rosetta():
+        return "Rosetta is missing: the x86_64 Python was not import-tested"
+    pre = ["/usr/bin/arch", "-x86_64"] if arch == "x86_64" else []
+    mods = local_imports()
+    r = subprocess.run(pre + [os.path.join(py, "bin", "python3"), "-I", "-c", "import importlib\nfor m in %r: importlib.import_module(m)" % mods], capture_output=True, text=True)
+    if r.returncode != 0:
+        fail(f"{arch} Python cannot import what Jeb needs ({', '.join(mods)}): {(r.stderr.strip().splitlines() or ['?'])[-1]}")
+    return None
+
+
+def put_tree(ref, dest, from_tree):
+    """The repo files a bundle carries, at dest: `git archive ref ...` (a release), or the working tree's tracked and unignored files."""
+    os.makedirs(dest)
+    if from_tree:
+        files = git("ls-files", "-co", "--exclude-standard", "--", *TREE).stdout.split("\n")
+        for f in sorted(x for x in files if x and os.path.isfile(os.path.join(CLONE, x))):
+            os.makedirs(os.path.join(dest, os.path.dirname(f)), exist_ok=True)
+            shutil.copy2(os.path.join(CLONE, f), os.path.join(dest, f), follow_symlinks=False)
+        return
+    p = subprocess.run(["git", "-C", CLONE, "archive", ref, "--"] + list(TREE), stdout=subprocess.PIPE)
+    if p.returncode != 0:
+        fail(f"git archive {ref} failed")
+    if subprocess.run(["tar", "-x", "-C", dest], input=p.stdout).returncode != 0:
+        fail("could not unpack the git archive")
+
+
+def verify_manifest(manifest, sig, signers):
+    """True when sig signs manifest for `jeb-release` by a key in signers."""
+    r = subprocess.run(["ssh-keygen", "-Y", "find-principals", "-s", sig, "-f", signers], capture_output=True, text=True)
+    for who in r.stdout.split():
+        with open(manifest, "rb") as f:
+            if subprocess.run(["ssh-keygen", "-Y", "verify", "-f", signers, "-I", who, "-n", "jeb-release", "-s", sig], stdin=f, capture_output=True).returncode == 0:
+                return True
+    return False
+
+
+def make_bundles(tag, ref, app_dir, out, key, signers=None, from_tree=False):
+    """Build Jeb-<tag>-macos-{arm64,x86_64}.zip plus the signed manifest in out; returns the paths to upload (manifest, signature, zips).
+    signers overrides the bundle's desktop/release-signers (tests: a throwaway key). Self-verifies the signature against the bundle's
+    own release-signers, the file an install pins."""
+    version = tag.lstrip("v")
+    commit = git("rev-parse", ref if not from_tree else "HEAD").stdout.strip() or "0" * 40
+    os.makedirs(out, exist_ok=True)
+    work = tempfile.mkdtemp(prefix="jeb-bundle-")
+    bundles, warns = {}, []
+    try:
+        for arch in ("arm64", "x86_64"):
+            say(f"bundle {arch}:")
+            root = os.path.join(work, arch)
+            put_tree(ref, root, from_tree)
+            if signers:
+                shutil.copyfile(signers, os.path.join(root, "desktop", "release-signers"))
+            shutil.copytree(app_dir, os.path.join(root, "app"), symlinks=True)
+            w = fetch_python(arch, root)
+            if w:
+                warns.append(w)
+            with open(os.path.join(root, "bundle.json"), "w") as f:
+                json.dump({"schema": 1, "repo": REPO, "tag": tag, "version": version, "commit": commit, "arch": arch, "python": PBS_PY}, f, indent=2)
+                f.write("\n")
+            for need in ("install", "desktop/jebctl", "desktop/bin/jebctl", "desktop/updater.py", "mod", "app/JebDesktop", "app/detect", "app/png2raw"):
+                if not os.path.exists(os.path.join(root, need)):
+                    fail(f"the {arch} bundle lacks {need}")
+            name = f"Jeb-{tag}-macos-{arch}.zip"
+            zp = os.path.join(out, name)
+            if os.path.exists(zp):
+                os.unlink(zp)
+            if subprocess.run(["ditto", "-c", "-k", root, zp]).returncode != 0:
+                fail(f"ditto could not make {name}")
+            bundles[arch] = {"name": name, "sha256": sha256_of(zp), "size": os.path.getsize(zp)}
+            say(f"  {name}: {bundles[arch]['size'] // 1024 // 1024} MB, sha256 {bundles[arch]['sha256'][:16]}")
+        man = os.path.join(out, f"Jeb-{tag}-manifest.json")
+        with open(man, "w") as f:
+            json.dump({"schema": 1, "repo": REPO, "tag": tag, "version": version, "commit": commit,
+                       "created": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "python": PBS_PY, "bundles": bundles}, f, indent=2)
+            f.write("\n")
+        sig = man + ".sig"
+        if os.path.exists(sig):
+            os.unlink(sig)
+        if subprocess.run(["ssh-keygen", "-Y", "sign", "-f", key, "-n", "jeb-release", man]).returncode != 0:
+            fail("ssh-keygen could not sign the manifest")
+        pinned = os.path.join(work, "arm64", "desktop", "release-signers")
+        if not verify_manifest(man, sig, pinned):
+            fail("the manifest signature does not verify against the bundle's own desktop/release-signers (namespace jeb-release); "
+                 "is the signing key listed there with namespaces including jeb-release? (./release setup shows it)")
+        say(f"manifest signed and verified against the bundle's release-signers: {man}")
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+    for w in warns:
+        say("warning: " + w)
+    return [man, sig] + [os.path.join(out, b["name"]) for b in bundles.values()]
+
+
+def signing_key():
+    """The private key git signs tags with (ssh-keygen -Y sign needs the private file, not the .pub)."""
+    k = os.path.expanduser(cfg("user.signingkey"))
+    if not k or k.startswith("key::"):
+        fail("user.signingkey must name a private key file to sign the manifest; run ./release setup")
+    return k[:-4] if k.endswith(".pub") and os.path.exists(k[:-4]) else k
+
+
+def bundle_cmd(argv):
+    """./release bundle --tag vX.Y.Z --out DIR [--ref REF] [--from-tree] [--app DIR] [--key K] [--signers F]"""
+    opts, i, from_tree = {}, 0, False
+    while i < len(argv):
+        a = argv[i]
+        if a == "--from-tree":
+            from_tree = True
+            i += 1
+        elif a in ("--tag", "--out", "--ref", "--app", "--key", "--signers") and i + 1 < len(argv):
+            opts[a[2:]] = argv[i + 1]
+            i += 2
+        else:
+            say(__doc__); return 2
+    if "tag" not in opts or "out" not in opts or not re.fullmatch(r"v\d+\.\d+\.\d+", opts["tag"]):
+        say(__doc__); return 2
+    app = opts.get("app") or os.path.join(CLONE, git("rev-parse", "--git-path", f"jeb-release-{opts['tag']}").stdout.strip(), "stage")
+    if not os.path.isdir(app):
+        fail(f"{app} is not a folder (the app folder holds JebDesktop, detect and png2raw)")
+    paths = make_bundles(opts["tag"], opts.get("ref", "HEAD"), app, opts["out"], opts.get("key") or signing_key(), opts.get("signers"), from_tree)
+    say("made:\n" + "\n".join("  " + p for p in paths))
+    return 0
+
+
+# ---- smoke ----
+SMOKE_TAG_RE = re.compile(r"v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")     # installs only follow SemVer releases
 JEBCTL = os.path.join(CODE, "jebctl")
 
 
-def smoke_key(t):
-    m = SMOKE_TAG_RE.fullmatch(t)
-    return (int(m.group(1)), int(m.group(2)), int(m.group(3)), 0, int(m.group(4))) if m and m.group(4) else (int(m.group(1)), int(m.group(2)), int(m.group(3)), 1, 0)
+def host_arch():
+    r = subprocess.run(["/usr/sbin/sysctl", "-n", "hw.optional.arm64"], capture_output=True, text=True)
+    return "arm64" if r.stdout.strip() == "1" else "x86_64"
 
 
-def remote_tags(origin):
-    """Release tags on origin (SemVer, optionally -rc.N), oldest first; exits when origin cannot be read."""
-    r = subprocess.run(["git", "ls-remote", "--tags", "--refs", origin, "refs/tags/v*"], capture_output=True, text=True, timeout=120)
-    if r.returncode != 0:
-        fail(f"cannot list the tags of {origin}: {r.stderr.strip()[:200]}")
-    tags = [l.split("refs/tags/", 1)[1] for l in r.stdout.splitlines() if "refs/tags/" in l]
-    return sorted((t for t in tags if SMOKE_TAG_RE.fullmatch(t)), key=smoke_key)
+def smoke_repo():
+    """owner/name of the GitHub repo (JEB_SMOKE_REPO overrides, for tests)."""
+    if os.environ.get("JEB_SMOKE_REPO"):
+        return os.environ["JEB_SMOKE_REPO"]
+    m = re.search(r"github\.com[:/]([^/\s]+/[^/\s]+?)(?:\.git)?/?$", git("remote", "get-url", "origin").stdout.strip())
+    return m.group(1) if m else REPO
 
 
-def smoke_env(home, tag, extra=None):
-    """Every child's environment: the owner's PATH and auth (gh, git config) but a fake HOME and no JEB_* from outside."""
+def smoke_env(home, extra=None):
+    """Every child's environment: the owner's PATH and gh login but a fake HOME, no JEB_* from outside and no launchctl."""
     real = pwd.getpwuid(os.getuid()).pw_dir
     env = {k: v for k, v in os.environ.items() if not k.startswith("JEB_")}
     env.update(HOME=home, JEB_APP_DIR=os.path.join(home, "Applications"), JEB_LAUNCHAGENTS=os.path.join(home, "Library", "LaunchAgents"),
                JEB_SETTINGS=os.path.join(home, ".claude", "settings.json"), JEB_BACKUPS=os.path.join(home, ".claude", "backups", "jeb"),
                JEB_STORE_DIR=os.path.join(home, ".claude", "plugins", "store"), JEB_BIN_DIR=os.path.join(home, ".local", "bin"),
-               JEB_PROFILE=os.path.join(home, ".zprofile"))
+               JEB_PROFILE=os.path.join(home, ".zprofile"), JEB_NO_LAUNCHCTL="1")
     env.setdefault("GH_CONFIG_DIR", os.path.join(real, ".config", "gh"))
-    if "GIT_CONFIG_GLOBAL" not in env and os.path.isfile(os.path.join(real, ".gitconfig")):
-        env["GIT_CONFIG_GLOBAL"] = os.path.join(real, ".gitconfig")
-    if "-rc." in tag:
-        env["JEB_ALLOW_RC"] = "1"
     env.update(extra or {})
     return env
 
 
-def smoke_case(name, label, sandbox, home, tag, origin, seed=None):
-    """One case: clone origin, install with --no-agents, check. Returns (ok, text)."""
+def newest_tag(repo):
+    r = subprocess.run(["gh", "release", "list", "-R", repo, "--exclude-drafts", "--exclude-pre-releases", "--limit", "30", "--json", "tagName", "--jq", ".[].tagName"], capture_output=True, text=True, timeout=120)
+    if r.returncode != 0:
+        fail("gh release list failed: " + (r.stderr.strip() or "?")[:200])
+    tags = [t for t in r.stdout.split() if SMOKE_TAG_RE.fullmatch(t)]
+    if not tags:
+        fail(f"no published v* release in {repo}")
+    return max(tags, key=lambda t: [int(x) for x in t[1:].split(".")])
+
+
+def smoke_case(sandbox, home, tag, repo):
+    """Download the release the way a teammate's Claude does, verify it, install it with --no-agents, check. Returns (ok, text)."""
     t0 = time.time()
-    clone = os.path.join(sandbox, "clone-" + name.lower())
+    arch = host_arch()
     state = os.path.join(home, "Library", "Application Support", "Jeb")
-    old = os.path.join(home, ".claude", "jeb-desktop")
-    env = smoke_env(home, tag, {"JEB_CLONE": clone, "JEB_SMOKE_TAG": tag})
+    env = smoke_env(home)
+    def bad(why):
+        return False, f"FAIL: {why}"
     os.makedirs(os.path.join(home, "Library"))
     # gh keeps its login in the keychain, found under $HOME/Library/Keychains: link the real one so no token goes into env
     os.symlink(os.path.join(pwd.getpwuid(os.getuid()).pw_dir, "Library", "Keychains"), os.path.join(home, "Library", "Keychains"))
-    if seed:
-        seed(old)
-    def bad(why):
-        return False, f"FAIL: {why}"
-    r = subprocess.run(["git", "clone", "-q", origin, clone], env=env, capture_output=True, text=True, timeout=900)
+    dl = os.path.join(sandbox, "download")
+    os.makedirs(dl)
+    man, zname = f"Jeb-{tag}-manifest.json", f"Jeb-{tag}-macos-{arch}.zip"
+    r = subprocess.run(["gh", "release", "download", tag, "-R", repo, "-p", man, "-p", man + ".sig", "-p", zname, "-D", dl], env=env, capture_output=True, text=True, timeout=900)
     if r.returncode != 0:
-        return bad("git clone failed: " + (r.stderr.strip().splitlines() or ["?"])[-1][:200])
-    r = subprocess.run(["/usr/bin/python3", "-I", JEBCTL, "install", "--mode", "release", "--no-agents"], env=env, cwd=sandbox, capture_output=True, text=True, timeout=1800)
+        return bad("gh release download failed: " + (r.stderr.strip().splitlines() or ["?"])[-1][:200])
+    if not verify_manifest(os.path.join(dl, man), os.path.join(dl, man + ".sig"), SIGNERS):
+        return bad("the manifest signature does not verify against desktop/release-signers (jeb-release)")
+    doc = json.load(open(os.path.join(dl, man)))
+    want = (doc.get("bundles") or {}).get(arch) or {}
+    zp = os.path.join(dl, zname)
+    if doc.get("tag") != tag or want.get("sha256") != sha256_of(zp) or want.get("size") != os.path.getsize(zp):
+        return bad(f"{zname} does not match the signed manifest")
+    ver = os.path.join(home, ".jeb", "versions", tag)
+    os.makedirs(os.path.dirname(ver))
+    if subprocess.run(["ditto", "-x", "-k", zp, ver], capture_output=True).returncode != 0:
+        return bad("ditto could not unpack the bundle")
+    py = os.path.join(ver, "python", "bin", "python3")
+    r = subprocess.run([py, "-I", os.path.join(ver, "install"), "--no-agents"], env=env, cwd=sandbox, capture_output=True, text=True, timeout=1800)
     out = (r.stdout + r.stderr).strip()
-    open(os.path.join(sandbox, f"install-{name.lower()}.log"), "w").write(out + "\n")
+    open(os.path.join(sandbox, "install.log"), "w").write(out + "\n")
     if r.returncode != 0:
         return bad("install exit %d: %s" % (r.returncode, " | ".join(out.splitlines()[-3:])[:400]))
     app = os.path.join(home, "Applications", "JebDesktop.app")
@@ -245,80 +495,44 @@ def smoke_case(name, label, sandbox, home, tag, origin, seed=None):
         return bad(f"{app} was not installed")
     if subprocess.run(["codesign", "--verify", app], capture_output=True).returncode != 0:
         return bad("codesign --verify failed on the installed app")
+    cur = os.path.join(home, ".jeb", "current")
+    if not os.path.islink(cur) or os.path.realpath(cur) != os.path.realpath(ver):
+        return bad(f"{cur} does not point at {ver}")
     try:
         jm = plistlib.load(open(os.path.join(app, "Contents", "Info.plist"), "rb")).get("JebMod")
     except (OSError, ValueError):
         jm = None
-    if not isinstance(jm, str) or os.path.realpath(jm) != os.path.realpath(os.path.join(clone, "mod")):
-        return bad(f"Info.plist JebMod is {jm!r}, not the clone's mod")
+    if jm != os.path.join(cur, "mod"):
+        return bad(f"Info.plist JebMod is {jm!r}, not {os.path.join(cur, 'mod')}")
     try:
         ulog = open(os.path.join(state, "update.log")).read()
     except OSError:
         return bad(f"no update.log in {state}")
-    if "using the prebuilt binary" not in ulog or f"(prebuilt {tag})" not in out:
-        why = [l for l in out.splitlines() if l.startswith("app:")]
-        return bad("the app was built from source, not the release's prebuilt" + (": " + why[-1] if why else ""))
-    head = subprocess.run(["git", "-C", clone, "rev-parse", "HEAD", f"refs/tags/{tag}^{{commit}}"], capture_output=True, text=True).stdout.split()
-    if len(head) != 2 or head[0] != head[1]:
-        return bad(f"the clone is not at {tag}")
-    if not os.path.isdir(state) or os.path.islink(state):
-        return bad(f"state folder {state} is missing")
-    if name == "A":
-        if os.path.lexists(old):
-            return bad(f"{old} exists on a fresh install")
-    else:
-        if not os.path.islink(old) or os.path.realpath(old) != os.path.realpath(state):
-            return bad(f"{old} is not a link to the new state folder")
-        for n in ("install-mode", "release-state.json", os.path.join("launchd", "com.jeb.desktop.plist"), os.path.join("launchd", "com.jeb.desktop.update.plist")):
-            if not os.path.exists(os.path.join(state, n)):
-                return bad(f"{n} did not survive the move to {state}")
-        ld = os.path.join(state, "launchd")
-        stale = [n for n in sorted(os.listdir(ld)) if ".claude/jeb-desktop" in open(os.path.join(ld, n), errors="replace").read()]
-        if stale:
-            return bad("plists still name the old state folder: " + ", ".join(stale))
-    return True, f"ok (prebuilt {tag}, {time.time() - t0:.0f}s)"
-
-
-def seed_old_layout(old):
-    """A minimal release-mode install as the state folder was laid out before it moved."""
-    os.makedirs(os.path.join(old, "launchd"), mode=0o700)
-    open(os.path.join(old, "install-mode"), "w").write("release\n")
-    json.dump({"failed": [], "checked": int(time.time()) - 3600, "last": None}, open(os.path.join(old, "release-state.json"), "w"))
-    for label in ("com.jeb.desktop", "com.jeb.desktop.update"):     # the update one is not rewritten by the install, so only the migration can fix it
-        with open(os.path.join(old, "launchd", label + ".plist"), "wb") as f:
-            plistlib.dump({"Label": label, "ProgramArguments": ["/usr/bin/true"], "StandardOutPath": os.path.join(old, "run.log"),
-                           "StandardErrorPath": os.path.join(old, "run.err"), "EnvironmentVariables": {"JEB_HOME": old}}, f)
-
-
-def smoke_plugdirs(home, clone, tag):
-    """The ./install settings step against the sandbox settings, so plugdirs is covered too."""
-    sys.path.insert(0, CODE)
-    import plugdirs
-    saved = dict(os.environ)
+    if "using the prebuilt binary" not in ulog:
+        return bad("the app was not the release's prebuilt one")
     try:
-        os.environ.update(smoke_env(home, tag))
-        plugdirs.edit(os.path.join(clone, "mod"), False, False, lambda *a: None)
-        return plugdirs.settings_path()
-    finally:
-        os.environ.clear(); os.environ.update(saved)
+        entries = json.load(open(os.path.join(home, ".claude", "settings.json"))).get("env", {}).get("CLAUDE_CODE_PLUGIN_DIRS", "")
+    except (OSError, ValueError):
+        entries = ""
+    if os.path.join(cur, "mod") not in entries.split(os.pathsep):
+        return bad("settings.json does not list ~/.jeb/current/mod")
+    left = [n for n in os.listdir(os.path.dirname(ver))]
+    if left != [tag]:
+        return bad("versions/ holds " + ", ".join(left))
+    return True, f"ok (prebuilt {tag}, {arch}, {time.time() - t0:.0f}s)"
 
 
 def smoke(tag, dry):
-    origin = os.environ.get("JEB_SMOKE_ORIGIN") or git("remote", "get-url", "origin").stdout.strip()
-    if not origin:
-        fail("this clone has no origin")
-    if tag:
-        if not SMOKE_TAG_RE.fullmatch(tag):
-            fail(f"{tag} is not a release tag (vX.Y.Z or vX.Y.Z-rc.N)")
-    else:
-        tags = remote_tags(origin)
-        if not tags:
-            fail(f"no v* release tag on {origin}")
-        tag = tags[-1]
+    repo = smoke_repo()
+    if not tag:
+        tag = "<newest published>" if dry else newest_tag(repo)
+    elif not SMOKE_TAG_RE.fullmatch(tag):
+        fail(f"{tag} is not a release tag (vX.Y.Z)")
     root = os.path.join(CLONE, git("rev-parse", "--git-path", "jeb-smoke").stdout.strip())
     sandbox = os.path.join(root, tag)
-    say(f"smoke {tag} from {origin}\n  sandbox {sandbox} (fake HOME inside; an earlier one is moved to {os.path.join(root, 'old-<time>')})\n"
-        f"  A fresh install: git clone, jebctl install --mode release --no-agents; B existing install in the old state folder; then jebctl doctor (JEB_NO_LAUNCHCTL=1)")
+    say(f"smoke {tag} from {repo}\n  sandbox {sandbox} (fake HOME inside; an earlier one is moved to {os.path.join(root, 'old-<time>')})\n"
+        f"  gh release download (manifest, signature, this Mac's zip), verify, unpack into <home>/.jeb/versions/<tag>, run the bundle's own\n"
+        f"  python/bin/python3 -I install --no-agents; then jebctl doctor (JEB_NO_LAUNCHCTL=1)")
     if dry:
         say("dry run: nothing was created.")
         return 0
@@ -328,24 +542,19 @@ def smoke(tag, dry):
         os.rename(sandbox, aside)
         say(f"  moved the previous sandbox to {aside}")
     os.makedirs(sandbox)
-    results = []
-    for name, label, home, seed in (("A", "fresh install", "home", None), ("B", "existing install, old layout", "home-b", seed_old_layout)):
-        try:
-            ok, text = smoke_case(name, label, sandbox, os.path.join(sandbox, home), tag, origin, seed)
-        except (OSError, subprocess.SubprocessError) as e:
-            ok, text = False, f"FAIL: {type(e).__name__}: {e}"
-        say(f"smoke {name} {label}: {text}")
-        results.append(ok)
-    if results[0]:
-        home, clone = os.path.join(sandbox, "home"), os.path.join(sandbox, "clone-a")
-        try:
-            say(f"smoke plugin settings: ok ({smoke_plugdirs(home, clone, tag)})")
-        except (SystemExit, OSError, ImportError) as e:
-            say(f"smoke plugin settings: FAIL: {e}"); results.append(False)
-        r = subprocess.run(["/usr/bin/python3", "-I", JEBCTL, "doctor"], env=smoke_env(home, tag, {"JEB_CLONE": clone, "JEB_NO_LAUNCHCTL": "1"}), cwd=sandbox, capture_output=True, text=True, timeout=300)
+    home = os.path.join(sandbox, "home")
+    try:
+        ok, text = smoke_case(sandbox, home, tag, repo)
+    except (OSError, subprocess.SubprocessError, ValueError) as e:
+        ok, text = False, f"FAIL: {type(e).__name__}: {e}"
+    say(f"smoke fresh install: {text}")
+    results = [ok]
+    if ok:
+        py = os.path.join(home, ".jeb", "current", "python", "bin", "python3")
+        r = subprocess.run([py, "-I", os.path.join(home, ".jeb", "current", "desktop", "jebctl"), "doctor"], env=smoke_env(home), cwd=sandbox, capture_output=True, text=True, timeout=300)
         lines = (r.stdout + r.stderr).strip().splitlines()
         say("smoke doctor (agents are not loaded in a sandbox; those FIX lines are expected):\n" + "\n".join("  " + l for l in lines))
-        crit = [l for l in lines if l.startswith("FIX") and re.search(r"app bundle|mod folder|signers|state folder", l)]
+        crit = [l for l in lines if l.startswith("FIX") and re.search(r"app bundle|mod folder|signers|state folder|bundle|Python|version", l)]
         if crit:
             say("smoke doctor: FAIL: " + "; ".join(c[:120] for c in crit)); results.append(False)
     say(f"sandbox: {sandbox}\n" + ("smoke passed" if all(results) else "smoke FAILED"))
@@ -355,6 +564,8 @@ def smoke(tag, dry):
 def main(argv):
     dry = "--dry-run" in argv
     rest = [a for a in argv if a != "--dry-run"]
+    if rest[:1] == ["bundle"]:
+        return bundle_cmd(rest[1:])
     if rest[:1] == ["smoke"] and len(rest) <= 2:
         return smoke(rest[1] if len(rest) == 2 else None, dry)
     if rest not in ([], ["setup"], ["patch"], ["minor"], ["major"]):

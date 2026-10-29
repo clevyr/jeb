@@ -4,8 +4,129 @@ The state folder is ~/Library/Application Support/Jeb. Older installs keep it at
 migrate() moves it (the old path then stays behind as a symlink, so the running app, its rollback versions and the
 LaunchAgents' log paths keep working). Shared by jebctl, updater.py and watchdog.py; the Swift app resolves the
 same way in Heartbeat.swift. Stdlib only; paths are computed at call time so tests can point $HOME elsewhere.
+Also the install's shared lookups: dev_dir and use_dev_dir (fall back to the Command Line Tools when an unlicensed Xcode
+would block git), find_gh,
+find_claude, and the standard places ~/.jeb/bin (gh; JEB_TOOLS_DIR), ~/.jeb/versions/<tag> (one unpacked release bundle: its
+tree, the universal app and a private Python) and ~/.jeb/current (a symlink to the live one; LaunchAgents and settings only name it).
+Also read_bundle, host_arch, macho_archs (a stdlib Mach-O reader) and pin_python.
 """
-import fcntl, os, plistlib, shutil
+import fcntl, json, os, plistlib, shutil, struct, subprocess, sys
+
+CLT = "/Library/Developer/CommandLineTools"
+SYS_PATH = "/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin"
+
+
+def dev_dir(clt=CLT):
+    """The Command Line Tools folder when it has git, else None. Exported as DEVELOPER_DIR it keeps git and xcrun off
+    the Xcode license prompt (the CLT never asks for it)."""
+    return clt if os.path.isfile(os.path.join(clt, "usr", "bin", "git")) else None
+
+
+def use_dev_dir():
+    """DEVELOPER_DIR = the Command Line Tools only when the selected developer folder fails (an Xcode whose license was
+    never accepted); a working Xcode stays in use, so the owner's builds keep its Swift."""
+    d = dev_dir()
+    if not d or "DEVELOPER_DIR" in os.environ:
+        return
+    try:
+        ok = subprocess.run(["/usr/bin/xcrun", "--find", "git"], capture_output=True, timeout=20).returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        ok = False
+    if not ok:
+        os.environ["DEVELOPER_DIR"] = d
+
+
+def jeb_dir():
+    return os.path.expanduser("~/.jeb")
+
+
+def tools_dir():
+    return os.environ.get("JEB_TOOLS_DIR") or os.path.join(jeb_dir(), "bin")
+
+
+def current_dir():
+    return os.path.join(jeb_dir(), "current")
+
+
+def versions_dir():
+    return os.path.join(jeb_dir(), "versions")
+
+
+def read_bundle(root):
+    """root/bundle.json as a dict (a release bundle), or None (a git clone)."""
+    try:
+        d = json.load(open(os.path.join(root, "bundle.json")))
+    except (OSError, ValueError):
+        return None
+    return d if isinstance(d, dict) else None
+
+
+def host_arch():
+    """arm64 or x86_64 by the hardware (a Rosetta shell reports x86_64 through platform.machine())."""
+    try:
+        r = subprocess.run(["/usr/sbin/sysctl", "-n", "hw.optional.arm64"], capture_output=True, text=True, timeout=10)
+        return "arm64" if r.returncode == 0 and r.stdout.strip() == "1" else "x86_64"
+    except (OSError, subprocess.TimeoutExpired):
+        return "x86_64"
+
+
+CPU_TYPES = {0x0100000c: "arm64", 0x01000007: "x86_64"}
+
+
+def macho_archs(path):
+    """The architectures of a Mach-O file as a set of arm64 / x86_64 (other CPUs are ignored); empty when unreadable.
+    Fat files (0xcafebabe, 0xcafebabf) are big-endian, thin 64-bit files (0xfeedfacf) little-endian."""
+    try:
+        with open(path, "rb") as f:
+            head = f.read(8)
+            if len(head) < 8:
+                return set()
+            magic = struct.unpack(">I", head[:4])[0]
+            if magic in (0xcafebabe, 0xcafebabf):
+                n, size = struct.unpack(">I", head[4:])[0], 20 if magic == 0xcafebabe else 32
+                if not 0 < n <= 20:
+                    return set()
+                body = f.read(n * size)
+                if len(body) < n * size:
+                    return set()
+                cpus = (struct.unpack(">I", body[i * size:i * size + 4])[0] for i in range(n))
+                return {CPU_TYPES[c] for c in cpus if c in CPU_TYPES}
+            c = struct.unpack("<I", head[4:])[0]
+            return {CPU_TYPES[c]} if struct.unpack("<I", head[:4])[0] == 0xfeedfacf and c in CPU_TYPES else set()
+    except OSError:
+        return set()
+
+
+def pin_python():
+    """A process started through ~/.jeb/current/python re-executes through the real versions/<tag> path, so a flip of `current`
+    (an update) never changes the interpreter or stdlib under it. A no-op everywhere else."""
+    cur, exe = current_dir() + os.sep, sys.executable
+    if not exe or not ((sys.prefix + os.sep).startswith(cur) or exe.startswith(cur)):
+        return
+    real = os.path.realpath(exe)
+    if real == exe:
+        return
+    os.execv(real, [real] + (["-I"] if sys.flags.isolated else []) + [os.path.realpath(sys.argv[0])] + sys.argv[1:])
+
+
+def _exe(p):
+    return os.path.isfile(p) and os.access(p, os.X_OK)
+
+
+def find_gh():
+    """Absolute path of gh: Jeb's own copy ($JEB_TOOLS_DIR or ~/.jeb/bin), Homebrew's, then anything on PATH."""
+    for p in (os.path.join(tools_dir(), "gh"), "/opt/homebrew/bin/gh", "/usr/local/bin/gh"):
+        if _exe(p):
+            return p
+    return shutil.which("gh", path=os.environ.get("PATH", "") + os.pathsep + SYS_PATH)
+
+
+def find_claude():
+    """Claude Code's CLI: on PATH, or where its installers put it."""
+    for p in (os.path.expanduser("~/.local/bin/claude"), os.path.expanduser("~/.claude/local/claude")):
+        if _exe(p):
+            return p
+    return shutil.which("claude")
 
 LABEL_PREFIX = "com.jeb.desktop"
 

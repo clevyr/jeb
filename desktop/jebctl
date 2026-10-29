@@ -6,7 +6,7 @@
                           (install, follow and the updater do this on their own; the old path stays as a link)
   doctor                  read-only health check: one line per check (ok / FIX with the fix), exit 1 on a problem
                           (JEB_NO_LAUNCHCTL=1 skips the launchctl queries: `skipped (sandbox)`)
-  install [--mode dev|release] [--repin] [--add-path] [--no-agents] [--dry-run] [--verbose]
+  install [--mode dev|release] [--repin] [--add-path] [--build-from-source] [--no-agents] [--dry-run] [--verbose]
                           one short line per step (--verbose: every command and detail). First build through
                           the updater's compile, smoke and start gates (refuses if one fails; updates and
                           releases keep all gates), the
@@ -20,27 +20,30 @@
                           tag is looked at. Then tags are fetched and the clone moves to the newest verified
                           tag (signed by a pinned signer, commit on origin's default branch); with no signer or
                           no verified tag it stays on the cloned commit. --repin replaces the pin (key rotation).
-                          The release's prebuilt app is used in place of the compile when it checks out
-                          (see follow); every gate still runs.
-                          Last, `jebctl` is linked into ~/.local/bin (JEB_BIN_DIR). When that folder is not on
-                          PATH: --add-path adds it to the shell profile (zsh ~/.zprofile, bash ~/.bash_profile,
-                          else ~/.profile; JEB_PROFILE; backup first); without it a terminal asks, else the
-                          line to add is printed. A different file already at that path is left alone.
+                          Release mode never compiles: the release's prebuilt app (and its detect and png2raw helpers)
+                          is used when it checks out (see follow); every gate still runs. With no verified prebuilt (no
+                          gh, not signed in to GitHub, no access, no asset, a hash mismatch) the install stops
+                          with a plain reason. --build-from-source (or JEB_ALLOW_BUILD=1) is the escape hatch: it
+                          compiles as dev mode does (needs the Command Line Tools).
+                          Last, `jebctl` is linked into ~/.local/bin (JEB_BIN_DIR); a different file already at that
+                          path is left alone. The PATH is optional: one line says to run ~/.local/bin/jebctl, and
+                          --add-path adds that folder to the shell profile (zsh ~/.zprofile, bash ~/.bash_profile,
+                          else ~/.profile; JEB_PROFILE; backup first).
                           --no-agents (sandbox only, used by ./release smoke): everything above up to the install-mode file and
                           the plists in JEB_HOME/launchd, but no hand-over, no copy into LaunchAgents, no launchctl,
                           no wait for the desktop, no jebctl link (each prints `skipped (--no-agents)`). Refused
                           unless HOME differs from the account's real home and the app, LaunchAgents and state
-                          folders are under HOME. JEB_CLONE (honoured only with --no-agents, and by `doctor` when
-                          JEB_NO_LAUNCHCTL=1) runs on that clone instead of this script's: its mod, updater and
-                          release-signers are used, this script's install logic. JEB_SMOKE_TAG selects that tag
-                          instead of the newest verified one (it must verify; a pre-release vX.Y.Z-rc.N tag needs
-                          JEB_ALLOW_RC=1), and with it the release's prebuilt app is mandatory: no prebuilt, no
-                          compile, the install fails with the reason.
+                          folders are under HOME. `follow`, `reload-agents` and `rollback` take it too (sandbox tests).
+                          Release bundle (<root>/bundle.json exists: ~/.jeb/versions/<tag>/ unpacked from a release zip): no git and no
+                          compile. The bundle's app is gated (smoke, headless start) and swapped in, ~/.jeb/current is pointed at the
+                          bundle, and the plists, the plugin entry and the ~/.local/bin link name only ~/.jeb/current paths. It runs with
+                          the bundle's own Python (python/bin/python3 -I). --build-from-source and --mode dev are refused.
   uninstall [--purge] [--dry-run] [--verbose]
                           one short line per step (--verbose: every command and detail). Bootout, remove the
                           plists and the app; versions and logs stay unless --purge (removes everything in JEB_HOME);
                           also the ~/.local/bin/jebctl link (only if it points here) and the PATH lines install added
-  follow [--gates-only] [--dry-run]
+  follow [--gates-only] [--quick] [--build-from-source] [--dry-run]
+                          (bundle layout, see below; this describes the git-clone layout.)
                           release mode: fetch tags, then take the newest unseen v* tag that is signed by a
                           pinned signer (JEB_HOME/release-signers; none pinned: nothing happens) and whose
                           commit is on origin's default branch; any other candidate is recorded as failed
@@ -51,23 +54,31 @@
                           or not on a v* tag. --gates-only stops after the gates. Log: JEB_HOME/release.log
                           Progress and the final result (and why a check did nothing) go to JEB_HOME/update-status.json,
                           which the menu bar shows; the menu's click file JEB_HOME/check-now is cleared at the start.
-                          The release's app (JebDesktop-<tag>-macos.zip, a universal binary) is downloaded with
-                          gh and used in place of the compile only when its SHA-256 equals the app-sha256 line
-                          in the signed tag message and it holds this Mac's architecture; anything else (no
-                          line, no gh, no asset, a mismatch) builds from source as before. The gates run on it.
+                          The release's app (JebDesktop-<tag>-macos.zip: JebDesktop, detect and png2raw, universal) is
+                          downloaded with gh (found by absolute path: ~/.jeb/bin, Homebrew, PATH) and used only when
+                          its SHA-256 equals the app-sha256 line in the signed tag message and it holds this Mac's
+                          architecture. Release mode never compiles: with no usable app the run stops with "app
+                          download failed; will retry" and the tag is NOT marked failed (the 6-hourly agent retries).
+                          --build-from-source (or JEB_ALLOW_BUILD=1) compiles instead. The gates run on the app.
   release [--bump auto|patch|minor|major] [--parity] [--dry-run]
                           owner side: the clone is clean and on the default branch, a signing key is
                           configured (user.signingkey), then `claude plugin validate mod`, `claude plugin
                           test mod`, a universal release build (and the parity gate with --parity on that
                           same binary), then a local signed tag v<version> whose message carries the SHA-256
                           of the app zip (JebDesktop-<tag>-macos.zip, written to .git/jeb-release-<tag>/ for
-                          ./release to attach). The version comes from the tags, as release-please does: no tag yet is
+                          ./release to attach; it holds JebDesktop plus the universal detect and png2raw helpers). The version comes from the tags, as release-please does: no tag yet is
                           1.0.0; else the last tag raised by --bump (default auto: the level from the
                           Conventional Commits since it; refuses when none is releasable). Only once every
                           check has passed is it written to mod/.claude-plugin/plugin.json and committed
                           ("chore(release): v<version>") before tagging. Release notes from the same commits go
                           to .git/jeb-release-notes-<tag>.md. Prints the push command; never pushes
-  rollback                put the newest saved version back (the running app hands over by itself)
+  rollback                put the newest saved version back (the running app hands over by itself). In bundle layout the
+                          previous good release (release-state `installed`) is downloaded again, gated and switched to,
+                          and the bad one is deleted; a failed download changes nothing
+  reload-agents [--wait-pid PID]
+                          hidden: wait for PID to exit, then bootout and bootstrap the release LaunchAgents (used after a
+                          clone converts to a bundle)
+  prune-versions [--wait-pid PID]  hidden: once PID exits, delete every ~/.jeb/versions folder except the one ~/.jeb/current points to
   screenshot [--dry-run]  save what the running app draws (SIGUSR2; one PNG per screen into ~/Pictures/Jeb, or
                           JEB_SHOT_DIR) and print the paths (from JEB_HOME/screenshot-last). Needs exactly one
                           running JebDesktop whose build has it; waits up to 10 s
@@ -96,14 +107,23 @@
 
 JEB_HOME (state root), JEB_SRC (the app source, default src/ beside this script), JEB_APP_DIR (default
 ~/Applications), JEB_LAUNCHAGENTS (default ~/Library/LaunchAgents), JEB_BIN_DIR (default ~/.local/bin), JEB_PROFILE and
-JEB_BACKUPS override the defaults, mostly for tests.
+JEB_BACKUPS and JEB_TOOLS_DIR (gh, default ~/.jeb/bin) override the defaults, mostly for tests. JEB_NO_LAUNCHCTL=1 (sandbox)
+skips the launchctl calls.
+Bundle layout, follow: the newest published release (gh release list) newer than the installed one is downloaded (manifest,
+signature, this Mac's zip), verified against the pinned signers for the `jeb-release` namespace, unpacked beside the live version, gated,
+then ~/.jeb/current is switched and the older folder removed (one version on disk). A git clone converts to this layout on its first
+release-mode follow when a bundle release exists; the clone is left on disk (release-state legacy_clone).
+In the git-clone layout DEVELOPER_DIR is set to the Command Line Tools only when the selected Xcode fails (its license never
+accepted), so that license never blocks git or xcrun; a working Xcode is left alone.
 The mod path rendered into the plists (JEB_MOD) is mod/ beside desktop/, from this script's own location.
 """
-import fcntl, glob, hashlib, importlib.util, json, os, plistlib, pwd, re, shutil, signal, subprocess, sys, tarfile, time
+import errno, fcntl, glob, hashlib, importlib.util, json, os, plistlib, pwd, re, shutil, signal, subprocess, sys, tarfile, time
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
-import jebhome
+import jebhome, plugdirs
 
+jebhome.pin_python()        # a process started through ~/.jeb/current runs from the real versions/<tag> folder
+jebhome.use_dev_dir()       # before anything runs git or xcrun: the Command Line Tools, never the Xcode license
 HOME = jebhome.resolve()
 APP_DIR = os.environ.get("JEB_APP_DIR") or os.path.expanduser("~/Applications")
 AGENTS = os.environ.get("JEB_LAUNCHAGENTS") or os.path.expanduser("~/Library/LaunchAgents")
@@ -113,14 +133,16 @@ CODE = os.path.dirname(os.path.realpath(__file__))      # realpath: `jebctl` may
 CLONE = os.path.dirname(CODE)
 MOD = os.path.join(CLONE, "mod")
 SRC = os.environ.get("JEB_SRC") or os.path.join(CODE, "src")
-# Sandbox only (./release smoke): --no-agents, no LaunchAgent, launchctl or PATH step; JEB_CLONE then names the clone to run on
+BUNDLE = jebhome.read_bundle(CLONE)         # a release bundle (versions/<tag>) has bundle.json at its root; a git clone does not
+LIVE = jebhome.current_dir()                # ~/.jeb/current: the only path LaunchAgents, settings.json and the app's JebMod name
+if BUNDLE:
+    MOD = os.path.join(LIVE, "mod")
+    SRC = os.environ.get("JEB_SRC") or os.path.join(LIVE, "desktop", "src")
+PY = [os.path.join(LIVE, "python", "bin", "python3"), "-I"] if BUNDLE else ["/usr/bin/python3", "-I"]     # what the plists run
+RUN = [sys.executable, "-I"]                # what jebctl runs as a child
+# Sandbox only (./release smoke): --no-agents, no LaunchAgent, launchctl or PATH step
 NO_AGENTS = "--no-agents" in sys.argv[1:]
-SMOKE_TAG = (os.environ.get("JEB_SMOKE_TAG") or None) if NO_AGENTS else None
-if os.environ.get("JEB_CLONE") and (NO_AGENTS or (sys.argv[1:2] == ["doctor"] and os.environ.get("JEB_NO_LAUNCHCTL") == "1")):
-    CLONE = os.path.realpath(os.environ["JEB_CLONE"])
-    CODE = os.path.join(CLONE, "desktop")
-    MOD = os.path.join(CLONE, "mod")
-    SRC = os.environ.get("JEB_SRC") or os.path.join(CODE, "src")
+NO_LAUNCHCTL = os.environ.get("JEB_NO_LAUNCHCTL") == "1"       # sandbox only: doctor skips the launchctl queries, follow only logs the reload
 ALL_LABELS = ("com.jeb.desktop", "com.jeb.desktop.watchdog", "com.jeb.desktop.update", "com.jeb.desktop.release")
 VERSIONS = MODE_FILE = RELEASE_STATE = RELEASE_LOG = SIGNERS = None
 
@@ -140,10 +162,10 @@ set_home(HOME)
 REPO_SIGNERS = os.path.join(CODE, "release-signers")        # shipped in the repo (ssh allowed_signers format)
 TAG_RE = re.compile(r"v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")    # SemVer releases; pre-release tags are never followed
 PLUGIN_JSON = os.path.join(MOD, ".claude-plugin", "plugin.json")   # the release writes its "version"; tags are the source
-SMOKE_TAG_RE = re.compile(TAG_RE.pattern + r"(-rc\.(0|[1-9]\d*))?")     # smoke only: a pre-release tag needs JEB_ALLOW_RC=1
 INITIAL_VERSION = "1.0.0"                                          # the first release, as release-please starts
 UID = os.getuid()
 DRY = False
+TOUCHED = False     # install_steps got past the gates and began rewriting plists and agents
 VERBOSE = True      # main() turns it off for install/uninstall unless --verbose; every other command keeps its output
 OPEN = False        # a step line ("  app ... ") is waiting for its result
 PATH = "/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin"
@@ -220,6 +242,11 @@ def mode():
     return m if m in ("dev", "release") else "dev"
 
 
+def layout():
+    """bundle: running from an unpacked release (versions/<tag>); clone: from a git clone."""
+    return "bundle" if BUNDLE else "clone"
+
+
 def labels_for(m):
     """dev ships local src edits (update agent); release follows tags (release agent), never local edits."""
     return tuple(l for l in ALL_LABELS if l != ("com.jeb.desktop.release" if m == "dev" else "com.jeb.desktop.update"))
@@ -227,7 +254,7 @@ def labels_for(m):
 
 def git(*a, **kw):
     try:
-        return subprocess.run(["git", "-C", CLONE] + list(a), capture_output=True, text=True, **kw)
+        return subprocess.run(["git", "-C", CLONE] + list(a), capture_output=True, text=True, env=dict(os.environ, GIT_TERMINAL_PROMPT="0"), **kw)
     except subprocess.TimeoutExpired:
         return subprocess.CompletedProcess(["git"] + list(a), 124, "", f"git {a[0] if a else ''} timed out")
 
@@ -244,10 +271,7 @@ def release_tags(*args):
 
 
 def head_tags():
-    """The release tags at HEAD; a smoke run (which may name a pre-release tag) asks for its own tag only."""
-    if SMOKE_TAG:
-        r = git("rev-parse", "--verify", "-q", "refs/tags/" + SMOKE_TAG + "^{commit}")
-        return [SMOKE_TAG] if r.returncode == 0 and r.stdout.strip() == git("rev-parse", "HEAD").stdout.strip() else []
+    """The release tags at HEAD."""
     return release_tags("--points-at", "HEAD")
 
 
@@ -305,8 +329,11 @@ def write_quit_marker():
 # ---- plists ----
 
 def plists(m):
-    py = ["/usr/bin/python3", "-I"]
+    py = PY
+    code = os.path.join(LIVE, "desktop") if BUNDLE else CODE        # a bundle's agents only ever name `current`
     env = {"PATH": PATH, "JEB_MOD": MOD, "JEB_SRC": SRC}
+    if os.environ.get("DEVELOPER_DIR") and not BUNDLE:
+        env["DEVELOPER_DIR"] = os.environ["DEVELOPER_DIR"]
     out = {
         "com.jeb.desktop": {
             "Label": "com.jeb.desktop",
@@ -322,7 +349,7 @@ def plists(m):
         },
         "com.jeb.desktop.watchdog": {
             "Label": "com.jeb.desktop.watchdog",
-            "ProgramArguments": py + [os.path.join(CODE, "watchdog.py")],
+            "ProgramArguments": py + [os.path.join(code, "watchdog.py")],
             "EnvironmentVariables": env,
             "StartInterval": 30,        # no RunAtLoad: at login the agent's own RunAtLoad start goes first
             "ProcessType": "Background",
@@ -331,7 +358,7 @@ def plists(m):
         },
         "com.jeb.desktop.update": {
             "Label": "com.jeb.desktop.update",
-            "ProgramArguments": py + [os.path.join(CODE, "updater.py")],
+            "ProgramArguments": py + [os.path.join(code, "updater.py")],
             "EnvironmentVariables": env,
             "WatchPaths": [SRC],
             "StartInterval": 300,       # a net for in-place edits, which do not always wake a WatchPaths job
@@ -344,7 +371,7 @@ def plists(m):
         },
         "com.jeb.desktop.release": {
             "Label": "com.jeb.desktop.release",
-            "ProgramArguments": py + [os.path.join(CODE, "jebctl"), "follow"],
+            "ProgramArguments": py + [os.path.join(code, "jebctl"), "follow"],
             "EnvironmentVariables": env,
             "RunAtLoad": True,
             "StartInterval": 21600,     # every 6 h
@@ -621,34 +648,60 @@ def cmd_doctor():
             return subprocess.run(cmd, capture_output=True, timeout=20).returncode == 0
         except (OSError, subprocess.TimeoutExpired):
             return False
+    m = mode()
+    FIX = (lambda dev: dev) if m == "dev" else (lambda dev: "ask Claude to repair Jeb (it re-runs the install)")
     check(sys.platform == "darwin", "macOS", "Jeb runs on macOS only")
-    check(ok_run(["xcode-select", "-p"]), "Xcode Command Line Tools", "run: xcode-select --install")
-    check(ok_run(["xcrun", "--find", "swiftc"]), "swiftc", "run: xcode-select --install")
-    check(os.access("/usr/bin/python3", os.X_OK), "/usr/bin/python3", "run: xcode-select --install")
-    check(bool(shutil.which("claude")), "claude on PATH", "install Claude Code")
-    check(bool(shutil.which("git")), "git", "run: xcode-select --install")
+    if BUNDLE:
+        check(live_valid(), f"{LIVE} resolves to a Jeb bundle", FIX(""))
+        check(ok_run([PY[0], "-I", "-c", "0"]), f"bundled Python runs ({PY[0]})", FIX(""))
+        vd = jebhome.versions_dir()
+        vs = [n for n in sorted(os.listdir(vd)) if os.path.isdir(os.path.join(vd, n))] if os.path.isdir(vd) else []
+        check(len(vs) <= 1, f"one version on disk ({', '.join(vs) or 'none'})", "run: jebctl follow (it removes the older folder), or ask Claude to repair Jeb")
+        lc = load_rstate().get("legacy_clone")
+        if lc and os.path.isdir(lc):
+            say(f"note  the old git clone {lc} is no longer used; it can be deleted")
+    else:
+        check(ok_run(["git", "--version"]), "git (Command Line Tools)", FIX("run: xcode-select --install") if m == "dev" else "the Command Line Tools are missing; ask Claude to repair Jeb")
+        if m == "dev":
+            check(ok_run(["xcrun", "--find", "swiftc"]), "swiftc", "run: xcode-select --install")
+        check(os.access("/usr/bin/python3", os.X_OK), "/usr/bin/python3", FIX("run: xcode-select --install"))
+    cl = jebhome.find_claude()
+    say(f"ok    claude found ({cl})" if cl else "note  claude was not found (Jeb works, but needs Claude Code to show in sessions)")
+    st = link_state()
     w = shutil.which("jebctl")
-    if not w:
-        check(False, "jebctl on PATH", "open a new terminal, or add ~/.local/bin to PATH (./install --add-path)")
+    if st == "ours":
+        check(True, f"jebctl command ({link_path()})")
+    elif not w:
+        check(False, "jebctl command", FIX(f"open a new terminal, or add {bin_dir()} to PATH (./install --add-path)"))
     elif is_me(w):
         check(True, f"jebctl on PATH ({w})")
     else:
-        check(False, f"jebctl on PATH is {w}", f"it runs {os.path.realpath(w)}, not this clone's {ME}; remove it or put {bin_dir()} first on PATH")
+        check(False, f"jebctl on PATH is {w}", FIX(f"it runs {os.path.realpath(w)}, not this clone's {ME}; remove it or put {bin_dir()} first on PATH"))
     # An install from before install-mode was recorded runs as dev, like mode() says.
-    m = mode()
     say(f"ok    install mode: {m}" + ("" if os.path.isfile(MODE_FILE) else " (not recorded; dev is assumed)"))
-    check(os.path.isdir(APP), f"app bundle {APP}", "run: ./install")
+    check(os.path.isdir(APP), f"app bundle {APP}", FIX("run: ./install"))
     try:
         jm = plistlib.load(open(os.path.join(APP, "Contents", "Info.plist"), "rb")).get("JebMod")
     except (OSError, plistlib.InvalidFileException, ValueError, AttributeError):
         jm = None
-    check(isinstance(jm, str) and os.path.isfile(os.path.join(jm, "hooks", "pixel-art.ts")), "app's mod folder (JebMod) has hooks/pixel-art.ts", "reinstall: ./install")
+    check(isinstance(jm, str) and os.path.isfile(os.path.join(jm, "hooks", "pixel-art.ts")), "app's mod folder (JebMod) has hooks/pixel-art.ts", FIX("reinstall: ./install"))
     for l in labels_for(m):
-        check(os.path.isfile(os.path.join(AGENTS, l + ".plist")), f"LaunchAgent plist {l}", "run: ./install")
+        check(os.path.isfile(os.path.join(AGENTS, l + ".plist")), f"LaunchAgent plist {l}", FIX("run: ./install"))
+        if BUNDLE:
+            try:
+                pa = plistlib.load(open(os.path.join(AGENTS, l + ".plist"), "rb"))
+                pv = pa.get("ProgramArguments") or []
+                paths = [x for x in pv if isinstance(x, str) and x.startswith("/")]
+                check(bool(paths) and all(os.path.exists(x) for x in paths), f"{l} ProgramArguments exist", FIX(""))
+                jm2 = (pa.get("EnvironmentVariables") or {}).get("JEB_MOD")
+                if jm2 is not None:
+                    check(jm2 == os.path.join(LIVE, "mod"), f"{l} JEB_MOD is {os.path.join(LIVE, 'mod')}", FIX(""))
+            except (OSError, ValueError, plistlib.InvalidFileException):
+                pass
         if os.environ.get("JEB_NO_LAUNCHCTL") == "1":
             say(f"skip  LaunchAgent loaded {l}: skipped (sandbox)")
         else:
-            check(ok_run(["launchctl", "print", f"gui/{UID}/{l}"]), f"LaunchAgent loaded {l}", "run: ./install")
+            check(ok_run(["launchctl", "print", f"gui/{UID}/{l}"]), f"LaunchAgent loaded {l}", FIX("run: ./install"))
     procs, beats = running(), beat_files()
     check(len(procs) == 1, f"exactly one JebDesktop running ({len(procs)})", "run: jebctl start (more than one: jebctl quit, then jebctl start)")
     for pid, _, _ in procs:
@@ -658,14 +711,12 @@ def cmd_doctor():
     check(not q, "no quit marker", "Quit was chosen from the menu; run: jebctl start")
     p = os.path.exists(os.path.join(HOME, "updates-paused"))
     check(not p, "updates not paused", "run: jebctl resume-updates")
-    sys.path.insert(0, CODE)
-    import plugdirs
     try:
         env_dirs = plugdirs.current(plugdirs.load(plugdirs.settings_path()))
     except SystemExit as e:
         env_dirs = None
         say(f"      {e}")
-    check(any(plugdirs.same(e, MOD) for e in (env_dirs or "").split(os.pathsep) if e.strip()), f"plugin registered in {plugdirs.settings_path()}", "run: ./install again")
+    check(any(plugdirs.same(e, MOD) for e in (env_dirs or "").split(os.pathsep) if e.strip()), f"plugin registered in {plugdirs.settings_path()}", FIX("run: ./install again"))
     store_dir = os.environ.get("JEB_STORE_DIR") or os.path.expanduser("~/.claude/plugins/store")
     stores = sorted(glob.glob(os.path.join(store_dir, "jeb_inline-*.json")))
     if check(bool(stores), "mod store file", "start a new Claude Code session so the plugin loads"):
@@ -682,15 +733,40 @@ def cmd_doctor():
         last = None
     check(last not in ("rolled-back", "rejected", "rollback-failed", "swap-failed"), f"last update result: {last or 'none'}", f"see {os.path.join(HOME, 'update.log')}; run: jebctl status")
     say(f"ok    state folder: {HOME}" + (" (older location; run: jebctl migrate)" if HOME == jebhome.old_path() and not os.environ.get("JEB_HOME") else ""))
-    say("ok    " + ("gh available: updates use the release's prebuilt app" if shutil.which("gh") else "gh not on PATH (optional): updates build from source"))
+    gh = jebhome.find_gh()
     if m == "release":
-        check(os.path.isfile(SIGNERS), "release signers pinned", "run: ./install --repin (needs desktop/release-signers in the clone)")
+        check(os.path.isfile(SIGNERS), "release signers pinned", FIX("run: ./install --repin (needs desktop/release-signers in the clone)"))
+        if BUNDLE and os.path.isfile(SIGNERS):
+            check(any((key_line(l) or (0, None))[1] and "jeb-release" in key_line(l)[1][1] for l in open(SIGNERS).read().splitlines()), "a pinned signer covers jeb-release", FIX(""))
+        if check(bool(gh), "gh (GitHub tool) found", FIX("")):
+            try:
+                r = subprocess.run([gh, "auth", "status"], capture_output=True, text=True, timeout=15)
+                text = r.stdout + r.stderr
+                if r.returncode == 0:
+                    check(True, "gh signed in to GitHub")
+                elif re.search(r"error connecting|dial tcp|no such host|timed? ?out|network|offline", text, re.I):
+                    say("skip  gh sign-in not checked: no network")
+                else:
+                    check(False, "gh signed in to GitHub", FIX(""))
+            except subprocess.TimeoutExpired:
+                say("skip  gh sign-in not checked: GitHub did not answer in 15 s")
+            except OSError:
+                check(False, "gh runs", FIX(""))
+    else:
+        say("ok    " + ("gh available: updates use the release's prebuilt app" if gh else "gh not found (optional): dev updates build from source"))
     say("all good" if not bad else f"{len(bad)} problem(s)")
     return 1 if bad else 0
 
 
 def release_line():
     m = mode()
+    rs = load_rstate()
+    if BUNDLE:
+        cur = (jebhome.read_bundle(LIVE) or BUNDLE).get("tag", "?")
+        last = rs.get("last")
+        chk = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(rs["checked"])) if rs.get("checked") else "never"
+        return (f"mode: {m}; bundle {cur}; signers {'pinned' if os.path.isfile(SIGNERS) else 'NOT pinned (no updates)'}; last release check {chk}"
+                + (f", last result {last['result']} {last['tag']}" if last else "") + (f"; failed tags: {', '.join(rs['failed'])}" if rs.get("failed") else ""))
     on = release_tags("--points-at", "HEAD")
     cur = on[-1] if on else ("branch " + (git("branch", "--show-current").stdout.strip() or "?") if git("symbolic-ref", "-q", "HEAD").returncode == 0 else "no release tag (detached)")
     rs = load_rstate()
@@ -776,12 +852,10 @@ def select_release():
             say(f"warning: could not fetch tags from origin ({r.stderr.strip()[:200]}); using the tags already here")
     base, rs = base_branch(), load_rstate()
     here = git("rev-parse", "HEAD").stdout.strip()
-    for t in ([SMOKE_TAG] if SMOKE_TAG else reversed(release_tags())):
+    for t in reversed(release_tags()):
         if t in rs.get("failed", []):
             continue
         sha, why = verify_tag(t, base)
-        if why and SMOKE_TAG:
-            raise SystemExit(f"{t} does not verify: {why}")
         if why:
             rlog(f"install: {t} rejected: {why}; it will not be retried")
             rs.setdefault("failed", []).append(t)
@@ -797,15 +871,13 @@ def select_release():
         if r.returncode != 0:
             raise SystemExit("git checkout failed: " + r.stderr.strip())
         return here
-    if SMOKE_TAG:
-        raise SystemExit(f"{SMOKE_TAG} was skipped as failed in an earlier run")
     say("release: no verified release tag; staying on the cloned commit, detached (updates start once a verified tag appears)")
     return None
 
 
 # ---- jebctl on PATH ----
 
-ME = os.path.join(CODE, "jebctl")                        # CODE is already a realpath
+ME = os.path.join(LIVE, "desktop", "bin", "jebctl") if BUNDLE else os.path.join(CODE, "jebctl")      # a bundle links the stable ~/.jeb/current path; CODE is already a realpath
 PATH_MARK = "# added by Jeb's ./install"
 
 
@@ -825,35 +897,38 @@ def is_me(path):
         return False
 
 
-def link_state():
-    """none | ours | older (a link to another Jeb clone's desktop/jebctl) | foreign (anything else: leave it)."""
-    p = link_path()
+def link_state(target=None):
+    """none | ours | older (a link to another Jeb clone's or bundle's desktop/jebctl) | foreign (anything else: leave it)."""
+    p, target = link_path(), target or ME
     if not os.path.lexists(p):
         return "none"
     if not os.path.islink(p):
         return "foreign"
     r = os.path.realpath(p)
-    if is_me(p):
+    if os.path.realpath(target) == r or (target is ME and is_me(p)):
         return "ours"
-    return "older" if os.path.basename(r) == "jebctl" and os.path.basename(os.path.dirname(r)) == "desktop" else "foreign"
+    d = os.path.basename(os.path.dirname(r))
+    up = os.path.basename(os.path.dirname(os.path.dirname(r)))
+    return "older" if os.path.basename(r) == "jebctl" and (d == "desktop" or (d == "bin" and up == "desktop")) else "foreign"
 
 
-def link_jebctl():
-    """Link ~/.local/bin/jebctl to this jebctl. True when it is (or, in a dry run, would be) ours."""
-    p, st = link_path(), link_state()
+def link_jebctl(target=None):
+    """Link ~/.local/bin/jebctl to this jebctl (or target). True when it is (or, in a dry run, would be) ours."""
+    p, st = link_path(), link_state(target)
+    target = target or ME
     if st == "ours":
         detail(f"{p} already points here")
         return True
     if st == "foreign":
         say(f"warning: {p} exists and is not a link to a Jeb jebctl; left alone, so `jebctl` is not set up (run {ME})")
         return False
-    detail(f"link {p} -> {ME}" + (f" (replaces the link to {os.path.realpath(p)})" if st == "older" else ""))
+    detail(f"link {p} -> {target}" + (f" (replaces the link to {os.path.realpath(p)})" if st == "older" else ""))
     if not DRY:
         os.makedirs(bin_dir(), mode=0o755, exist_ok=True)
         tmp = p + ".tmp"
         if os.path.lexists(tmp):
             os.unlink(tmp)
-        os.symlink(ME, tmp)
+        os.symlink(target, tmp)
         os.replace(tmp, p)
     return True
 
@@ -931,17 +1006,10 @@ def path_step(add):
     if on_path(d):
         detail(f"{d} is on PATH")
         return
-    prof = profile_path()
-    shown = d.replace(os.path.expanduser("~"), "~", 1)
     if add:
         add_to_profile()
-    elif sys.stdin.isatty() and sys.stdout.isatty() and not DRY:
-        if input(f"Add {shown} to your PATH in {prof}? [y/N] ").strip().lower() in ("y", "yes"):
-            add_to_profile()
-        else:
-            say(f"not added; to add it later, put this in {prof}: {export_line()}")
     else:
-        say(f"{shown} is not on PATH; add this line to {prof} (or run ./install --add-path):\n  {export_line()}")
+        say("Run Jeb's tool as " + d.replace(os.path.expanduser("~"), "~", 1) + "/jebctl")
 
 
 def unlink_jebctl():
@@ -980,7 +1048,79 @@ def cmd_install(args):
         raise
 
 
+def install_bundle(args):
+    """Install from an unpacked release bundle (~/.jeb/versions/<tag>): no git, no compile; the prebuilt app is gated and swapped in,
+    then ~/.jeb/current points at the bundle and the plists, the plugin entry and the jebctl link use only that path."""
+    if "--mode" in args and args[args.index("--mode") + 1:][:1] != ["release"]:
+        raise SystemExit("a release bundle only installs in release mode")
+    if allow_build(args):
+        raise SystemExit("a release bundle never compiles: --build-from-source is for the git clone")
+    vd = jebhome.versions_dir()
+    if os.path.realpath(os.path.dirname(CLONE)) != os.path.realpath(vd):
+        raise SystemExit(f"run install from the unpacked bundle in {vd}/<tag>, as the README says")
+    tag = BUNDLE.get("tag")
+    lead("signers")
+    migrate_home()
+    os.makedirs(HOME, mode=0o700, exist_ok=True)
+    pin_signers("--repin" in args)
+    widen_signers(os.path.join(CODE, "release-signers"))
+    fin("ok")
+    lead("app")
+    why = check_app(os.path.join(CLONE, "app")) if not DRY else None
+    if why:
+        raise SystemExit(f"the bundle's app is unusable: {why}\nNothing was installed or changed.")
+    detail("1. gates and first start through the updater (prebuilt app, never compiled)")
+    t0 = time.time()
+    old_mod = None
+    try:
+        old_mod = plistlib.load(open(os.path.join(AGENTS, "com.jeb.desktop.plist"), "rb"))["EnvironmentVariables"].get("JEB_MOD")
+    except (OSError, KeyError, ValueError, plistlib.InvalidFileException):
+        pass
+    if DRY:
+        detail(f"$ {RUN[0]} -I {CODE}/updater.py --force --no-watch --quick --prebuilt {CLONE}/app/JebDesktop --no-compile")
+        detail(f"{LIVE} -> versions/{tag}")
+    else:
+        lock = open(os.path.join(HOME, "release.lock"), "w")
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            raise SystemExit("an update is running; try again in a few minutes")
+        prev = flip_current(CLONE)
+        env = dict(os.environ, JEB_HOME=HOME, JEB_MOD=os.path.join(LIVE, "mod"), JEB_BUNDLE_MOD=os.path.join(LIVE, "mod"), JEB_APP_DIR=APP_DIR)
+        r = subprocess.run(RUN + [os.path.join(CODE, "updater.py"), "--force", "--no-watch", "--quick", "--prebuilt", os.path.join(CLONE, "app", "JebDesktop"), "--no-compile"], env=env, **({} if VERBOSE else {"capture_output": True, "text": True}))
+        if r.returncode != 0 or not os.path.isdir(APP):
+            tail = open(os.path.join(HOME, "update.log")).read().splitlines()[-6:] if os.path.exists(os.path.join(HOME, "update.log")) else []
+            if not tail and not VERBOSE:
+                tail = (r.stdout + r.stderr).strip().splitlines()[-6:]
+            try:
+                if prev:
+                    flip_current(prev)
+                else:
+                    os.unlink(LIVE)
+            except OSError:
+                pass
+            raise SystemExit("a gate failed; nothing installed.\n" + "\n".join(tail))
+    fin("skipped (dry run)" if DRY else f"ok (prebuilt {tag}, {time.time() - t0:.0f}s)")
+    if not DRY:
+        with open(MODE_FILE, "w") as f:
+            f.write("release\n")
+        rs = load_rstate()
+        rs.update({"layout": "bundle", "last": {"at": int(time.time()), "tag": tag, "result": "ok", "app": "prebuilt"}})
+        if not any(e.get("tag") == tag for e in rs.get("installed", [])):
+            u = load_updater()
+            u.set_home(HOME)
+            record_installed(rs, tag, u)
+        if old_mod and os.path.realpath(old_mod) != os.path.realpath(os.path.join(LIVE, "mod")):
+            rs["legacy_mod"] = old_mod
+        save_rstate(rs)
+    finish_install("release", args)
+    if not DRY:
+        prune_versions()
+
+
 def install_steps(args):
+    if BUNDLE:
+        return install_bundle(args)
     migrate_home()      # first: everything below reads and writes the state folder
     m = mode()
     if "--mode" in args:
@@ -989,7 +1129,7 @@ def install_steps(args):
         except IndexError:
             m = ""
         if m not in ("dev", "release"):
-            raise SystemExit("usage: jebctl install [--mode dev|release] [--repin] [--add-path] [--no-agents] [--dry-run] [--verbose]")
+            raise SystemExit("usage: jebctl install [--mode dev|release] [--repin] [--add-path] [--build-from-source] [--no-agents] [--dry-run] [--verbose]")
     detail(f"mode: {m}")
     back = None
     if m == "release":
@@ -997,24 +1137,31 @@ def install_steps(args):
         back = select_release()
     lead("app")
     app, pre, tag = None, [], None
+    build = m == "dev" or allow_build(args)         # release mode compiles only on request
+    why = []
     if m == "release" and os.path.isfile(SIGNERS):
         on = head_tags()
         if on and verify_tag(on[-1], base_branch())[1] is None:
             tag = on[-1]
-            why = []
             if DRY:
-                detail(f"app: would use {app_name(on[-1])} from the release in place of the compile when its hash matches the app-sha256 line in the tag; else the compile")
+                detail(f"app: would use {app_name(on[-1])} (JebDesktop, detect, png2raw) from the release when its hash matches the app-sha256 line in the tag" + ("; else the compile" if build else "; else stop (release mode never compiles)"))
             else:
-                app = fetch_app(tag, lambda m: (why.append(m), detail(m)))
+                app = fetch_app(tag, lambda m: (why.append(m), detail(m)), build)
                 pre = ["--prebuilt", app] if app else []
-                if SMOKE_TAG and not app:       # a smoke run exists to prove the prebuilt path; no silent compile
-                    raise SystemExit("the release's prebuilt app was not used (it would have been built from source): " + (why[-1] if why else "no reason logged"))
-    detail("1. first build through the updater (compile, smoke, headless start)")
+        else:
+            why.append("no verified Jeb release was found to install (the clone is not on a release tag signed by a pinned signer); try again later")
+    elif m == "release":
+        why.append("no signing keys are pinned, so no release can be trusted (the clone has no desktop/release-signers); ask Claude to repair Jeb")
+    if m == "release" and not build and not app and not DRY:
+        if back:
+            git("checkout", "--detach", back)
+        raise SystemExit("could not get the Jeb app to install: " + (why[-1].removeprefix("app: ") if why else "no reason logged") + "\nNothing was installed or changed.")
+    detail("1. first build through the updater (" + ("compile" if build else "prebuilt app, never compiled") + ", smoke, headless start)")
     t0 = time.time()
     if DRY:
-        detail(f"$ python3 -I {CODE}/updater.py --force --no-watch --quick")
+        detail(f"$ python3 -I {CODE}/updater.py --force --no-watch --quick" + ("" if build else " --no-compile"))
     else:
-        r = subprocess.run(["/usr/bin/python3", "-I", os.path.join(CODE, "updater.py"), "--force", "--no-watch", "--quick"] + pre, env=dict(os.environ, JEB_HOME=HOME, JEB_MOD=MOD, JEB_APP_DIR=APP_DIR), **({} if VERBOSE else {"capture_output": True, "text": True}))
+        r = subprocess.run(RUN + [os.path.join(CODE, "updater.py"), "--force", "--no-watch", "--quick"] + pre + ([] if build else ["--no-compile"]), env=dict(os.environ, JEB_HOME=HOME, JEB_MOD=MOD, JEB_APP_DIR=APP_DIR), **({} if VERBOSE else {"capture_output": True, "text": True}))
         if app:
             shutil.rmtree(os.path.dirname(os.path.dirname(app)), ignore_errors=True)
         if r.returncode != 0 or not os.path.isdir(APP):
@@ -1036,6 +1183,13 @@ def install_steps(args):
             r = git("checkout", "--detach", "HEAD")
             if r.returncode != 0:
                 say(f"warning: could not detach the clone from its branch ({r.stderr.strip()[:200]}); follow will skip until it is")
+    finish_install(m, args)
+
+
+def finish_install(m, args):
+    """Plists, the LaunchAgents, the desktop wait and the jebctl link: the part of an install both layouts share."""
+    global TOUCHED
+    TOUCHED = not DRY       # from here the agents and plists change (nothing is rolled back from here)
     lead("LaunchAgents")
     detail("2. plists")
     write_plists(os.path.join(HOME, "launchd"), m)
@@ -1127,6 +1281,20 @@ def cmd_uninstall(purge):
         if not DRY:
             os.unlink(old)
     unlink_jebctl()
+
+
+# ---- the live bundle: ~/.jeb/current -> versions/<tag> ----
+
+def same_dir(a, b):
+    try:
+        return os.path.samefile(a, b)
+    except OSError:
+        return False
+
+
+def scrubbed_env():
+    """The environment for a child that outlives follow: no pointer at follow's staging copy."""
+    return {k: v for k, v in os.environ.items() if k not in ("JEB_MOD", "JEB_SRC", "JEB_BUNDLE_MOD")}
 
 
 # ---- releases ----
@@ -1234,52 +1402,90 @@ def app_name(tag):
     return f"JebDesktop-{tag}-macos.zip"
 
 
-def fetch_app(tag, log=say):
-    """The release's prebuilt binary, or None (and why, through log). Call only for a tag verify_tag accepted: the
-    download is trusted only when its SHA-256 equals the app-sha256 line in that signed tag's message."""
+HELPERS = ("detect", "png2raw")        # the gate helpers the release zip carries beside JebDesktop (updater.GATE_TOOLS)
+
+
+def allow_build(args):
+    """Release mode never compiles unless asked: --build-from-source or JEB_ALLOW_BUILD=1."""
+    return "--build-from-source" in args or os.environ.get("JEB_ALLOW_BUILD") == "1"
+
+
+def gh_reason(err, gh):
+    """A plain reason for a failed gh call."""
+    if re.search(r"saml|sso|auth login|not logged|authentication|GH_TOKEN|gh auth|HTTP 40[13]", err, re.I):
+        return f"GitHub sign-in needed: run `{gh} auth login --hostname github.com --git-protocol https --web`, or ask Claude to repair Jeb"
+    if re.search(r"HTTP 404|not found", err, re.I):
+        return "GitHub did not show the release (404): this GitHub account may not have access to clevyr/jeb"
+    return "the download from GitHub failed (" + err.strip()[:150] + ")"
+
+
+def fetch_app(tag, log=say, build=True):
+    """The release's prebuilt JebDesktop, or None (and why, through log). Its helpers (detect, png2raw) sit beside it, where
+    updater.py --prebuilt picks them up; an older release's zip has the binary only. Call only for a tag verify_tag
+    accepted: the download is trusted only when its SHA-256 equals the app-sha256 line in that signed tag's message.
+    build: the caller compiles instead when this returns None (changes only the wording)."""
     name = app_name(tag)
+    then = "; building from source" if build else ""
+    def no(why):
+        log(f"app: {why}{then}")
     msg = git("cat-file", "tag", "refs/tags/" + tag).stdout.split("\n\n", 1)[-1]
     m = re.search(r"^app-sha256: ([0-9a-f]{64}) (\S+)$", msg, re.M)
     if not m or m.group(2) != name:
-        log(f"app: {tag} has no app-sha256 line; building from source"); return None
+        no(f"{tag} has no app-sha256 line"); return None
     want = m.group(1)
-    if not shutil.which("gh"):
-        log("app: gh is not on PATH; building from source"); return None
+    gh = jebhome.find_gh()
+    if not gh:
+        no("GitHub's gh tool was not found (ask Claude to repair Jeb, it installs it)"); return None
     url = git("remote", "get-url", "origin").stdout.strip()
     r = re.search(r"github\.com[:/]([^/\s]+/[^/\s]+?)(?:\.git)?/?$", url)
     if not r:
-        log(f"app: origin is not a GitHub repo ({url[:80]}); building from source"); return None
+        no(f"origin is not a GitHub repo ({url[:80]})"); return None
     dest = os.path.join(HOME, "staging", tag + "-app")
     shutil.rmtree(dest, ignore_errors=True)
     os.makedirs(dest, mode=0o700)
     zp = os.path.join(dest, name)
     try:
-        p = subprocess.run(["gh", "release", "download", tag, "-R", r.group(1), "-p", name, "-D", dest, "--clobber"], capture_output=True, text=True, timeout=300)
+        p = subprocess.run([gh, "release", "download", tag, "-R", r.group(1), "-p", name, "-D", dest, "--clobber"], capture_output=True, text=True, timeout=300, env=dict(os.environ, GH_PROMPT_DISABLED="1"))
     except (OSError, subprocess.TimeoutExpired) as e:
-        log(f"app: download failed ({type(e).__name__}); building from source"); return None
+        no(f"download failed ({type(e).__name__})"); return None
     if p.returncode != 0 or not os.path.isfile(zp):
-        log(f"app: no {name} to download ({p.stderr.strip()[:150]}); building from source"); return None
+        no(gh_reason(p.stderr + p.stdout, gh)); return None
     h = hashlib.sha256()
     with open(zp, "rb") as f:
         for chunk in iter(lambda: f.read(1 << 20), b""):
             h.update(chunk)
     if h.hexdigest() != want:
         os.unlink(zp)
-        log(f"app: {name} does not match the signed hash; discarded, building from source"); return None
+        no(f"{name} does not match the signed hash; discarded"); return None
     out = os.path.join(dest, "out")
     binary = os.path.join(out, "JebDesktop")
     if subprocess.run(["ditto", "-x", "-k", zp, out], capture_output=True).returncode != 0 or not os.path.isfile(binary):
-        log(f"app: could not unpack {name}; building from source"); return None
-    subprocess.run(["xattr", "-c", binary], capture_output=True)
-    arch = os.uname().machine
-    la = subprocess.run(["lipo", "-archs", binary], capture_output=True, text=True)
-    if la.returncode != 0 or arch not in la.stdout.split():
-        log(f"app: the binary is not built for {arch} ({la.stdout.strip() or 'unreadable'}); building from source"); return None
-    log(f"app: {name} matches the signed hash; using it in place of a build")
+        no(f"could not unpack {name}"); return None
+    have = [n for n in HELPERS if os.path.isfile(os.path.join(out, n))]
+    if have and len(have) != len(HELPERS):
+        no(f"{name} holds only part of the helper tools ({', '.join(have)})"); return None
+    arch = jebhome.host_arch()
+    for n in ("JebDesktop",) + tuple(have):
+        f = os.path.join(out, n)
+        subprocess.run(["xattr", "-c", f], capture_output=True)
+        os.chmod(f, 0o755)
+        got = jebhome.macho_archs(f)
+        if arch not in got:
+            no(f"{n} is not built for {arch} ({' '.join(sorted(got)) or 'unreadable'})"); return None
+    log(f"app: {name} matches the signed hash; using it in place of a build" + ("" if have else " (this release's zip has no helper tools)"))
     return binary
 
 
-def cmd_follow(gates_only):
+def live_valid():
+    """True when ~/.jeb/current resolves to a bundle with its Python and jebctl."""
+    return all(os.path.isfile(os.path.join(LIVE, *p)) for p in (("bundle.json",), ("python", "bin", "python3"), ("desktop", "jebctl")))
+
+
+def cmd_follow(args):
+    gates_only = "--gates-only" in args
+    if not BUNDLE and load_rstate().get("layout") == "bundle" and live_valid() and not DRY:
+        py = os.path.join(LIVE, "python", "bin", "python3")      # converted: the bundle follows from now on, this clone is only a leftover
+        os.execv(py, [py, "-I", os.path.join(LIVE, "desktop", "jebctl")] + sys.argv[1:])
     if not os.path.exists(os.path.join(HOME, "updates-paused")):
         migrate_home()      # before the lock below: migrate takes release.lock itself
     os.makedirs(HOME, mode=0o700, exist_ok=True)
@@ -1296,19 +1502,23 @@ def cmd_follow(gates_only):
         u._ST["clicked"] = True
     except OSError:
         pass
+    final = []
     def S(phase, detail="", result=None):
+        if phase == "done":
+            final.append(result)
         if not DRY:
             u.status(phase, detail[:160] if phase == "done" else detail, result=result)
     try:
         S("checking")
-        return follow(gates_only, u, S)
+        rc = follow_bundle(gates_only, u, S, "--quick" in args) if BUNDLE else follow(gates_only, u, S, allow_build(args), "--quick" in args)
     except BaseException as e:
         if not u._ST["finished"]:
             S("done", f"{type(e).__name__}: {e}", "error")
         raise
+    return rc
 
 
-def follow(gates_only, u, S):
+def follow(gates_only, u, S, build=False, quick=False):
     """cmd_follow after the lock; every return writes the final status."""
     def stop(why, result="error"):
         S("done", why, result)
@@ -1318,6 +1528,8 @@ def follow(gates_only, u, S):
         rlog("follow: updates are paused; skipping"); stop("updates are paused"); return 0
     if not os.path.isfile(SIGNERS):
         rlog(f"follow: no pinned release signers ({SIGNERS}); not updating (install from a clone that ships desktop/release-signers)"); stop("no pinned release signers"); return 0
+    if not gates_only and not DRY and convert_clone(u, S, quick):
+        return 0        # now a release bundle; the clone below is only used when that did not work
     if git("status", "--porcelain", "-uno").stdout.strip():
         rlog("follow: the clone has local changes; skipping"); stop("the clone has local changes"); return 0
     if git("symbolic-ref", "-q", "HEAD").returncode == 0:
@@ -1367,12 +1579,12 @@ def follow(gates_only, u, S):
         stop(f"no verified release newer than {here}", "up-to-date")
         return 0
     src, mod = os.path.join(staged, "desktop", "src"), os.path.join(staged, "mod")
-    args = ["--force", "--src", src] + (["--gates-only"] if gates_only else [])
+    args = ["--force", "--src", src] + (["--gates-only"] if gates_only else []) + (["--quick"] if quick else [])
     if DRY:
         say(f"{tag} ({sha[:12]}) is signed by a pinned signer and on origin/{base}")
         say(f"$ git -C {CLONE} archive --format=tar {sha} desktop mod   (members checked, extracted into {staged})")
         say(f"$ JEB_MOD={mod} JEB_SRC={src} updater.py {' '.join(args)}   (compile, smoke, parity, day, start gates)")
-        say(f"app: would use {app_name(tag)} from the release in place of the compile when its hash matches the app-sha256 line in the tag; else the compile")
+        say(f"app: would use {app_name(tag)} (JebDesktop, detect, png2raw) from the release when its hash matches the app-sha256 line in the tag; " + ("else the compile" if build else "else stop with `app download failed; will retry` (release mode never compiles)"))
         if not gates_only:
             say(f"on a pass: git -C {CLONE} checkout --detach {sha}; install the build; watch; on failure git checkout --detach {cur_sha} ({here}) and restore the previous bundle")
         return 0
@@ -1380,9 +1592,16 @@ def follow(gates_only, u, S):
     # after the update, and the clone is checked out to the same SHA before the bundle is installed)
     os.environ["JEB_MOD"], os.environ["JEB_SRC"], os.environ["JEB_BUNDLE_MOD"] = mod, src, MOD
     S("downloading app")
-    app = fetch_app(tag, rlog)
+    app = fetch_app(tag, rlog, build)
     if app:
         args += ["--prebuilt", app]
+    elif not build:         # not the tag's fault: it is not marked failed, and the next run tries again
+        for d in (staged, os.path.join(HOME, "staging", tag + "-app")):
+            shutil.rmtree(d, ignore_errors=True)
+        rlog(f"follow: could not get the app for {tag}; will try again later")
+        stop("app download failed; will retry"); return 0
+    if not build:
+        args += ["--no-compile"]
     moved = []
     def checkout():
         r = git("checkout", "--detach", sha)
@@ -1422,6 +1641,489 @@ def follow(gates_only, u, S):
         if d != tag or rc == 0:         # a failed one stays for a look; older ones go
             shutil.rmtree(os.path.join(HOME, "staging", d), ignore_errors=True)
     return 0 if rc in (0, 2, 3) else 1
+
+
+# ---- release bundles: versions/<tag> unpacked beside the live one, `current` flipped after the gates ----
+
+def check_app(d):
+    """None when every binary of the unpacked app folder (JebDesktop, detect, png2raw) holds this Mac's architecture; they are
+    made executable and stripped of extended attributes. Else the reason."""
+    arch = jebhome.host_arch()
+    for n in ("JebDesktop",) + HELPERS:
+        f = os.path.join(d, n)
+        if not os.path.isfile(f):
+            return f"{n} is missing"
+        got = jebhome.macho_archs(f)
+        if arch not in got:
+            return f"{n} is not built for {arch} ({' '.join(sorted(got)) or 'unreadable'})"
+        os.chmod(f, 0o755)
+        subprocess.run(["xattr", "-c", f], capture_output=True)
+    return None
+
+
+def key_line(line):
+    """(blob, namespaces list or None, token index of the option field or None) of an allowed_signers line; None for a comment."""
+    t = line.split()
+    if not t or t[0].startswith("#"):
+        return None
+    i = next((k for k, x in enumerate(t) if k and x.startswith(("ssh-", "ecdsa-", "sk-"))), None)
+    if i is None or i + 1 >= len(t):
+        return None
+    ns = None
+    for k in range(1, i):
+        m = re.fullmatch(r'namespaces="([^"]*)"', t[k])
+        if m:
+            ns = (k, [x for x in m.group(1).split(",") if x])
+    return t[i + 1], ns
+
+
+def widen_signers(src):
+    """A key that is already pinned (JEB_HOME/release-signers) gets the namespaces src (a shipped desktop/release-signers) lists for
+    it, added to its own, so an old pin signed for `git` also covers `jeb-release`. Never adds a key. True when the file changed."""
+    try:
+        want = {}
+        for l in open(src).read().splitlines():
+            k = key_line(l)
+            if k and k[1]:
+                want[k[0]] = k[1][1]
+        lines = open(SIGNERS).read().splitlines()
+    except OSError:
+        return False
+    out, changed = [], False
+    for l in lines:
+        k = key_line(l)
+        if k and k[1] and k[0] in want:
+            ns = k[1][1] + [x for x in want[k[0]] if x not in k[1][1]]
+            if ns != k[1][1]:
+                t = l.split()
+                t[k[1][0]] = 'namespaces="' + ",".join(ns) + '"'
+                l, changed = " ".join(t), True
+        out.append(l)
+    if changed:
+        detail(f"signers: widened the namespaces in {SIGNERS}")
+        if not DRY:
+            tmp = SIGNERS + ".tmp"
+            fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            with os.fdopen(fd, "w") as f:
+                f.write("\n".join(out) + "\n")
+            os.replace(tmp, SIGNERS)
+    return changed
+
+
+def flip_current(target):
+    """Point ~/.jeb/current at target (a relative link when it sits in versions/); atomic. Returns the previous target as an
+    absolute path, or None when there was none."""
+    cur, vd = jebhome.current_dir(), jebhome.versions_dir()
+    if os.path.lexists(cur) and not os.path.islink(cur):
+        raise OSError(f"{cur} is not a link; left alone")
+    prev = None
+    if os.path.islink(cur):
+        prev = os.readlink(cur)
+        prev = prev if os.path.isabs(prev) else os.path.join(os.path.dirname(cur), prev)
+    link = os.path.join("versions", os.path.basename(target)) if os.path.realpath(os.path.dirname(target)) == os.path.realpath(vd) else target
+    tmp = cur + ".new"
+    if os.path.lexists(tmp):
+        os.unlink(tmp)
+    os.makedirs(os.path.dirname(cur), mode=0o755, exist_ok=True)
+    os.symlink(link, tmp)
+    os.replace(tmp, cur)
+    return prev
+
+
+def prune_versions():
+    """The one-version rule: only the folder `current` points to stays in ~/.jeb/versions, and no .*.partial leftover. The folder
+    this process runs from stays until the next run (follow starts with this); nothing goes while current does not resolve."""
+    vd = jebhome.versions_dir()
+    live = os.path.realpath(LIVE) if os.path.isdir(LIVE) else None
+    me = os.path.realpath(CLONE) if BUNDLE else None
+    for n in sorted(os.listdir(vd)) if os.path.isdir(vd) else []:
+        p = os.path.join(vd, n)
+        if n.startswith(".") and n.endswith(".partial"):
+            pass
+        elif live is None or os.path.realpath(p) == live:
+            continue
+        elif os.path.realpath(p) == me:
+            detail(f"versions: {n} is this process's own folder; it goes once this run exits")
+            continue
+        detail(f"versions: removing {n}")
+        if not DRY:
+            shutil.rmtree(p, ignore_errors=True) if os.path.isdir(p) and not os.path.islink(p) else os.unlink(p)
+
+
+def prune_now():
+    """prune_versions, then a detached run from the live version that removes this process's own (old) folder once this
+    process has exited (deleting it under a running interpreter would break its later imports), so a finished update leaves
+    exactly one folder."""
+    prune_versions()
+    me, live = os.path.realpath(CLONE) if BUNDLE else None, os.path.realpath(LIVE)
+    if me and me != live and os.path.isdir(live) and live_valid():
+        subprocess.Popen([os.path.join(LIVE, "python", "bin", "python3"), "-I", os.path.join(LIVE, "desktop", "jebctl"), "prune-versions", "--wait-pid", str(os.getpid())], env=scrubbed_env(), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+
+
+def release_repo():
+    """owner/name of the GitHub repo releases come from: the bundle's, else origin's, else clevyr/jeb."""
+    if BUNDLE and BUNDLE.get("repo"):
+        return BUNDLE["repo"]
+    r = re.search(r"github\.com[:/]([^/\s]+/[^/\s]+?)(?:\.git)?/?$", git("remote", "get-url", "origin").stdout.strip())
+    return r.group(1) if r else "clevyr/jeb"
+
+
+def verify_manifest(manifest, sig, tag):
+    """None when the manifest is signed for `jeb-release` by a pinned signer and names this tag; else the reason."""
+    if not os.path.isfile(SIGNERS):
+        return "no signers are pinned"
+    r = subprocess.run(["ssh-keygen", "-Y", "find-principals", "-s", sig, "-f", SIGNERS], capture_output=True, text=True)
+    who = r.stdout.split()
+    if r.returncode != 0 or not who:
+        return "the manifest is not signed by a pinned signer"
+    for p in who:
+        with open(manifest, "rb") as f:
+            v = subprocess.run(["ssh-keygen", "-Y", "verify", "-f", SIGNERS, "-I", p, "-n", "jeb-release", "-s", sig], stdin=f, capture_output=True, text=True)
+        if v.returncode == 0:
+            break
+    else:
+        return "the manifest signature does not verify for jeb-release: " + (v.stderr.strip().splitlines() or ["?"])[-1][:150]
+    try:
+        doc = json.load(open(manifest))
+    except (OSError, ValueError):
+        return "the manifest is not valid JSON"
+    if not isinstance(doc, dict) or doc.get("tag") != tag:
+        return f"the signed manifest names {doc.get('tag') if isinstance(doc, dict) else '?'}, not {tag} (replayed)"
+    return None
+
+
+def fetch_bundle(tag, log=say):
+    """Download, verify and unpack release `tag` into ~/.jeb/versions/<tag>. Returns (path, None), or (None, (why, permanent)):
+    permanent (a bad signature, tag, hash, size or content) means the tag is never retried; network, sign-in or a missing asset
+    retries later. Nothing is left half-done: the unpack goes to versions/.<tag>.partial and is renamed last."""
+    arch, repo, gh = jebhome.host_arch(), release_repo(), jebhome.find_gh()
+    if not gh:
+        return None, ("GitHub's gh tool was not found (ask Claude to repair Jeb, it installs it)", False)
+    vd = jebhome.versions_dir()
+    dl, part, final = os.path.join(HOME, "staging", tag + "-dl"), os.path.join(vd, f".{tag}.partial"), os.path.join(vd, tag)
+    man, zname = f"Jeb-{tag}-manifest.json", f"Jeb-{tag}-macos-{arch}.zip"
+    def done(res):
+        for d in (dl, part):
+            shutil.rmtree(d, ignore_errors=True)
+        return res
+    def bad(why):
+        return done((None, (why, True)))
+    shutil.rmtree(dl, ignore_errors=True)
+    os.makedirs(dl, mode=0o700)
+    try:
+        p = subprocess.run([gh, "release", "download", tag, "-R", repo, "-p", man, "-p", man + ".sig", "-p", zname, "-D", dl, "--clobber"],
+                           capture_output=True, text=True, timeout=300, env=dict(os.environ, GH_PROMPT_DISABLED="1"))
+    except (OSError, subprocess.TimeoutExpired) as e:
+        return done((None, (f"download failed ({type(e).__name__})", False)))
+    paths = [os.path.join(dl, n) for n in (man, man + ".sig", zname)]
+    if p.returncode != 0 or not all(os.path.isfile(x) for x in paths):
+        return done((None, (gh_reason(p.stderr + p.stdout, gh) if p.returncode != 0 else f"{tag} has no {', '.join(n for n, x in zip((man, man + '.sig', zname), paths) if not os.path.isfile(x))}", False)))
+    why = verify_manifest(paths[0], paths[1], tag)
+    if why:
+        return bad(why)
+    want = (json.load(open(paths[0])).get("bundles") or {}).get(arch)
+    h = hashlib.sha256()
+    with open(paths[2], "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    if not isinstance(want, dict) or want.get("name") != zname or want.get("sha256") != h.hexdigest() or want.get("size") != os.path.getsize(paths[2]):
+        return bad(f"{zname} does not match the signed manifest (hash or size)")
+    shutil.rmtree(part, ignore_errors=True)
+    os.makedirs(vd, mode=0o755, exist_ok=True)
+    if subprocess.run(["ditto", "-x", "-k", paths[2], part], capture_output=True).returncode != 0:
+        return done((None, (f"could not unpack {zname}", False)))
+    root = os.path.realpath(part)
+    for dirpath, dirs, names in os.walk(part):
+        for n in dirs + names:
+            q = os.path.join(dirpath, n)
+            if os.path.islink(q) and not (os.path.realpath(q) + os.sep).startswith(root + os.sep):
+                return bad(f"the bundle has a link that leaves its folder ({os.path.relpath(q, part)})")
+    b = jebhome.read_bundle(part)
+    if not b or b.get("tag") != tag or b.get("arch") != arch:
+        return bad(f"bundle.json does not say {tag} for {arch}")
+    for rel in ("install", "desktop/jebctl", "desktop/updater.py", "mod", "python/bin/python3", "app/JebDesktop"):
+        if not os.path.exists(os.path.join(part, rel)):
+            return bad(f"the bundle lacks {rel}")
+    subprocess.run(["xattr", "-dr", "com.apple.quarantine", part], capture_output=True)
+    why = check_app(os.path.join(part, "app"))
+    if why:
+        return bad(why)
+    if os.path.lexists(final):
+        if os.path.realpath(final) == os.path.realpath(LIVE):
+            return done((None, (f"{tag} is the installed version", False)))
+        shutil.rmtree(final, ignore_errors=True)
+    os.rename(part, final)
+    log(f"bundle: {zname} matches the signed manifest; unpacked into {final}")
+    return done((final, None))
+
+
+def run_update(u, ver, flip, extra=()):
+    """The updater's gates on the unpacked bundle `ver` (never compiles; always the quick set, because parity and day run at release time) and, unless --gates-only, the swap; flip() runs just before
+    the swap. Returns (updater exit code, previous current target or None, whether current was flipped)."""
+    src = os.path.join(ver, "desktop", "src")
+    os.environ["JEB_MOD"], os.environ["JEB_SRC"], os.environ["JEB_BUNDLE_MOD"] = os.path.join(ver, "mod"), src, os.path.join(LIVE, "mod")
+    args = ["--force", "--src", src, "--prebuilt", os.path.join(ver, "app", "JebDesktop"), "--no-compile", "--quick"] + (["--no-watch"] if NO_AGENTS else []) + [x for x in extra if x != "--quick"]
+    prev = []
+    def before():
+        try:
+            prev.append(flip(ver))
+        except OSError as e:
+            return f"could not switch {LIVE}: {e}"
+        rlog(f"bundle: {LIVE} now points at {os.path.basename(ver)}")
+        return None
+    try:
+        rc = u.main(args, None if "--gates-only" in extra else before)
+    except Exception as e:
+        rlog(f"updater error: {type(e).__name__}: {e}"); rc = 1
+    return rc, (prev[0] if prev else None), bool(prev)
+
+
+def undo_flip(prev, new):
+    """After a failed update: current goes back to prev, the new folder goes."""
+    if prev:
+        try:
+            flip_current(prev)
+        except OSError as e:
+            rlog(f"COULD NOT point {LIVE} back at {prev}: {e}")
+    shutil.rmtree(new, ignore_errors=True)
+
+
+def list_tags(gh, repo):
+    """The published (not draft, not pre-release) v* tags, newest first; raises OSError with a plain reason when gh fails."""
+    try:
+        p = subprocess.run([gh, "release", "list", "-R", repo, "--exclude-drafts", "--exclude-pre-releases", "--limit", "30", "--json", "tagName"],
+                           capture_output=True, text=True, timeout=120, env=dict(os.environ, GH_PROMPT_DISABLED="1"))
+        if p.returncode != 0:
+            raise OSError(gh_reason(p.stderr + p.stdout, gh))
+        tags = [x.get("tagName") for x in json.loads(p.stdout)]
+    except (subprocess.TimeoutExpired, ValueError, AttributeError) as e:
+        raise OSError(f"the release list failed ({type(e).__name__})")
+    return sorted((t for t in tags if isinstance(t, str) and tag_key(t)), key=tag_key, reverse=True)
+
+
+def installed_tag():
+    b = jebhome.read_bundle(LIVE) or BUNDLE or {}
+    return b.get("tag")
+
+
+def record_installed(rs, tag, u):
+    rs.setdefault("installed", []).append({"tag": tag, "stamp": (u.load_state() or {}).get("stamp"), "at": int(time.time())})
+    rs["installed"] = rs["installed"][-20:]
+
+
+def follow_bundle(gates_only, u, S, quick=False):
+    """follow for a release bundle: the newest published tag newer than the installed one, downloaded, signature-checked, gated, then
+    `current` flipped before the swap. Every return writes the final status."""
+    def stop(why, result="error"):
+        S("done", why, result)
+    prune_versions()        # the folder a previous run went on from
+    if mode() != "release":
+        rlog("follow: not in release mode; nothing to do"); stop("not in release mode"); return 0
+    if os.path.exists(os.path.join(HOME, "updates-paused")):
+        rlog("follow: updates are paused; skipping"); stop("updates are paused"); return 0
+    if not os.path.isfile(SIGNERS):
+        rlog(f"follow: no pinned release signers ({SIGNERS}); not updating"); stop("no pinned release signers"); return 0
+    cur, repo, gh, rs = installed_tag(), release_repo(), jebhome.find_gh(), load_rstate()
+    if not cur or not tag_key(cur):
+        rlog("follow: cannot tell which release is installed; skipping"); stop("cannot tell the installed release"); return 0
+    if not gh:
+        rlog("follow: gh was not found; will try again later"); stop("gh not found; will retry"); return 0
+    S("checking GitHub")
+    try:
+        tags = list_tags(gh, repo)
+    except OSError as e:
+        rlog(f"follow: {e}; will try again later"); stop("could not reach GitHub; will retry"); return 0
+    rs["checked"] = int(time.time())
+    save_rstate(rs)
+    new = [t for t in tags if tag_key(t) > tag_key(cur) and t not in rs.get("failed", [])]
+    if not new:
+        rlog(f"follow: {cur} is current"); stop(f"{cur} is current", "up-to-date"); return 0
+    if DRY:
+        say(f"would download {new[0]} ({repo}), verify its signed manifest, run the gates, point {LIVE} at it, then remove {cur}")
+        return 0
+    tag = ver = None
+    for t in new:       # newest first: a bogus far-future tag cannot block the real releases
+        S(f"downloading {t}")
+        path, err = fetch_bundle(t, rlog)
+        if not err:
+            tag, ver = t, path
+            break
+        why, permanent = err
+        if not permanent:
+            rlog(f"follow: could not get {t}: {why}; will try again later")
+            stop("app download failed; will retry"); return 0
+        rlog(f"follow: {t} rejected: {why}; it will not be retried")
+        rs.setdefault("failed", []).append(t)
+        save_rstate(rs)
+    if not tag:
+        rlog(f"follow: no verified release newer than {cur}"); stop(f"no verified release newer than {cur}", "up-to-date"); return 0
+    rc, prev, flipped = run_update(u, ver, flip_current, (["--gates-only"] if gates_only else []) + (["--quick"] if quick else []))
+    if gates_only or rc != 0:
+        if flipped:
+            rlog(f"follow: {tag} failed after the switch (updater exit {rc}); back on {cur}")
+        undo_flip(prev if flipped else None, ver)
+    result = {0: "ok", 2: "rejected", 3: "rolled-back"}.get(rc, "error")
+    if gates_only:
+        result = "gates-" + result
+    elif rc in (2, 3):
+        rs.setdefault("failed", []).append(tag)
+        rlog(f"follow: {tag} {result}; it will not be retried")
+    elif rc == 0:
+        rlog(f"follow: now on {tag}")
+        record_installed(rs, tag, u)
+        rs["layout"] = "bundle"
+    else:
+        rlog(f"follow: {tag} not installed (updater exit {rc}); will try again later")
+    rs["last"] = {"at": int(time.time()), "tag": tag, "result": result, "app": "prebuilt"}
+    save_rstate(rs)
+    last = u.load_state().get("last") or {}
+    why = last.get("why") if (last.get("at") or 0) >= u._ST["started"] else None
+    if gates_only:
+        stop(f"{tag}: gates {'passed' if rc == 0 else 'failed'}; nothing installed", "up-to-date" if rc == 0 else "failed")
+    elif rc == 0:
+        stop(f"updated to {tag}", "updated")
+    else:
+        stop(f"{tag}: {why or 'see update.log'}", {2: "failed", 3: "rolled-back"}.get(rc, "error"))
+    if rc == 0 and not gates_only:
+        prune_now()
+    for d in os.listdir(os.path.join(HOME, "staging")) if os.path.isdir(os.path.join(HOME, "staging")) else []:
+        shutil.rmtree(os.path.join(HOME, "staging", d), ignore_errors=True)
+    return 0 if rc in (0, 2, 3) else 1
+
+
+def spawn_reload():
+    """Reload the release-mode agents once this process has exited (a detached jebctl in a new session, so launchd does not take it
+    down with follow). Under --no-agents or JEB_NO_LAUNCHCTL it only logs."""
+    if NO_AGENTS or NO_LAUNCHCTL:
+        rlog("convert: would reload the LaunchAgents once this run has exited (sandbox: skipped)")
+        return
+    py = os.path.join(LIVE, "python", "bin", "python3")
+    err = open(os.path.join(HOME, "release.err"), "ab")
+    subprocess.Popen([py, "-I", os.path.join(LIVE, "desktop", "jebctl"), "reload-agents", "--wait-pid", str(os.getpid())], env=scrubbed_env(), stdin=subprocess.DEVNULL, stdout=err, stderr=err, start_new_session=True)
+
+
+def wait_pid(args):
+    """Wait for --wait-pid to exit, at most 120 s. True once it is gone (or none was given)."""
+    pid = int(args[args.index("--wait-pid") + 1]) if "--wait-pid" in args and args.index("--wait-pid") + 1 < len(args) else 0
+    for _ in range(240 if pid else 0):
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return True
+        except PermissionError:
+            pass
+        time.sleep(0.5)
+    return not pid
+
+
+def cmd_prune_versions(args):
+    """Hidden: prune_versions once --wait-pid has exited; a process still running from an old folder keeps it for the next run."""
+    if wait_pid(args):
+        prune_versions()
+
+
+def cmd_reload_agents(args):
+    """Hidden: wait for --wait-pid to exit (at most 120 s), then bootout and bootstrap each release-mode LaunchAgent."""
+    wait_pid(args)
+    for l in labels_for("release"):
+        if NO_AGENTS or NO_LAUNCHCTL:
+            rlog(f"reload-agents: would reload {l} (sandbox: skipped)"); continue
+        sh(["launchctl", "bootout", f"gui/{UID}/{l}"])
+        r = subprocess.run(["launchctl", "bootstrap", f"gui/{UID}", os.path.join(AGENTS, l + ".plist")], capture_output=True, text=True)
+        rlog(f"reload-agents: {l} " + ("reloaded" if r.returncode == 0 else f"bootstrap failed: {(r.stdout + r.stderr).strip()[:150]}"))
+    return 0
+
+
+def convert_clone(u, S, quick=False):
+    """A git-clone install becomes a release bundle on its first release-mode follow: the newest published bundle is fetched and gated
+    like an update, then the plists, the settings entry, the jebctl link and the agents move to ~/.jeb/current. The clone stays on
+    disk (rs.legacy_clone). True when converted; False (logged) leaves everything as it was and the git follow runs."""
+    rs = load_rstate()
+    def no(why):
+        rlog(f"convert: not converted ({why}); staying on the git clone")
+        return False
+    gh = jebhome.find_gh()
+    if not gh:
+        return no("gh was not found")
+    widen_signers(os.path.join(CODE, "release-signers"))
+    try:
+        tags = [t for t in list_tags(gh, release_repo()) if t not in rs.get("bundle_failed", [])]
+    except OSError as e:
+        return no(str(e))
+    if not tags:
+        return no("no release to convert to")
+    tag = tags[0]
+    S(f"downloading {tag} (bundle)")
+    ver, err = fetch_bundle(tag, rlog)
+    if err:
+        if err[1]:
+            rs.setdefault("bundle_failed", []).append(tag)
+            save_rstate(rs)
+        return no(f"{tag}: {err[0]}")
+    rc, prev, flipped = run_update(u, ver, flip_current, ["--quick"] if quick else [])
+    if rc != 0:
+        undo_flip(prev if flipped else None, ver)
+        if rc in (2, 3):
+            rs.setdefault("bundle_failed", []).append(tag)
+            save_rstate(rs)
+        return no(f"{tag} did not pass the gates (updater exit {rc})")
+    quiet = lambda *a: None
+    py = os.path.join(LIVE, "python", "bin", "python3")
+    live_ctl = os.path.join(LIVE, "desktop", "jebctl")
+    subprocess.run([py, "-I", live_ctl, "plists"], env=scrubbed_env(), capture_output=True)       # the bundle's plists, written by the bundle's own code
+    for l in labels_for("release"):
+        try:
+            shutil.copy2(os.path.join(HOME, "launchd", l + ".plist"), os.path.join(AGENTS, l + ".plist"))
+        except OSError as e:
+            rlog(f"convert: could not copy the {l} plist: {e}")
+    rs.update({"layout": "bundle", "legacy_clone": CLONE, "legacy_mod": MOD})
+    record_installed(rs, tag, u)
+    rs["last"] = {"at": int(time.time()), "tag": tag, "result": "ok", "app": "prebuilt"}
+    save_rstate(rs)
+    try:
+        plugdirs.edit(os.path.join(LIVE, "mod"), False, False, quiet)
+        plugdirs.edit(os.path.join(CLONE, "mod"), True, False, quiet)
+    except (SystemExit, OSError) as e:
+        rlog(f"convert: could not update the plugin setting ({e}); open Claude Code sessions keep the old path")
+    if link_state(os.path.join(LIVE, "desktop", "bin", "jebctl")) in ("ours", "older"):
+        link_jebctl(os.path.join(LIVE, "desktop", "bin", "jebctl"))
+    spawn_reload()
+    rlog(f"convert: now a release bundle at {tag}; the old clone {CLONE} is no longer used and can be deleted")
+    S("done", f"updated to {tag}", "updated")
+    return True
+
+
+def rollback_bundle():
+    """Put the previous good release back: it is downloaded again (only one version is kept on disk), gated, and flipped to; the bad
+    one is deleted. When the download fails nothing changes."""
+    rs, cur = load_rstate(), installed_tag()
+    prev = next((e["tag"] for e in reversed(rs.get("installed", [])) if e.get("tag") != cur and e.get("tag") not in rs.get("failed", [])), None)
+    if not prev:
+        raise SystemExit("no earlier release is recorded to roll back to")
+    lock = open(os.path.join(HOME, "release.lock"), "w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        raise SystemExit("an update is running; try again in a few minutes")
+    say(f"rolling back {cur} -> {prev}: downloading {prev} again")
+    ver, err = fetch_bundle(prev, say)
+    if err:
+        raise SystemExit(f"could not download {prev}: {err[0]}\nNothing was changed; {cur} is still installed.")
+    u = load_updater()
+    u.set_home(HOME)
+    u.STATUS_SOURCE = "release"
+    old = os.path.realpath(LIVE)
+    rc, back, flipped = run_update(u, ver, flip_current, [])
+    if rc != 0:
+        undo_flip(back if flipped else None, ver)
+        raise SystemExit(f"{prev} failed (updater exit {rc}); {cur} is still installed. See {u.LOG}")
+    if cur:
+        rs.setdefault("failed", []).append(cur)
+    record_installed(rs, prev, u)
+    rs["last"] = {"at": int(time.time()), "tag": prev, "result": "rolled-back-manually", "app": "prebuilt"}
+    save_rstate(rs)
+    prune_now()
+    say(f"rolled back {cur} -> {prev}; the running app hands over within a few seconds")
 
 
 CC_RE = re.compile(r"(\w+)(?:\([^)]*\))?(!)?:\s*(.+)")    # Conventional Commits subject: type(scope)!: text
@@ -1552,9 +2254,18 @@ def release_steps(args, done):
         adir = os.path.join(CLONE, git("rev-parse", "--git-path", f"jeb-release-{tag}").stdout.strip())
         shutil.rmtree(adir, ignore_errors=True)
         os.makedirs(adir)
-        shutil.copy2(os.path.join(SRC, "JebDesktop.dev"), os.path.join(adir, "JebDesktop"))
+        stage = os.path.join(adir, "stage")        # the zip holds JebDesktop and the gate helpers, no parent folder
+        os.makedirs(stage)
+        shutil.copy2(os.path.join(SRC, "JebDesktop.dev"), os.path.join(stage, "JebDesktop"))
+        print("  gate helpers (universal) ...", end=" ", flush=True)
+        t = time.time()
+        why = load_updater().build_universal_tools(SRC, stage)
+        if why:
+            say("failed")
+            raise SystemExit("could not build the gate helpers: " + why)
+        say(f"ok ({time.time() - t:.0f}s)")
         zp = os.path.join(adir, name)
-        step("app zip", ["ditto", "-c", "-k", os.path.join(adir, "JebDesktop"), zp])
+        step("app zip", ["ditto", "-c", "-k", stage, zp])
         h = hashlib.sha256()
         with open(zp, "rb") as f:
             for chunk in iter(lambda: f.read(1 << 20), b""):
@@ -1573,6 +2284,8 @@ def release_steps(args, done):
 
 
 def cmd_rollback():
+    if BUNDLE:
+        return rollback_bundle()
     u = load_updater()
     vs = sorted((d for d in os.listdir(VERSIONS) if d.endswith(".app")), reverse=True) if os.path.isdir(VERSIONS) else []
     if not vs:
@@ -1607,15 +2320,13 @@ def check_sandbox(cmd):
     """--no-agents skips every LaunchAgent and launchctl step, so it only runs where HOME is not the real home and
     the app, agents and state folder all sit under it. Returns the reason to refuse, or None."""
     me, real = os.path.realpath(os.path.expanduser("~")), os.path.realpath(pwd.getpwuid(os.getuid()).pw_dir)
-    if cmd != "install":
-        return "--no-agents is for `install` only"
+    if cmd not in ("install", "follow", "reload-agents", "rollback"):
+        return "--no-agents is for `install`, `follow`, `reload-agents` and `rollback` only"
     if me == real:
         return f"--no-agents needs a HOME other than the real one ({real}); it exists for sandboxes (./release smoke)"
     for what, p in (("JEB_APP_DIR", APP_DIR), ("JEB_LAUNCHAGENTS", AGENTS), ("the state folder", HOME)):
         if os.path.commonpath([os.path.realpath(p), me]) != me:
             return f"--no-agents: {what} ({p}) is outside the sandbox HOME {me}"
-    if SMOKE_TAG and not (SMOKE_TAG_RE.fullmatch(SMOKE_TAG) and ("-rc." not in SMOKE_TAG or os.environ.get("JEB_ALLOW_RC") == "1")):
-        return f"JEB_SMOKE_TAG {SMOKE_TAG!r} is not a release tag" + (" (a pre-release tag needs JEB_ALLOW_RC=1)" if "-rc." in SMOKE_TAG else "")
     return None
 
 
@@ -1635,7 +2346,9 @@ def main(argv):
     elif cmd == "plists": cmd_plists()
     elif cmd == "perf": cmd_perf(args[1:])
     elif cmd == "install": cmd_install(args[1:])
-    elif cmd == "follow": return cmd_follow("--gates-only" in args)
+    elif cmd == "follow": return cmd_follow(args[1:])
+    elif cmd == "reload-agents": return cmd_reload_agents(args[1:])
+    elif cmd == "prune-versions": cmd_prune_versions(args[1:])
     elif cmd == "release": cmd_release(args[1:])
     elif cmd == "uninstall": cmd_uninstall("--purge" in args)
     elif cmd == "rollback": cmd_rollback()
@@ -1648,9 +2361,16 @@ def main(argv):
         os.path.exists(p) and os.unlink(p); say("updates on")
     elif cmd == "start": cmd_start()
     elif cmd == "quit": cmd_quit()
+    elif cmd in ("update-now", "retry-update") and BUNDLE:
+        if cmd == "retry-update":
+            rs = load_rstate()
+            if rs.get("failed"):
+                rs["failed"].remove(max(rs["failed"], key=lambda t: tag_key(t) or (0, 0, 0)))
+                save_rstate(rs)
+        sys.exit(subprocess.run(["launchctl", "kickstart", "-k", f"gui/{UID}/com.jeb.desktop.release"]).returncode)
     elif cmd in ("update-now", "retry-update"):
         flag = "--now" if cmd == "update-now" else "--force"
-        sys.exit(subprocess.run(["/usr/bin/python3", "-I", os.path.join(CODE, "updater.py"), flag], env=dict(os.environ, JEB_HOME=HOME, JEB_MOD=MOD, JEB_APP_DIR=APP_DIR)).returncode)
+        sys.exit(subprocess.run(RUN + [os.path.join(CODE, "updater.py"), flag], env=dict(os.environ, JEB_HOME=HOME, JEB_MOD=MOD, JEB_APP_DIR=APP_DIR)).returncode)
     else:
         say(__doc__); return 2
     return 0

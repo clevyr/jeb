@@ -1,0 +1,12 @@
+#!/bin/sh
+# jebctl launcher: runs desktop/jebctl with the bundle's own Python (python/ beside desktop/), else the system one.
+p=$0
+while [ -L "$p" ]; do
+  l=$(readlink "$p")
+  case $l in /*) p=$l ;; *) p=$(dirname "$p")/$l ;; esac
+done
+root=$(cd "$(dirname "$p")/../.." && pwd -P)
+if [ -x "$root/python/bin/python3" ]; then
+  exec "$root/python/bin/python3" -I "$root/desktop/jebctl" "$@"
+fi
+exec /usr/bin/python3 -I "$root/desktop/jebctl" "$@"

@@ -1,5 +1,10 @@
 #!/usr/bin/python3
-"""./install [--dev] [--repin] [--add-path] [--dry-run] [--verbose]: set Jeb up from this clone.
+"""./install [--dev] [--repin] [--add-path] [--build-from-source] [--no-agents] [--dry-run] [--verbose]: set Jeb up from this clone or bundle.
+
+  release bundle:         the README's way. The signed Jeb-<tag>-macos-<arch>.zip is unpacked into ~/.jeb/versions/<tag>, and its own
+                          Python runs `python/bin/python3 -I install` there. No git, Xcode or Command Line Tools: the app is prebuilt.
+                          ~/.jeb/current is pointed at the bundle; the LaunchAgents, the plugin entry and the jebctl link use only that
+                          path. --dev and --build-from-source are refused. Updates download the next bundle and switch `current`.
 
   release mode (default): the clone follows release tags signed by a pinned signer (the clone is moved to the newest
                           verified tag; a 6-hourly agent fetches new ones, verifies, gates them and switches). No local
@@ -7,25 +12,34 @@
                           Updates only follow tags signed by a pinned signer: desktop/release-signers is copied to
                           ~/Library/Application Support/Jeb/release-signers on the first install and never replaced by a later tag.
   --repin                 replace the pinned signers with this clone's desktop/release-signers (key rotation).
-  --add-path              if ~/.local/bin (where `jebctl` is linked) is not on PATH, add it to the shell profile without
-                          asking (zsh ~/.zprofile, bash ~/.bash_profile, else ~/.profile; backup first). Without it a
-                          terminal asks; otherwise the line to add is printed.
-  --dev                   owner mode: runs from the working tree; local src edits ship through the update gates.
+  --add-path              add ~/.local/bin (where `jebctl` is linked) to the shell profile (zsh ~/.zprofile, bash
+                          ~/.bash_profile, else ~/.profile; backup first). The PATH is optional: without it one line says
+                          to run ~/.local/bin/jebctl.
+  --build-from-source     release mode only: compile the app when no verified prebuilt one can be downloaded (or JEB_ALLOW_BUILD=1).
+                          By default release mode never compiles: it needs gh signed in to GitHub (signed in to GitHub) and stops with a plain reason when the prebuilt app cannot be had.
+  --dev                   owner mode: runs from the working tree; local src edits ship through the update gates (compiles; needs
+                          swiftc from the Command Line Tools).
   --verbose               every command and detail; by default one short line per step.
 
+  --no-agents             sandbox only (./release smoke): no LaunchAgents, launchctl or jebctl link; needs a HOME other than the real one.
+A git clone (developers) still installs the old way and converts to a bundle on its first release-mode follow.
+Preflight (git clone, release mode): macOS, /usr/bin/python3 and git (DEVELOPER_DIR points at the Command Line Tools only when the
+selected Xcode fails, e.g. its license was never accepted); claude missing is only a note.
 Steps: preflight, `desktop/jebctl install` (first build through the gates, LaunchAgents, start), then the mod folder
 added to CLAUDE_CODE_PLUGIN_DIRS in ~/.claude/settings.json (backup first). --dry-run changes nothing.
-Env overrides (tests): JEB_HOME, JEB_APP_DIR, JEB_LAUNCHAGENTS, JEB_SETTINGS, JEB_BACKUPS, JEB_BIN_DIR, JEB_PROFILE.
+Env overrides (tests): JEB_HOME, JEB_APP_DIR, JEB_LAUNCHAGENTS, JEB_SETTINGS, JEB_BACKUPS, JEB_BIN_DIR, JEB_PROFILE, JEB_TOOLS_DIR, JEB_NO_LAUNCHCTL.
 """
-import os, shutil, subprocess, sys
+import json, os, shutil, subprocess, sys
 
-CLONE = os.path.dirname(os.path.abspath(__file__))
+CLONE = os.path.dirname(os.path.realpath(__file__))
 MOD = os.path.join(CLONE, "mod")
+BUNDLED = os.path.isfile(os.path.join(CLONE, "bundle.json"))        # unpacked release bundle, not a git clone
 sys.path.insert(0, os.path.join(CLONE, "desktop"))
-import plugdirs
+import jebhome, plugdirs
 
+jebhome.pin_python()
 
-
+jebhome.use_dev_dir()       # before anything runs git or xcrun: fall back to the Command Line Tools if Xcode's license blocks
 VERBOSE = False
 
 
@@ -41,21 +55,33 @@ def git(*a):
     return subprocess.run(["git", "-C", CLONE] + list(a), capture_output=True, text=True)
 
 
-def preflight():
+def preflight(compile_ok):
+    """Fails with a plain reason; returns notes (not failures). compile_ok: dev or --build-from-source, which need swiftc."""
     if sys.platform != "darwin":
         fail("macOS only")
-    if subprocess.run(["xcode-select", "-p"], capture_output=True).returncode != 0:
-        fail("the Xcode Command Line Tools are missing; run `xcode-select --install`, then run ./install again")
-    if subprocess.run(["xcrun", "--find", "swiftc"], capture_output=True).returncode != 0:
-        fail("swiftc was not found; run `xcode-select --install` (or install Xcode), then run ./install again")
+    if BUNDLED:
+        if not os.path.isdir(MOD):
+            fail(f"{MOD} not found; the bundle is incomplete")
+        return [] if jebhome.find_claude() else ["Claude Code was not found on this Mac; Jeb installs anyway, but it needs Claude Code to show up in sessions"]
     if not os.access("/usr/bin/python3", os.X_OK):
-        fail("/usr/bin/python3 is missing (it comes with the Command Line Tools)")
-    if not shutil.which("claude"):
-        fail("`claude` is not on PATH; install Claude Code first")
+        fail("Python is missing from this Mac; the Command Line Tools are missing; ask Claude to repair Jeb")
+    if subprocess.run(["git", "--version"], capture_output=True).returncode != 0:
+        fail("git does not work here; the Command Line Tools are missing; ask Claude to repair Jeb")
+    if compile_ok and subprocess.run(["xcrun", "--find", "swiftc"], capture_output=True).returncode != 0:
+        fail("swiftc was not found (needed to build from source); the Command Line Tools are missing; ask Claude to repair Jeb")
     if not os.path.isdir(MOD):
         fail(f"{MOD} not found; run ./install from a full clone")
+    notes = [] if jebhome.find_claude() else ["Claude Code was not found on this Mac; Jeb installs anyway, but it needs Claude Code to show up in sessions"]
     if VERBOSE:
-        say("preflight ok: macOS, Command Line Tools, swiftc, /usr/bin/python3, claude")
+        say("preflight ok: macOS, /usr/bin/python3, git" + (", swiftc" if compile_ok else ""))
+    return notes
+
+
+def load_rstate():
+    try:
+        return json.load(open(os.path.join(jebhome.resolve(), "release-state.json")))
+    except (OSError, ValueError):
+        return {}
 
 
 def clone_check():
@@ -73,17 +99,21 @@ def main(argv):
     dev = "--dev" in argv
     repin = "--repin" in argv
     addp = "--add-path" in argv
-    bad = [a for a in argv if a not in ("--dry-run", "--dev", "--repin", "--add-path", "--verbose")]
+    build = "--build-from-source" in argv
+    noag = "--no-agents" in argv
+    bad = [a for a in argv if a not in ("--dry-run", "--dev", "--repin", "--add-path", "--build-from-source", "--no-agents", "--verbose")]
     if bad:
         say(__doc__); return 2
+    if BUNDLED and (dev or build):
+        fail("a release bundle has no source to build: --dev and --build-from-source are for a git clone")
     if VERBOSE:
         say(f"Jeb install ({'dev' if dev else 'release'} mode{', dry run' if dry else ''}) from {CLONE}")
     else:
         say(f"Installing Jeb ({'dev' if dev else 'release'} mode{', dry run' if dry else ''})")
         print("  checks ...", end=" ", flush=True)
     try:
-        preflight()
-        if not dev:
+        notes = preflight(dev or build or os.environ.get("JEB_ALLOW_BUILD") == "1")
+        if not dev and not BUNDLED:
             clone_check()
     except SystemExit:
         if not VERBOSE:
@@ -91,15 +121,24 @@ def main(argv):
         raise
     if not VERBOSE:
         say("ok")
-    cmd = ["/usr/bin/python3", "-I", os.path.join(CLONE, "desktop", "jebctl"), "install", "--mode", "dev" if dev else "release"] + (["--repin"] if repin and not dev else []) + (["--add-path"] if addp else []) + (["--dry-run"] if dry else []) + (["--verbose"] if VERBOSE else [])
+    for n in notes:
+        say("note: " + n)
+    cmd = [sys.executable if BUNDLED else "/usr/bin/python3", "-I", os.path.join(CLONE, "desktop", "jebctl"), "install", "--mode", "dev" if dev else "release"] + (["--no-agents"] if noag else []) + (["--repin"] if repin and not dev else []) + (["--add-path"] if addp else []) + (["--build-from-source"] if build and not dev else []) + (["--dry-run"] if dry else []) + (["--verbose"] if VERBOSE else [])
     if VERBOSE:
         say("$ " + " ".join(cmd))
-    rc = subprocess.run(cmd).returncode
+    rc = subprocess.run(cmd).returncode     # inherits DEVELOPER_DIR (set above)
     if rc != 0:
         return rc       # settings untouched when a gate fails
     if not VERBOSE:
         print("  Claude Code plugin ...", end=" ", flush=True)
-    act = plugdirs.edit(MOD, False, dry, say if VERBOSE else lambda *a: None)
+    quiet = say if VERBOSE else (lambda *a: None)
+    if BUNDLED:
+        act = plugdirs.edit(os.path.join(jebhome.current_dir(), "mod"), False, dry, quiet)
+        old = (load_rstate().get("legacy_mod") or "")
+        if old and os.path.realpath(old) != os.path.realpath(os.path.join(jebhome.current_dir(), "mod")):
+            plugdirs.edit(old, True, dry, quiet)        # a git clone's entry from before this bundle
+    else:
+        act = plugdirs.edit(MOD, False, dry, quiet)
     if not VERBOSE:
         say("would add" if dry and act in ("set", "append") else "ok")
         say("Dry run only; nothing was changed." if dry else "Done. Start a new Claude Code session to load Jeb.")
