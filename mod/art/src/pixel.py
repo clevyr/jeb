@@ -127,6 +127,13 @@ PALETTE: dict[str, tuple[int, int, int]] = {
     'dirt_dark': (100, 79, 57),
     'dirt_light': (138, 112, 83),
     'pebble': (146, 140, 132),
+    # The Halloween witch: a dark robe (shade leans blue, light leans magenta)
+    # and lighter sleeves with a darker edge so the arms read in every pose.
+    'witch_robe': (82, 54, 122),
+    'witch_robe_dark': (52, 38, 104),
+    'witch_robe_light': (122, 76, 144),
+    'witch_sleeve': (178, 118, 198),
+    'witch_sleeve_dark': (120, 68, 156),
 }
 NAMES = ['clear'] + list(PALETTE)
 INDEX = {name: i for i, name in enumerate(NAMES)}

@@ -10,6 +10,7 @@ import { BUILDS, buySupplies, craftAll, mashFull, KEEPSAKES, noteEdit, queuedBui
 import { markGate, MAX_GATES, sweptLine, takeGate } from '../hooks/chores'
 import { classify, denyRuleOf, workOf } from '../hooks/classify'
 import { mcpKindOf, mcpServerOf } from '../hooks/mcp'
+import { PIXEL_COLOUR, PIXEL_SPRITES } from '../hooks/pixel-art'
 import { CROP_BARN, CROP_NAMES, RIPE } from '../hooks/crops'
 import {
   beatsOf,
@@ -4709,4 +4710,118 @@ test('VI21 britches: a daytime midsummer happening that stands still, speaks twi
     'Hang them high and dry. Come winter, we feast.',
   ])
   expect(restOf({ id: 'britches', t: 10, dur: 80 })).toBe(0)
+})
+
+test('VI22 every Jeb pose has a halloween variant: same width and frames, 8 rows taller, feet on the bottom row', () => {
+  const poses = ['idle', 'happy', 'spooked', 'wink', 'think', 'sleep', 'banjo', 'sip', 'hoe', 'broom',
+    'book', 'stir', 'salute', 'wave', 'hold', 'jar']
+  const pixels = (frame: string, w: number, h: number) => {
+    const raw = atob(frame)
+    const out: number[] = []
+    for (let i = 0; i < raw.length; i += 2) {
+      for (let n = 0; n < raw.charCodeAt(i); n++) out.push(raw.charCodeAt(i + 1))
+    }
+    expect(out.length).toBe(w * h)
+    return out
+  }
+  for (const pose of poses) {
+    const base = PIXEL_SPRITES[`jeb-${pose}`]
+    const variant = PIXEL_SPRITES[`jeb-${pose}--halloween`]
+    expect(variant).toBeDefined()
+    expect(variant.w).toBe(base.w)
+    expect(variant.h).toBe(base.h + 8)
+    expect(variant.frames.length).toBe(base.frames.length)
+    variant.frames.forEach((frame: string, i: number) => {
+      expect(frame).not.toBe(base.frames[i])
+      const px = pixels(frame, variant.w, variant.h)
+      // the hat's tip outline reaches row 0, and the feet stay on the bottom row
+      expect(px.slice(0, variant.w).some(p => p !== 0)).toBe(true)
+      const bottom = (f: string, w: number, h: number) => pixels(f, w, h).slice(-w).map(p => p !== 0)
+      expect(bottom(frame, variant.w, variant.h)).toEqual(bottom(base.frames[i], base.w, base.h))
+      // the brim is at least as wide as the straw hat's
+      const wide = (p: number[], row: number) => p.slice(row * variant.w, (row + 1) * variant.w).filter(v => v !== 0).length
+      expect(wide(px, 13)).toBeGreaterThanOrEqual(wide(pixels(base.frames[i], base.w, base.h), 5))
+    })
+  }
+})
+
+test('VI23 the witch hat is identical in every halloween frame, with no orphan pixels', () => {
+  const pixels = (frame: string) => {
+    const raw = atob(frame)
+    const out: number[] = []
+    for (let i = 0; i < raw.length; i += 2) {
+      for (let n = 0; n < raw.charCodeAt(i); n++) out.push(raw.charCodeAt(i + 1))
+    }
+    return out
+  }
+  const names = Object.keys(PIXEL_SPRITES).filter(n => /^jeb-.*--halloween$/.test(n))
+  expect(names.length).toBe(16)
+  const hat = pixels(PIXEL_SPRITES['jeb-idle--halloween'].frames[0]).slice(0, 20 * 15).join(',')
+  const bad: string[] = []
+  for (const name of names) {
+    const { w, h, frames } = PIXEL_SPRITES[name]
+    frames.forEach((frame: string, i: number) => {
+      const px = pixels(frame)
+      const ref = hat.split(',').map(Number)
+      px.slice(0, w * 15).forEach((p, n) => {
+        if (p !== ref[n]) bad.push(`${name}#${i} hat ${n % w},${Math.floor(n / w)}`)
+      })
+      // the bent tip (rows 0-4) is plain: outline, robe and its shade only
+      expect(new Set(px.slice(0, w * 5).filter(p => p !== 0)).size).toBeLessThanOrEqual(3)
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          if (!px[y * w + x]) continue
+          const near = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]
+            .filter(([dx, dy]) => x + dx >= 0 && x + dx < w && y + dy >= 0 && y + dy < h && px[(y + dy) * w + x + dx])
+          if (!near.length) bad.push(`${name}#${i} orphan ${x},${y}`)
+        }
+      }
+    })
+  }
+  expect(bad).toEqual([])
+  const idle = PIXEL_SPRITES['jeb-idle--halloween'].frames
+  expect(idle[3]).not.toBe(idle[2])
+})
+
+test('VI24 witch sleeves have a dark outer edge, raised hands stand clear of the brim, and the hem star is the same in every frame', () => {
+  const pixels = (frame: string) => {
+    const raw = atob(frame)
+    const out: number[] = []
+    for (let i = 0; i < raw.length; i += 2) {
+      for (let n = 0; n < raw.charCodeAt(i); n++) out.push(raw.charCodeAt(i + 1))
+    }
+    return out
+  }
+  const at = (name: string, i: number) => pixels(PIXEL_SPRITES[name].frames[i])
+  const W = 20
+  const colour = (name: string) => PIXEL_COLOUR[name]
+  const skin = colour('skin')
+  const star = (px: number[]) => px.map((p, n) => (p === colour('yellow') && n >= 40 * W ? n : -1)).filter(n => n >= 0)
+  // the hanging arms: a robe-dark outer column, the sleeve shade beside it
+  const idle = at('jeb-idle--halloween', 0)
+  for (let y = 30; y <= 34; y++) {
+    expect(idle[y * W + 3]).toBe(colour('witch_robe_dark'))
+    expect(idle[y * W + 4]).toBe(colour('witch_sleeve'))
+    expect(idle[y * W + 16]).toBe(colour('witch_robe_dark'))
+    expect(idle[y * W + 15]).toBe(colour('witch_sleeve'))
+  }
+  // the star: five pixels, identical in every idle frame, never anywhere new in another pose
+  const stars = star(idle)
+  expect(stars.length).toBe(5)
+  for (let i = 1; i < 4; i++) expect(star(at('jeb-idle--halloween', i))).toEqual(stars)
+  for (const name of Object.keys(PIXEL_SPRITES).filter(n => /^jeb-.*--halloween$/.test(n))) {
+    PIXEL_SPRITES[name].frames.forEach((_: string, i: number) => {
+      for (const n of star(at(name, i))) expect(stars).toContain(n)
+    })
+  }
+  // raised hands are skin and start at least two rows under the brim (rows 13-14)
+  const salute = at('jeb-salute--halloween', 1)
+  const handTop = (px: number[], x: number) => px.findIndex((p, n) => n % W === x && p === skin) / W
+  expect(handTop(salute, 1)).toBeGreaterThanOrEqual(17)
+  expect(salute[17 * W + 1]).toBe(skin)
+  for (const i of [0, 1]) {
+    const wave = at('jeb-wave--halloween', i)
+    expect(handTop(wave, 18)).toBeGreaterThanOrEqual(18)
+    expect(wave[(18 + i) * W + 18]).toBe(skin)
+  }
 })

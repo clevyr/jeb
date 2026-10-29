@@ -3,11 +3,12 @@ band scale (feet on the sprite's bottom row)."""
 
 from __future__ import annotations
 
-from PIL import ImageDraw
+from PIL import Image, ImageDraw
 
 from pixel import Sprite, blank, outline, rgb
 
 JEB_W, JEB_H = 20, 40
+HEADROOM = 8  # rows a holiday variant may add above the base
 BODY_H, BODY_DY = 36, 4  # the body layer, drawn as before and set 4 px lower
 
 
@@ -87,13 +88,23 @@ def _jeb_hat(d: ImageDraw.ImageDraw) -> None:
     d.line([2, 7, 17, 7], fill=c('hat_dark'))
 
 
-def jeb(eyes: str = 'open', mouth: str = 'smile', pose: str = 'stand', beat: int = 0):
+def _witch_paint(name: str) -> tuple[int, int, int, int]:
+    """The witch's palette: the arms' shirt colour becomes the sleeve shade."""
+    return rgb('witch_sleeve' if name == 'shirt' else name)
+
+
+def jeb(eyes: str = 'open', mouth: str = 'smile', pose: str = 'stand', beat: int = 0, witch: bool = False):
     """One Jeb frame. `pose` decides the arms and any held prop; `beat`
-    picks the alternate frame of a working pose."""
+    picks the alternate frame of a working pose. `witch` is the Halloween
+    variant: same pose and face, a robe and sleeves, and a tall hat in the
+    headroom above."""
     img, d = blank(JEB_W, BODY_H)
-    c = rgb
+    c = _witch_paint if witch else rgb
     arms = pose in ('stand', 'sleep')
-    _jeb_base(d, arms=arms)
+    if witch:
+        _witch_robe(d, arms)
+    else:
+        _jeb_base(d, arms=arms)
     if pose == 'banjo':
         d.rectangle([3, 17, 4, 21], fill=c('shirt'))  # left sleeve
         d.rectangle([15, 17, 16, 20], fill=c('shirt'))  # right sleeve
@@ -167,9 +178,17 @@ def jeb(eyes: str = 'open', mouth: str = 'smile', pose: str = 'stand', beat: int
     full, fd = blank(JEB_W, JEB_H)
     full.alpha_composite(img, (0, BODY_DY))
     _jeb_big_head(fd, eyes, mouth)
-    _jeb_big_hat(fd)
-    _jeb_head_props(fd, pose, beat)
-    return outline(full)
+    if not witch:
+        _jeb_big_hat(fd)
+    _jeb_head_props(fd, pose, beat, witch)
+    if not witch:
+        return outline(full)
+    # the same body at the bottom of a taller box, the hat in the rows above
+    tall, td = blank(JEB_W, JEB_H + HEADROOM)
+    tall.alpha_composite(full, (0, HEADROOM))
+    _witch_hat(td)
+    _sleeve_edges(tall)
+    return outline(tall)
 
 
 def _jeb_big_head(d: ImageDraw.ImageDraw, eyes: str, mouth: str) -> None:
@@ -233,9 +252,9 @@ def _jeb_big_hat(d: ImageDraw.ImageDraw) -> None:
         d.point((x, 5), fill=c('hat_dark'))
 
 
-def _jeb_head_props(d: ImageDraw.ImageDraw, pose: str, beat: int) -> None:
+def _jeb_head_props(d: ImageDraw.ImageDraw, pose: str, beat: int, witch: bool = False) -> None:
     """What he holds up near his head, drawn over the big head."""
-    c = rgb
+    c = _witch_paint if witch else rgb
     if pose == 'jar':
         d.rectangle([15, 19, 16, 23], fill=c('shirt'))  # arm raised
         d.rectangle([15, 11, 19, 19], fill=c('glass'))  # jar beside his head
@@ -249,34 +268,135 @@ def _jeb_head_props(d: ImageDraw.ImageDraw, pose: str, beat: int) -> None:
         d.rectangle([9, 15, 13, 19], fill=c('amber'))
         d.line([9, 13, 13, 13], fill=c('steel'))
         d.rectangle([12, 19, 15, 20], fill=c('skin'))
+    elif pose == 'salute' and witch:
+        # the hand stays three rows under the brim; the forearm and its
+        # shadow keep it apart from the face
+        d.line([4, 21, 1, 16], fill=c('shirt'), width=2)  # upper arm, elbow out
+        d.line([1, 16, 2, 11], fill=c('shirt'), width=2)  # forearm up to the temple
+        d.rectangle([1, 9, 6, 10], fill=c('skin'))  # flat hand
+        d.line([4, 11, 6, 11], fill=c('skin_dark'))  # its shadow on the cheek
     elif pose == 'salute':
         d.line([4, 21, 1, 16], fill=c('shirt'), width=2)  # upper arm, elbow out
         d.line([1, 16, 3, 10], fill=c('shirt'), width=2)  # forearm to the brow
         d.line([2, 8, 9, 7], fill=c('skin'), width=2)  # flat hand at the brim, over the eye
+    elif pose == 'wave' and witch:
+        y = 10 if beat == 0 else 11
+        d.rectangle([15, 15, 16, 22], fill=c('shirt'))
+        d.rectangle([17, y + 4, 17, 15], fill=c('shirt'))  # forearm steps out past the ear
+        d.rectangle([17, y, 19, y + 3], fill=c('skin'))  # hand clear of ear and brim
     elif pose == 'wave':
         d.rectangle([15, 15, 16, 22], fill=c('shirt'))
         y = 10 if beat == 0 else 11
         d.rectangle([16, y, 18, y + 4], fill=c('skin'))
 
 
+def _witch_robe(d: ImageDraw.ImageDraw, arms: bool = True) -> None:
+    """The witch's body layer: boots, a robe that flares to the hem instead of
+    overalls, and sleeves in their own shade. Shading is hue-shifted: shadow
+    leans blue, light leans magenta."""
+    c = rgb
+    robe, dark, light = c('witch_robe'), c('witch_robe_dark'), c('witch_robe_light')
+    d.rectangle([5, 32, 9, 34], fill=c('boot'))
+    d.rectangle([10, 32, 14, 34], fill=c('boot'))
+    d.rectangle([5, 16, 14, 24], fill=robe)
+    for y, x0, x1 in ((25, 4, 15), (26, 4, 15), (27, 3, 16), (28, 3, 16), (29, 3, 16), (30, 2, 17), (31, 2, 17)):
+        d.line([x0, y, x1, y], fill=robe)
+    d.line([5, 17, 5, 23], fill=light)  # light from the left
+    d.line([13, 16, 14, 16], fill=dark)  # shadow down the right
+    d.line([13, 16, 13, 24], fill=dark)
+    d.line([14, 16, 14, 24], fill=dark)
+    for y, x1 in ((25, 15), (26, 15), (27, 16), (28, 16), (29, 16), (30, 17)):
+        d.line([x1 - 1, y, x1, y], fill=dark)
+    d.line([9, 25, 9, 30], fill=dark)  # a fold in the skirt
+    d.line([2, 31, 17, 31], fill=dark)  # hem
+    d.point([(5, 28), (4, 29), (5, 29), (6, 29), (5, 30)], fill=c('yellow'))  # a small four point star
+    if arms:
+        d.rectangle([3, 17, 4, 23], fill=c('witch_sleeve'))
+        d.rectangle([15, 17, 16, 23], fill=c('witch_sleeve'))
+        d.rectangle([3, 24, 4, 25], fill=c('skin'))
+        d.rectangle([15, 24, 16, 25], fill=c('skin'))
+
+
+# the tall hat's cone, row by row: (x0, x1), leaning right toward a bent tip
+_WITCH_CONE = {12: (5, 14), 11: (5, 14), 10: (6, 13), 9: (6, 13), 8: (7, 12), 7: (7, 12),
+               6: (8, 11), 5: (8, 11), 4: (9, 12), 3: (10, 12), 2: (11, 13), 1: (13, 14)}
+
+
+def _witch_hat(d: ImageDraw.ImageDraw) -> None:
+    """A tall pointed hat in rows 1-12 of the taller box and a flat brim as
+    wide as the straw hat's. One orange band with a gold buckle; the tip
+    (rows 1-4) is plain. Drawn once, so it is identical in every pose."""
+    c = rgb
+    robe, dark = c('witch_robe'), c('witch_robe_dark')
+    for y, (x0, x1) in _WITCH_CONE.items():
+        d.line([x0, y, x1, y], fill=robe)
+        d.point((x1, y), fill=dark)  # shaded side
+    for y in (11, 12):
+        x0, x1 = _WITCH_CONE[y]
+        d.line([x0, y, x1, y], fill=c('fire'))
+        d.point((x1, y), fill=c('copper'))
+    d.rectangle([9, 11, 10, 12], fill=c('yellow'))  # buckle
+    d.line([1, 13, 18, 13], fill=robe)  # brim
+    d.line([1, 14, 18, 14], fill=dark)
+    d.line([1, 13, 3, 13], fill=c('witch_robe_light'))
+
+
+def _sleeve_edges(img: Image.Image) -> None:
+    """The selective outline: a sleeve pixel on the outer edge of the arm
+    (empty space on the side away from the body) takes the robe's dark shade,
+    and one that touches skin, beard or a prop takes the sleeve's own darker
+    shade, so the arm separates from the body in every pose."""
+    c = rgb
+    px = img.load()
+    w, h = img.size
+    sleeve, edge, outer = c('witch_sleeve'), c('witch_sleeve_dark'), c('witch_robe_dark')
+    robe = {c('witch_robe'), c('witch_robe_dark'), c('witch_robe_light')}
+    marks = []
+    for y in range(h):
+        for x in range(w):
+            if px[x, y] != sleeve:
+                continue
+            ox = x - 1 if x < w // 2 else x + 1
+            if 0 <= ox < w and not px[ox, y][3]:
+                marks.append((x, y, outer))
+                continue
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < w and 0 <= ny < h and px[nx, ny][3] and px[nx, ny] not in robe | {sleeve, edge, outer}:
+                    marks.append((x, y, edge))
+                    break
+    for x, y, col in marks:
+        px[x, y] = col
+
+
 def jeb_sprites() -> list[Sprite]:
+    base = _jeb_base_sprites()
+    # every pose wears the same witch costume as a --halloween variant
+    return base + [Sprite(f'{sp.name}--halloween', w.frames, list(sp.ms), sp.anchor)
+                   for sp, w in zip(base, _jeb_base_sprites(witch=True))]
+
+
+def _jeb_base_sprites(witch: bool = False) -> list[Sprite]:
+    def j(*args: str | int) -> Image.Image:
+        return jeb(*args, witch=witch)
+
     return [
-        Sprite('jeb-idle', [jeb(), jeb(), jeb(), jeb('shut')], [900, 900, 900, 160]),
-        Sprite('jeb-happy', [jeb('happy', 'grin')], [400]),
-        Sprite('jeb-spooked', [jeb('wide', 'o')], [400]),
-        Sprite('jeb-wink', [jeb('wink', 'smile')], [400]),
-        Sprite('jeb-think', [jeb('down', 'flat', 'hold')], [400]),
-        Sprite('jeb-sleep', [jeb('shut', 'flat', 'sleep')], [400]),
-        Sprite('jeb-banjo', [jeb('happy', 'smile', 'banjo', 0), jeb('shut', 'smile', 'banjo', 1)], [260, 260]),
-        Sprite('jeb-jar', [jeb('happy', 'grin', 'jar')], [400]),
-        Sprite('jeb-sip', [jeb('shut', 'smile', 'sip', 0), jeb('happy', 'smile', 'sip', 1)], [700, 700]),
-        Sprite('jeb-hoe', [jeb('down', 'flat', 'hoe', 0), jeb('down', 'flat', 'hoe', 1)], [300, 300]),
-        Sprite('jeb-broom', [jeb('open', 'smile', 'broom', 0), jeb('open', 'smile', 'broom', 1)], [280, 280]),
-        Sprite('jeb-book', [jeb('down', 'smile', 'book')], [400]),
-        Sprite('jeb-stir', [jeb('open', 'flat', 'stir', 0), jeb('open', 'flat', 'stir', 1)], [320, 320]),
-        Sprite('jeb-salute', [jeb('open', 'flat', 'stand'), jeb('open', 'flat', 'salute')], [500, 1500]),
-        Sprite('jeb-wave', [jeb('happy', 'grin', 'wave', 0), jeb('happy', 'grin', 'wave', 1)], [250, 250]),
-        Sprite('jeb-hold', [jeb('open', 'smile', 'hold')], [400]),
+        Sprite('jeb-idle', [j(), j(), j(), j('shut')], [900, 900, 900, 160]),
+        Sprite('jeb-happy', [j('happy', 'grin')], [400]),
+        Sprite('jeb-spooked', [j('wide', 'o')], [400]),
+        Sprite('jeb-wink', [j('wink', 'smile')], [400]),
+        Sprite('jeb-think', [j('down', 'flat', 'hold')], [400]),
+        Sprite('jeb-sleep', [j('shut', 'flat', 'sleep')], [400]),
+        Sprite('jeb-banjo', [j('happy', 'smile', 'banjo', 0), j('shut', 'smile', 'banjo', 1)], [260, 260]),
+        Sprite('jeb-jar', [j('happy', 'grin', 'jar')], [400]),
+        Sprite('jeb-sip', [j('shut', 'smile', 'sip', 0), j('happy', 'smile', 'sip', 1)], [700, 700]),
+        Sprite('jeb-hoe', [j('down', 'flat', 'hoe', 0), j('down', 'flat', 'hoe', 1)], [300, 300]),
+        Sprite('jeb-broom', [j('open', 'smile', 'broom', 0), j('open', 'smile', 'broom', 1)], [280, 280]),
+        Sprite('jeb-book', [j('down', 'smile', 'book')], [400]),
+        Sprite('jeb-stir', [j('open', 'flat', 'stir', 0), j('open', 'flat', 'stir', 1)], [320, 320]),
+        Sprite('jeb-salute', [j('open', 'flat', 'stand'), j('open', 'flat', 'salute')], [500, 1500]),
+        Sprite('jeb-wave', [j('happy', 'grin', 'wave', 0), j('happy', 'grin', 'wave', 1)], [250, 250]),
+        Sprite('jeb-hold', [j('open', 'smile', 'hold')], [400]),
     ]
 
 
