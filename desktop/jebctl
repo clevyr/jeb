@@ -2271,7 +2271,7 @@ def release_steps(args, done):
             for chunk in iter(lambda: f.read(1 << 20), b""):
                 h.update(chunk)
         message = f"Jeb {tag}\n\napp-sha256: {h.hexdigest()} {name}"
-    step(f"sign tag {tag} (asks for the key's passphrase)", ["git", "-C", CLONE, "tag", "-s", tag, "-m", message], tty=True)
+    step(f"sign tag {tag}" + ("" if os.environ.get("JEB_RELEASE_WRAPPED") else " (asks for the key's passphrase)"),["git", "-C", CLONE, "tag", "-s", tag, "-m", message], tty=True)
     notes = notes or "Maintenance release."
     if DRY:
         say("release notes:\n" + notes)

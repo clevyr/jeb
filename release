@@ -3,8 +3,9 @@
 
   ./release setup         one-time signing setup. When this clone has no SSH signing key configured, makes
                           ~/.ssh/jeb_signing (ed25519; ssh-keygen asks for a passphrase) unless it exists and
-                          points this clone's git at it (gpg.format ssh, user.signingkey = the private key, so
-                          signing needs no ssh-agent; git asks for the passphrase once per release). Then creates
+                          points this clone's git at it (gpg.format ssh, user.signingkey = the private key; a
+                          release asks for its passphrase once, first, and holds it in a private ssh-agent
+                          that ends with the run). Then creates
                           desktop/release-signers (ssh allowed_signers format) from git's user.email and that
                           public key when it does not exist; else shows its fingerprints and whether the
                           configured key is in it. Commit and push the file before the first release: installs
@@ -148,8 +149,34 @@ def no_private_keys():
         fail("a tracked file holds a private key; remove it from git before releasing: " + ", ".join(hits))
 
 
+def unlock_key():
+    """Ask for the signing key's passphrase now, before the checks and builds: a private ssh-agent for this run holds the
+    key, and git (the tag) and ssh-keygen -Y sign (the manifest) sign through it. The key expires after 4 hours in case the
+    agent outlives a killed run. Returns the agent's pid."""
+    key = signing_key()
+    r = subprocess.run(["ssh-agent", "-s"], capture_output=True, text=True)
+    env = dict(re.findall(r"(SSH_AUTH_SOCK|SSH_AGENT_PID)=([^;]+);", r.stdout))
+    if r.returncode != 0 or len(env) != 2:
+        fail("could not start ssh-agent to hold the signing key")
+    os.environ.update(env)
+    say(f"unlocking the signing key {key}")
+    if subprocess.run(["ssh-add", "-t", "4h", key]).returncode != 0:
+        os.kill(int(env["SSH_AGENT_PID"]), signal.SIGTERM)
+        fail("the signing key was not unlocked; nothing was done")
+    return int(env["SSH_AGENT_PID"])
+
+
 def release(dry, bump):
     no_private_keys()
+    agent = None if dry else unlock_key()
+    try:
+        return release_run(dry, bump)
+    finally:
+        if agent:
+            os.kill(agent, signal.SIGTERM)
+
+
+def release_run(dry, bump):
     cmd = ["/usr/bin/python3", "-I", os.path.join(CODE, "jebctl"), "release", "--parity", "--bump", bump] + (["--dry-run"] if dry else [])
     # jebctl gets the Ctrl-C and says how far it got; this side just waits for it
     old = signal.signal(signal.SIGINT, lambda *a: None)

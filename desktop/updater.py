@@ -542,9 +542,9 @@ def update(a, before_swap):
             shutil.copy2(a.prebuilt, binary)
             os.chmod(binary, 0o755)
             for n in GATE_TOOLS:        # the release's helpers sit beside its binary
-                h = os.path.join(os.path.dirname(os.path.abspath(a.prebuilt)), n)
-                if os.path.isfile(h):
-                    shutil.copy2(h, os.path.join(snap, "tools", n))
+                tool = os.path.join(os.path.dirname(os.path.abspath(a.prebuilt)), n)
+                if os.path.isfile(tool):
+                    shutil.copy2(tool, os.path.join(snap, "tools", n))
                     os.chmod(os.path.join(snap, "tools", n), 0o755)
             rc, out, err = 0, "", ""
         except OSError as e:
