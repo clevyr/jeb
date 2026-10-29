@@ -45,17 +45,19 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     }
 
     /// Jeb's head, hat to beard: the top 20 rows of his idle sprite (the band's
-    /// jebHead box), one point per art pixel, in his own colours. 1x and 2x
+    /// jebHead box, plus the rows a taller holiday variant adds), one point per art pixel, in his own colours. 1x and 2x
     /// bitmaps, both whole-number scaled, so it is crisp either way.
     func setIcon(art: Art) {
         guard let button = item.button else { return }
-        let reps = [1, 2].compactMap { k in art.image("jeb-idle", rows: 20, scale: k).map(NSBitmapImageRep.init(cgImage:)) }
+        let reps = [1, 2].compactMap { k in art.image("jeb-idle", rows: art.headRows("jeb-idle", 20), scale: k).map(NSBitmapImageRep.init(cgImage:)) }
         guard reps.count == 2 else {
             button.image = nil
             button.title = "Jeb"
             return
         }
-        let image = NSImage(size: NSSize(width: 20, height: 20))
+        // Always 20 pt tall: a taller crop (a holiday costume) scales down to fit, width in proportion.
+        let size = NSSize(width: 20 * Double(reps[0].pixelsWide) / Double(reps[0].pixelsHigh), height: 20)
+        let image = NSImage(size: size)
         reps.forEach { $0.size = image.size; image.addRepresentation($0) }
         image.isTemplate = false
         button.image = image

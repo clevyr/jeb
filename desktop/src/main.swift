@@ -25,14 +25,15 @@
 // Files: main.swift (entry point, windows, the one Story, pausing, reloads, stats),
 // Store.swift, Farm.swift, Live.swift, Story.swift (which place, the trips and their
 // lines), FarmScene.swift (the valley), Valley.swift, Strip.swift, Homestead.swift,
-// Camp.swift, Road.swift, Cast.swift, Art.swift, PixelArt.swift, StatusMenu.swift, UpdateNotifier.swift, IconExport.swift,
+// Camp.swift, Road.swift, Cast.swift, Holiday.swift, Art.swift, PixelArt.swift, StatusMenu.swift, UpdateNotifier.swift, IconExport.swift, EmojiExport.swift,
 // Heartbeat.swift (install hooks), Probe.swift, Bench.swift (also Save Screenshot's renderer; JEB_SHOT_DIR its folder).   Build: ./build.sh   Live: ./run-live.sh
-// JEB_MOD the mod folder (default the bundle's JebMod, else mod/ beside desktop/ from the executable); JEB_ART_PATH the art file (default the mod's); JEB_ICONSET=<dir> writes the app icon's .iconset PNGs there and exits (tools/bundle.sh; nothing else starts); JEB_PID_FILE a file the running
+// JEB_MOD the mod folder (default the bundle's JebMod, else mod/ beside desktop/ from the executable); JEB_ART_PATH the art file (default the mod's); JEB_ICONSET=<dir> writes the app icon's .iconset PNGs there and exits (tools/bundle.sh; nothing else starts); JEB_EMOJI=<out.gif> writes a 128 px animated GIF of a sprite for a Slack custom emoji and exits (JEB_EMOJI_SPRITE default jeb-idle, JEB_EMOJI_ROWS top rows kept, default 20, 0 = all, JEB_EMOJI_DELAY seconds per frame, default jeb-idle's blink timing, else 0.5; JEB_HOLIDAY picks a variant; jebctl emoji); JEB_PID_FILE a file the running
 // instance keeps its pid in. JEB_NO_PAUSE=1 turns off the occlusion pause (for
 // measuring); JEB_IDLE_SECONDS sets the idle pause (default 120 s without a change
 // to what the farm shows); JEB_FPS the frame rate asked for while something passes
 // on the road or in the sky (default 60), JEB_CALM_FPS otherwise (default 30);
 // measuring only: JEB_FORCE_PAUSE=1; JEB_HOUR fixes the hour, JEB_NOW the clock (ms);
+// JEB_HOLIDAY=<name>|none forces a holiday's sprite variants (or turns them off; Holiday.swift; always off under JEB_BENCH unless forced);
 // JEB_STORE_PATH another store (fixtures, the latency test); JEB_PLACE=home|<token> (with
 // JEB_PLACE_SINCE seconds) where the story starts, JEB_STORY_SCALE=N story durations N times
 // shorter, JEB_STORY_PATH another story.json (none is written under JEB_BENCH unless set). JEB_SPACES=all goes back to one window
@@ -339,7 +340,9 @@ final class App {
         // night falls or ends. Paused or not: the layers show it either way.
         every(60) { [self] in
             let night = isNightHour(Int(hourNow()))
-            if night != lastNight {
+            let holidayChanged = art.refreshHoliday() // a holiday began or ended: new scenes and menu-bar head
+            if holidayChanged { onArt?(art) }
+            if night != lastNight || holidayChanged {
                 lastNight = night
                 windows.forEach { $0.replaceScene(art: art) }
             } else {
@@ -643,7 +646,22 @@ let artSource = ArtSource(path: artPath)
 // app (hand-over, windows, status item, timers, heartbeat), so it never touches a running instance.
 if let dir = env["JEB_ICONSET"] {
     guard artSource.refresh(), let art = artSource.art else { log("icon export: no usable art at \(artPath)"); exit(1) }
+    art.holidayName = { nil } // the bundle's icon is always the base head
     if let problem = exportIconset(art: art, to: dir) { log("icon export: \(problem)"); exit(1) }
+    exit(0)
+}
+// Emoji export (jebctl emoji): same place and rules as the icon export; nothing else starts.
+if let out = env["JEB_EMOJI"] {
+    guard artSource.refresh(), let art = artSource.art else { log("emoji export: no usable art at \(artPath)"); exit(1) }
+    let sprite = env["JEB_EMOJI_SPRITE"] ?? "jeb-idle"
+    let delay = env["JEB_EMOJI_DELAY"].map { Double($0) }    // nil: unset (the default timing); .some(nil): not a number
+    guard let rows = env["JEB_EMOJI_ROWS"].map({ Int($0) }) ?? 20, delay.map({ ($0 ?? 0) > 0 }) ?? true
+    else { log("emoji export: JEB_EMOJI_ROWS must be a whole number and JEB_EMOJI_DELAY a positive number of seconds"); exit(1) }
+    if let problem = exportEmoji(art: art, sprite: sprite, rows: rows, delay: delay ?? nil, to: out, report: { frames, bytes in
+        if frames == 1 { log("emoji export: \(sprite) has one frame, so the GIF is static") }
+        log("emoji export: \(out), \(frames) frame(s), \(bytes) bytes")
+        if bytes > 128 * 1024 { log("emoji export: warning, \(bytes) bytes is over Slack's 128 KB limit") }
+    }) { log("emoji export: \(problem)"); exit(1) }
     exit(0)
 }
 guard artSource.refresh(), let art = artSource.art else {
@@ -669,6 +687,7 @@ if env["JEB_PROBE"] == "1" { desktop.startProbe() }
 let statusMenu = StatusMenu(app: desktop)
 desktop.onArt = { statusMenu.setIcon(art: $0) }
 let updateNotifier = UpdateNotifier()
+updateNotifier.art = { desktop.art }
 updateNotifier.start()
 log("started (occlusion pause \(noPause ? "off" : "on"), idle pause after \(Int(idleSeconds)) s, art \(artPath))")
 

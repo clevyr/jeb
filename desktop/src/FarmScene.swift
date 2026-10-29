@@ -389,7 +389,15 @@ final class FarmScene {
         }
         strip.position = CGPoint(x: valley.farmX, y: valley.road)
         strip.zPosition = 4
-        strip.masksToBounds = v.kind == .camp
+        strip.masksToBounds = false
+        if v.kind == .camp {
+            // Clip to the band, but leave the rows above it a taller holiday variant of Jeb grows into.
+            let clip = CALayer()
+            clip.anchorPoint = .zero
+            clip.backgroundColor = CGColor(gray: 0, alpha: 1)
+            clip.frame = CGRect(x: 0, y: 0, width: valley.farmWidth, height: bandHeight + Art.variantHeadroom)
+            strip.mask = clip
+        }
         root.addSublayer(strip)
         world.addSublayer(root)
         if arriving {

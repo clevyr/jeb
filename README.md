@@ -118,6 +118,7 @@ The install:
     jebctl resume-updates
     jebctl rollback          # go back to the previous version
     jebctl screenshot        # same as Save Screenshot, prints the paths
+    jebctl emoji             # animated GIF of Jeb's head for a Slack custom emoji, in ~/Pictures/Jeb
 
 `jebctl screenshot --fixture <name> [--out <dir>] [--hour <h>]` renders one of the test scenes to `<dir>/<name>.png` without touching the running app. `--list` shows the scene names. That's how the screenshots in this README were made (scaled up 3x with `desktop/src/tools/up <in> <out> 3`).
 
@@ -270,6 +271,8 @@ The installed app finds the plugin through the `JebMod` key in its `Info.plist`,
 Environment variables, mostly for tests (the install sets the paths itself):
 
 - `JEB_HOME`: desktop state folder (default `~/Library/Application Support/Jeb`).
+- `JEB_HOLIDAY`: `<name>` forces a holiday's sprite variants (`newyear`, `valentines`, `stpatricks`, `easter`, `july4`, `halloween`, `thanksgiving`, `christmas`), `none` turns them off. A variant `<base>--<holiday>` must have its base's width and frame count and may be up to 8 rows taller (a costume's tall hat); it is drawn from the feet up. Holidays are always off under `JEB_BENCH` (so the checks stay deterministic) unless forced.
+- `JEB_EMOJI`: `<out.gif>` writes an animated 128 px GIF of a sprite for a Slack custom emoji and exits before the app starts (what `jebctl emoji` runs). `JEB_EMOJI_SPRITE` (default `jeb-idle`), `JEB_EMOJI_ROWS` (top rows of the base sprite kept, default 20, `0` the whole sprite; a taller holiday variant adds its extra rows on top), `JEB_EMOJI_DELAY` (seconds per frame; by default `jeb-idle` keeps the desktop's blink timing and other sprites get 0.5); `JEB_HOLIDAY` picks a variant.
 - `JEB_SRC`: app source for `jebctl` and `updater.py` (default `desktop/src`).
 - `JEB_MOD`: the plugin folder, used to find `hooks/pixel-art.ts`.
 - `JEB_BUNDLE_MOD`: the folder written into the bundle's `JebMod` key (default `JEB_MOD`). Release updates point it at the clone's `mod/`, since the staged copy is deleted afterwards.

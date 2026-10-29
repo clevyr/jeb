@@ -110,7 +110,7 @@ final class JebBlue {
         func add(_ l: CALayer?) { if let l { out.append(l) } }
         if chair && (sitting || away) { add(strip.standing("prop-chair", x: jebX + 5, bottom: FOOT, z: 9)) }
         guard !away else { return out }
-        add(strip.flipbook(clock: clock, count: art.frameCount(sprite), z: 10) { f in (sprite, f, self.jebX, FOOT - 40) })
+        add(strip.flipbook(clock: clock, count: art.frameCount(sprite), z: 10) { f in (sprite, f, self.jebX, FOOT - self.art.height(sprite)) })
         if hat { add(strip.sprite("hat-feather", x: jebX + 12, y: 0, z: 10.5)) }
         if sprite == "jeb-banjo" {
             add(strip.flipbook(clock: clock, count: 2, z: 10.5) { f in ("note", 0, self.jebX - 6 - (f % 2) * 3, 6) })

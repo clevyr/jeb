@@ -75,6 +75,13 @@
                           headless, never touches the running app: the parity fixture NAME rendered by the
                           installed binary (JEB_BIN overrides) with the bench, to <DIR>/NAME.png (default: the
                           current directory); --hour fixes the hour of day. screenshot --list: the fixture names
+  emoji [--holiday NAME] [--sprite NAME] [--rows N] [-o FILE]
+                          animated GIF of a sprite for a Slack custom emoji (128 x 128, transparent, looping), made by
+                          the installed binary (JEB_BIN overrides) in its export mode, which exits before the app
+                          starts, so the running instance is never touched. --sprite default jeb-idle; --rows the top
+                          rows kept (default 20, the menu bar's head; 0 the whole sprite); --holiday NAME uses that
+                          holiday's variant (the base when it has none). Default file ~/Pictures/Jeb/jeb-emoji[-NAME].gif.
+                          Prints the path and size; warns past Slack's 128 KB limit
   pause-updates | resume-updates
   start | quit            quit writes the marker the watchdog honours; start clears it
   update-now              the updater without the 60 s debounce (still gated)
@@ -546,6 +553,39 @@ def screenshot_fixture(name, out, hour):
         return 0
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+def cmd_emoji(args):
+    opts = {"--holiday": None, "--sprite": None, "--rows": None, "-o": None}
+    i = 0
+    while i < len(args):
+        if args[i] not in opts or i + 1 >= len(args):
+            say("usage: jebctl emoji [--holiday NAME] [--sprite NAME] [--rows N] [-o FILE]")
+            return 2
+        opts[args[i]] = args[i + 1]; i += 2
+    if opts["--rows"] is not None and not opts["--rows"].isdigit():
+        say("emoji: --rows takes a whole number (0 for the whole sprite)")
+        return 2
+    exe = os.path.abspath(os.environ.get("JEB_BIN") or EXE)
+    if not os.access(exe, os.X_OK):
+        say(f"emoji: no binary at {exe}")
+        return 1
+    holiday = opts["--holiday"]
+    dest = os.path.abspath(os.path.expanduser(opts["-o"] or os.path.join("~/Pictures/Jeb", "jeb-emoji" + (f"-{holiday}" if holiday else "") + ".gif")))
+    say(f"export {opts['--sprite'] or 'jeb-idle'} with {exe} to {dest}")
+    if DRY:
+        return 0
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    env = dict(os.environ, JEB_EMOJI=dest, JEB_MOD=MOD)
+    for flag, name in (("--holiday", "JEB_HOLIDAY"), ("--sprite", "JEB_EMOJI_SPRITE"), ("--rows", "JEB_EMOJI_ROWS")):
+        if opts[flag] is not None: env[name] = opts[flag]
+    r = subprocess.run([exe], capture_output=True, text=True, env=env)
+    if r.returncode != 0 or not os.path.isfile(dest):
+        say(f"emoji: the export failed (exit {r.returncode}): " + (r.stderr.strip().splitlines() or [""])[-1])
+        return 1
+    size = os.path.getsize(dest)
+    say(f"{dest}  {size} bytes" + ("  (over Slack's 128 KB emoji limit)" if size > 128 * 1024 else ""))
+    return 0
 
 
 def cmd_screenshot(args):
@@ -1600,6 +1640,7 @@ def main(argv):
     elif cmd == "uninstall": cmd_uninstall("--purge" in args)
     elif cmd == "rollback": cmd_rollback()
     elif cmd == "screenshot": return cmd_screenshot(args[1:])
+    elif cmd == "emoji": return cmd_emoji(args[1:])
     elif cmd == "pause-updates":
         open(os.path.join(HOME, "updates-paused"), "w").close(); say("updates paused")
     elif cmd == "resume-updates":

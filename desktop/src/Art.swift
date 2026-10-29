@@ -49,6 +49,15 @@ final class Art {
     private let sprites: [String: Sprite]
     private var cache: [String: CGImage] = [:]
 
+    /// The holiday whose `<base>--<holiday>` variants stand in for their base sprites (Holiday.swift). Read at most once a
+    /// minute; a test can set it and call refreshHoliday().
+    var holidayName: () -> String? = { Holiday.current() }
+    private var activeHoliday: String?
+    private var variants: [String: String] = [:]
+    private var holidayChecked = -Double.infinity
+    /// How many rows taller than its base a holiday variant may be.
+    static let variantHeadroom = 8
+
     init(_ data: PixelArt) {
         palette = data.palette
         colours = data.colours
@@ -60,16 +69,42 @@ final class Art {
         sprites = all
     }
 
+    /// Re-reads the holiday and rebuilds the base-to-variant map; true when the holiday changed. A variant stands in only
+    /// when its width and frame count match its base and it is at most `variantHeadroom` rows taller (a costume's tall
+    /// hat); every draw anchors a sprite at its feet, so a taller one grows upward. Otherwise it is skipped, quietly.
+    @discardableResult
+    func refreshHoliday() -> Bool {
+        holidayChecked = CFAbsoluteTimeGetCurrent()
+        let now = holidayName()
+        guard now != activeHoliday else { return false }
+        activeHoliday = now
+        variants = [:]
+        if let h = now {
+            for (key, v) in sprites where key.hasSuffix("--" + h) {
+                let base = String(key.dropLast(h.count + 2))
+                if let b = sprites[base], b.w == v.w, v.h >= b.h, v.h <= b.h + Art.variantHeadroom, b.frames.count == v.frames.count { variants[base] = key }
+            }
+        }
+        return true
+    }
+
+    /// The name a sprite is looked up under: its active-holiday variant if the art has a usable one, else itself.
+    private func resolve(_ name: String) -> String {
+        if abs(CFAbsoluteTimeGetCurrent() - holidayChecked) >= 60 { refreshHoliday() }
+        return variants[name] ?? name
+    }
+
     func colour(_ name: String) -> UInt32 { palette[colours[name] ?? 0] }
     func paletteWord(_ index: Int) -> UInt32 { palette.indices.contains(index) ? palette[index] : 0 }
     func colourIndex(_ name: String) -> Int { colours[name] ?? 0 }
     func sprite(_ name: String) -> Sprite? {
+        let name = resolve(name)
         if let s = sprites[name] { return s }
         if let s = custom[name] { return s }
         log("art has no sprite \(name)")
         return nil
     }
-    func has(_ name: String) -> Bool { sprites[name] != nil || custom[name] != nil }
+    func has(_ name: String) -> Bool { let name = resolve(name); return sprites[name] != nil || custom[name] != nil }
     /// A glyph's 15 bits; a character the font lacks draws as a space.
     func glyph(_ ch: Character) -> String { font[String(ch)] ?? font[String(ch).uppercased()] ?? font[" "] ?? "" }
     func hasGlyph(_ ch: Character) -> Bool { font[String(ch)] != nil || font[String(ch).uppercased()] != nil }
@@ -112,10 +147,11 @@ final class Art {
         return CGColor(srgbRed: CGFloat(c & 255) / 255, green: CGFloat(c >> 8 & 255) / 255, blue: CGFloat(c >> 16 & 255) / 255, alpha: 1)
     }
 
-    func frameCount(_ name: String) -> Int { (sprites[name] ?? custom[name])?.frames.count ?? 1 }
+    func frameCount(_ name: String) -> Int { let name = resolve(name); return (sprites[name] ?? custom[name])?.frames.count ?? 1 }
 
     /// One frame of a sprite, one pixel per art pixel (shared by every layer showing it).
     func image(_ name: String, _ frame: Int = 0) -> CGImage {
+        let name = resolve(name) // the variant's own name is the cache key, so a variant and its base never share an entry
         let key = "\(name)#\(frame)"
         if let hit = cache[key] { return hit }
         guard let s = sprites[name] ?? custom[name] else {
@@ -135,16 +171,24 @@ final class Art {
     /// The top `rows` rows of a sprite's first frame, each pixel `scale` x `scale`
     /// (whole-number scaling, so it stays crisp), or nil if the art lacks it.
     func image(_ name: String, rows: Int, scale: Int) -> CGImage? {
-        guard let s = sprites[name], rows <= s.h else { return nil }
+        guard let s = sprites[resolve(name)], rows <= s.h else { return nil }
         let w = s.w * scale, h = rows * scale
         let pixels = (0..<(w * h)).map { i in palette[Int(s.frames[0][(i / w / scale) * s.w + (i % w) / scale])] }
         return makeImage(width: w, height: h, pixels: pixels)
     }
 
+    /// The rows to crop from the top of `name` so the crop keeps `rows` rows of the base sprite plus any rows its active
+    /// holiday variant adds on top (a tall hat stays in frame). `rows` itself when no taller variant is active.
+    func headRows(_ name: String, _ rows: Int) -> Int {
+        let resolved = resolve(name)
+        guard let v = sprites[resolved], let b = sprites[name] else { return rows }
+        return rows + max(0, v.h - b.h)
+    }
+
     /// Paints a sprite frame into a canvas with its bottom-left at (x, y); `half`
     /// takes every other pixel, as the band's standHalf does. Clear pixels are skipped.
     func paint(_ name: String, frame: Int = 0, into c: inout Canvas, x: Int, y: Int, half: Bool = false) {
-        guard let s = sprites[name] else { log("art has no sprite \(name)"); return }
+        guard let s = sprites[resolve(name)] else { log("art has no sprite \(name)"); return }
         let f = s.frames[frame % s.frames.count], step = half ? 2 : 1
         let w = s.w / step, h = s.h / step
         for row in 0..<h {
@@ -164,8 +208,8 @@ final class Art {
         }
     }
 
-    func height(_ name: String) -> Int { (sprites[name] ?? custom[name])?.h ?? 0 }
-    func width(_ name: String) -> Int { (sprites[name] ?? custom[name])?.w ?? 0 }
+    func height(_ name: String) -> Int { let name = resolve(name); return (sprites[name] ?? custom[name])?.h ?? 0 }
+    func width(_ name: String) -> Int { let name = resolve(name); return (sprites[name] ?? custom[name])?.w ?? 0 }
 }
 
 /// The band's short counts: 999, then 1.2k, 13k, 1.5M.
