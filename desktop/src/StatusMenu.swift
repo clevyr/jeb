@@ -84,6 +84,12 @@ final class StatusMenu: NSObject, NSMenuDelegate {
             rates.addItem(entry)
         }
         menu.addItem(submenu("Frame rate", rates))
+        let broadcast = action("Broadcast Window", #selector(toggleBroadcast))
+        broadcast.state = app.broadcast != nil ? .on : .off
+        menu.addItem(broadcast)
+        let follow = action("Follow the Action", #selector(toggleBroadcastFollow))
+        follow.state = app.broadcastFollow ? .on : .off
+        menu.addItem(follow)
 
         menu.addItem(.separator())
         agent = updateAgent()
@@ -203,6 +209,10 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         task.terminationHandler = { p in log("menu: kickstart \(target) exited \(p.terminationStatus)") }
         do { try task.run() } catch { log("menu: kickstart failed: \(error)") }
     }
+
+    @objc private func toggleBroadcast() { app.toggleBroadcast() }
+
+    @objc private func toggleBroadcastFollow() { app.broadcastFollow.toggle() }
 
     @objc private func togglePause() {
         app.manualPause.toggle()

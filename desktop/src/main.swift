@@ -25,7 +25,7 @@
 // Files: main.swift (entry point, windows, the one Story, pausing, reloads, stats),
 // Store.swift, Farm.swift, Live.swift, Story.swift (which place, the trips and their
 // lines), FarmScene.swift (the valley), Valley.swift, Strip.swift, Homestead.swift,
-// Camp.swift, Road.swift, Cast.swift, Holiday.swift, Art.swift, PixelArt.swift, StatusMenu.swift, UpdateNotifier.swift, IconExport.swift, EmojiExport.swift,
+// Camp.swift, Road.swift, Cast.swift, Broadcast.swift (the Broadcast Window), Holiday.swift, Art.swift, PixelArt.swift, StatusMenu.swift, UpdateNotifier.swift, IconExport.swift, EmojiExport.swift,
 // Heartbeat.swift (install hooks), Probe.swift, Bench.swift (also Save Screenshot's renderer; JEB_SHOT_DIR its folder).   Build: ./build.sh   Live: ./run-live.sh
 // JEB_MOD the mod folder (default the bundle's JebMod, else mod/ beside desktop/ from the executable); JEB_ART_PATH the art file (default the mod's); JEB_ICONSET=<dir> writes the app icon's .iconset PNGs there and exits (tools/bundle.sh; nothing else starts); JEB_EMOJI=<out.gif> writes a 128 px animated GIF of a sprite for a Slack custom emoji and exits (JEB_EMOJI_SPRITE default jeb-idle, JEB_EMOJI_ROWS top rows kept, default 20, 0 = all, JEB_EMOJI_DELAY seconds per frame, default jeb-idle's blink timing, else 0.5; JEB_HOLIDAY picks a variant; jebctl emoji); JEB_PID_FILE a file the running
 // instance keeps its pid in. JEB_NO_PAUSE=1 turns off the occlusion pause (for
@@ -36,7 +36,7 @@
 // JEB_HOLIDAY=<name>|none forces a holiday's sprite variants (or turns them off; Holiday.swift; always off under JEB_BENCH unless forced);
 // JEB_STORE_PATH another store (fixtures, the latency test); JEB_PLACE=home|<token> (with
 // JEB_PLACE_SINCE seconds) where the story starts, JEB_STORY_SCALE=N story durations N times
-// shorter, JEB_STORY_PATH another story.json (none is written under JEB_BENCH unless set). JEB_SPACES=all goes back to one window
+// shorter, JEB_STORY_PATH another story.json (none is written under JEB_BENCH unless set). JEB_BROADCAST_ROWS the scene rows the Broadcast Window's view holds (default 96), JEB_BROADCAST_PAD the scene px kept clear around everything on stage (default 6), JEB_BROADCAST_LOG=1 logs its framing. JEB_SPACES=all goes back to one window
 // joining every Space (the old behaviour, for comparison); JEB_PROBE=1 logs every
 // Space, activation, occlusion, screen, sleep and lock notification with the
 // render state (Probe.swift).
@@ -239,9 +239,13 @@ final class App {
     private var watcher: StoreWatcher?
     private var latencyLog = env["JEB_LATENCY_LOG"] == "1"
     private(set) var windows: [DesktopWindow] = []
+    private(set) var broadcast: BroadcastWindow?
     private(set) var pauseReason: String? // nil while running
     var manualPause = settings.bool(forKey: "paused") {
         didSet { settings.set(manualPause, forKey: "paused"); lastChange = Date(); updatePause() }
+    }
+    var broadcastFollow = settings.object(forKey: "broadcastFollow") == nil ? true : settings.bool(forKey: "broadcastFollow") {
+        didSet { settings.set(broadcastFollow, forKey: "broadcastFollow"); broadcast?.follows = broadcastFollow }
     }
     private var lastChange = Date()
     private var asleep = false, locked = false
@@ -345,12 +349,15 @@ final class App {
             if night != lastNight || holidayChanged {
                 lastNight = night
                 windows.forEach { $0.replaceScene(art: art) }
+                broadcast?.replaceScene(art: art)
             } else {
                 story.ingest(live: source.live) // the clock's own decisions (night, a record gone stale)
                 windows.forEach { $0.scene.minute() }
+                broadcast?.scene.minute()
             }
             logStats()
         }
+        if settings.bool(forKey: "broadcast") { openBroadcast(activate: false) }
     }
 
     /// The store changed (or may have): what the scenes draw from it, re-read and applied.
@@ -369,6 +376,7 @@ final class App {
         for w in windows {
             if w.window.isOnActiveSpace { w.scene.apply(farm: source.farm, live: source.live); w.stale = false } else { w.stale = true }
         }
+        broadcast?.scene.apply(farm: source.farm, live: source.live)
         if windows.contains(where: \.stale), !catchUpPending {
             catchUpPending = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in self?.catchUp() }
@@ -389,6 +397,7 @@ final class App {
         for w in windows {
             if w.window.isOnActiveSpace { w.scene.apply(farm: source.farm, live: source.live); w.stale = false } else { w.stale = true }
         }
+        broadcast?.scene.apply(farm: source.farm, live: source.live)
         lastChange = Date()
     }
 
@@ -411,6 +420,7 @@ final class App {
         guard let next = artSource.art else { return }
         art = next
         windows.forEach { $0.replaceScene(art: next) }
+        broadcast?.replaceScene(art: next)
         lastChange = Date()
         onArt?(next)
     }
@@ -439,6 +449,33 @@ final class App {
         }
     }
 
+    // MARK: The Broadcast Window (Broadcast.swift): open state is kept in settings, so a reload or Restart reopens it.
+
+    func toggleBroadcast() { broadcast == nil ? openBroadcast() : closeBroadcast() }
+
+    func openBroadcast(activate: Bool = true) {
+        guard broadcast == nil else { return }
+        let b = BroadcastWindow(art: art, farm: source.farm, live: source.live, story: story, activate: activate, follows: broadcastFollow)
+        b.onClose = { [weak self, weak b] in
+            guard let self, let b, broadcast === b else { return }
+            closeBroadcast()
+        }
+        broadcast = b
+        settings.set(true, forKey: "broadcast")
+        if !isRunning { b.setRunning(false) }
+        lastChange = Date(); updatePause()
+        log("broadcast window opened")
+    }
+
+    func closeBroadcast() {
+        guard let b = broadcast else { return }
+        broadcast = nil
+        settings.set(false, forKey: "broadcast")
+        b.tearDown()
+        updatePause()
+        log("broadcast window closed")
+    }
+
     func buildWindows() {
         let farm = source.farm, live = source.live
         let old = windows
@@ -458,10 +495,10 @@ final class App {
     }
 
     /// Runs while awake and unlocked, while some window is visible (unless JEB_NO_PAUSE),
-    /// and while the store changed in the last two minutes or a session is live.
+    /// and while the store changed in the last two minutes or a session is live (never idle while the Broadcast Window is shown).
     private func updatePause() {
-        let idle = Date().timeIntervalSince(lastChange) > idleSeconds && !windows.contains { $0.scene.sessionCount > 0 }
-        let covered = !noPause && !windows.contains(where: \.isShown)
+        let idle = broadcast?.isShown != true && Date().timeIntervalSince(lastChange) > idleSeconds && !windows.contains { $0.scene.sessionCount > 0 }
+        let covered = !noPause && !windows.contains(where: \.isShown) && broadcast?.isShown != true
         let forced = env["JEB_FORCE_PAUSE"] == "1" // measuring only: paused from the start
         let run = !manualPause && !forced && !asleep && !locked && !idle && !covered
         pauseReason = run ? nil : forced ? "forced" : manualPause ? "by you" : asleep ? "asleep" : locked ? "locked" : idle ? "idle" : "covered"
@@ -469,11 +506,11 @@ final class App {
         if run { story.tick() } // it moved on while the scenes stood still: they resume from where it is now
         isRunning = run
         windows.forEach { $0.setRunning(run) }
+        broadcast?.setRunning(run)
         if run && storePending { DispatchQueue.main.async { [weak self] in self?.storeChanged(by: "resume") } }
         if run, let since = pausedSince { pausedSeconds += Date().timeIntervalSince(since); pausedSince = nil }
         if !run { pausedSince = Date() }
-        log(run ? "resumed" : "paused (\(pauseReason ?? ""))")
-    }
+        log(run ? "resumed" : "paused (\(pauseReason ?? ""))")    }
 
     // MARK: Self-reload: a rebuilt binary takes over without a gap
 
@@ -537,7 +574,7 @@ final class App {
     func screenshots() throws -> [String] { try saveScreenshots(art: art, farm: source.farm, live: source.live, story: story) }
 
     /// A new frame rate: new scenes, whose animations ask for it.
-    func applyRateToViews() { windows.forEach { $0.replaceScene(art: art) } }
+    func applyRateToViews() { windows.forEach { $0.replaceScene(art: art) }; broadcast?.replaceScene(art: art) }
 
     func logStats() {
         let paused = pausedSeconds + (pausedSince.map { Date().timeIntervalSince($0) } ?? 0)

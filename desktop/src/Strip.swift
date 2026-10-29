@@ -52,6 +52,7 @@ final class Strip {
     func part(_ name: String, key: String, _ build: () -> [CALayer]) -> Bool {
         if let old = parts[name], old.key == key { return false }
         let fresh = build()
+        fresh.forEach { $0.setValue(name, forKey: "jebPart") } // tagged with its part, for the Broadcast Window's framing
         parts[name]?.layers.forEach { $0.removeFromSuperlayer() }
         fresh.forEach { if $0.superlayer == nil { layer.addSublayer($0) } }
         parts[name] = (key, fresh)
