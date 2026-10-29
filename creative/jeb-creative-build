@@ -11,6 +11,9 @@ copy. Only a build that passes every gate is synced into the mod, in place; the
 old mod is backed up first. A failed build is thrown away.
 
   jeb-creative-build             build, gate, swap in on success
+  jeb-creative-build --task TEXT build as above, with a one-off request from the owner added to the
+                                 builder's prompt (up to 1000 printable characters; the run record
+                                 notes only that one was given, with its length and a short hash)
   jeb-creative-build --dry-run   copy and gate the current mod, no model run
   jeb-creative-build --rollback  restore the most recent backup
   jeb-creative-build --status    last runs and backups
@@ -89,6 +92,7 @@ BUILDER_COMMANDS = (VALIDATE_CMD, TSC_CMD, TEST_CMD, ART_CMD)
 
 BUILDER_MODEL = 'claude-sonnet-5-5'
 BUILDER_PROMPT = 'Read .creative-brief.md and .creative-changelog.md, then follow the brief.'
+TASK_MAX = 1000
 DISALLOWED_TOOLS = ('WebSearch', 'WebFetch', 'Agent', 'Workflow')
 # The only built-in tools the builder session has at all (--tools); everything
 # else (cron, triggers, notifications, messaging, skills, publishing) is absent.
@@ -127,13 +131,13 @@ ALLOWED_FILES = [
     r'art/src/[^/]+\.py',
     r'art/out/.+\.(png|gif)',
     r'tsconfig\.json',
-    r'\.claude-plugin/plugin\.json', r'\.claude-plugin/types/.+',
+    r'\.claude-plugin/plugin\.json', r'\.claude-plugin/icon\.png', r'\.claude-plugin/types/.+',
 ]
 # What a build may not change at all: the only module that calls the model and
 # MCP, the drop prompt and its filters, the news file the runner writes, the
-# module list, manifest, type-check config and art build entry point.
+# module list, manifest and plugin icon, type-check config and art build entry point.
 PINNED_FILES = (
-    'hooks/hooks.json', '.claude-plugin/plugin.json', 'tsconfig.json',
+    'hooks/hooks.json', '.claude-plugin/plugin.json', '.claude-plugin/icon.png', 'tsconfig.json',
     'hooks/signals.ts', 'hooks/surprise.ts', 'hooks/news.ts', 'art/src/build.py',
     # The area prompt, its parser and validator, and the offline generator.
     'hooks/areas.ts',
@@ -365,6 +369,27 @@ def builder_allowed() -> list[str]:
     # inside the staging folder only; anything outside asks, which -p refuses.
     # Bash rules are exact matches.
     return ['Bash(ls:*)', *(f"Bash({' '.join(c)})" for c in BUILDER_COMMANDS)]
+
+
+def task_problem(text: str) -> Optional[str]:
+    """Why `--task` text is not acceptable (empty, too long, or not plain printable text), else None."""
+    if not text.strip():
+        return 'the task is empty'
+    if len(text) > TASK_MAX:
+        return f'the task is {len(text)} characters; the limit is {TASK_MAX}'
+    if not text.isprintable():
+        return 'the task has control or unprintable characters'
+    return None
+
+
+def builder_prompt(task: str = '') -> str:
+    """The builder's prompt: the standing one, plus the owner's one-off request after the brief when given."""
+    if not task:
+        return BUILDER_PROMPT
+    return (f"{BUILDER_PROMPT}\n\n"
+            "--- This run's request from the owner (after the brief) ---\n"
+            f"{task}\n"
+            "--- End of the owner's request ---")
 
 
 def builder_args(stage: Path, prompt: str = BUILDER_PROMPT, model: str = BUILDER_MODEL, budget: str = BUDGET_USD) -> list[str]:
@@ -616,7 +641,7 @@ def tsc_problems(root: Path) -> list[str]:
 # "passed 600000 ms" when its tests advance the mocked clock by hours, though the
 # run took seconds of real time (a race in the kit's watchdog). Only a pass whose
 # every failure is that kill is run again; any real test failure still rejects.
-KIT_FLAKE_RETRIES = 2
+KIT_FLAKE_RETRIES = 4
 KIT_FLAKE = 'it did not finish: its run passed 600000 ms and was killed'
 
 
@@ -775,7 +800,7 @@ def sync_into_mod(src: Path) -> None:
         shutil.rmtree(dst) if stat.S_ISDIR(st.st_mode) else dst.unlink()
 
 
-def build() -> int:
+def build(task: str = '') -> int:
     if not BRIEF.exists() or not MOD.exists():
         log('skip: brief or mod missing')
         return 1
@@ -785,7 +810,7 @@ def build() -> int:
         return 1
     ensure_tools()
     build_id = dt.datetime.now().strftime('%Y%m%d-%H%M%S')
-    log(f'build {build_id}: staging')
+    log(f'build {build_id}: staging' + (f' (owner task given: {len(task)} chars, sha256 {hashlib.sha256(task.encode()).hexdigest()[:8]})' if task else ''))
     copy_mod(STAGE)
     (STAGE / '.creative-brief.md').write_text(brief_text())
     (STAGE / '.creative-changelog.md').write_text(CHANGELOG.read_text() if CHANGELOG.exists() else '(no builds yet)\n')
@@ -794,7 +819,7 @@ def build() -> int:
     runs = ROOT / 'runs'
     runs.mkdir(exist_ok=True)
     out_path = runs / f'{build_id}.log'
-    code, out = run_builder(builder_args(STAGE), STAGE, BUILD_TIMEOUT, out_path)
+    code, out = run_builder(builder_args(STAGE, builder_prompt(task)), STAGE, BUILD_TIMEOUT, out_path)
     log(f'build {build_id}: builder exited {code}')
     if len(out) > 200_000:
         out_path.write_text(out[-200_000:])
@@ -871,8 +896,19 @@ def main() -> int:
         except OSError:
             print('another run is in progress')
             return 3
-        arg = sys.argv[1] if len(sys.argv) > 1 else ''
+        args = sys.argv[1:]
+        task = ''
+        if args[:1] == ['--task']:
+            problem = task_problem(args[1]) if len(args) == 2 else 'usage: --task TEXT'
+            if problem:
+                print(f'--task: {problem}')
+                return 2
+            task = args[1]
+            args = []
+        arg = args[0] if args else ''
         try:
+            if task:
+                return build(task)
             return {'--dry-run': dry_run, '--rollback': rollback, '--status': status}.get(arg, build)()
         except Abort as e:
             log(f'aborted: {e}')
