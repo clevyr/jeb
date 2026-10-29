@@ -14,6 +14,7 @@ date, thread id and step, one step a trip, closed on the evening trip home, surv
     python3 -I tools/day.py [day|kinds|limit|evening|again|night|all]
 """
 import hashlib, json, os, re, subprocess, sys, tempfile, threading, time
+from concurrent.futures import ThreadPoolExecutor
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BIN = os.path.join(HERE, os.environ.get("JEB_BIN", "JebDesktop.dev"))
@@ -24,6 +25,12 @@ PRIORITY = {"newArea": "high", "areaAgain": "medium", "event": "medium", "hands"
 WINDOW, LIMIT = 3600 / SCALE, 4
 HOME_SHARE = 0.6
 TOL = 0.35
+
+OUT = threading.local()
+
+def say(*a):
+    if hasattr(OUT, "buf"): OUT.buf.append(" ".join(map(str, a)))
+    else: print(*a)
 
 def farm():
     return json.load(open(os.path.join(HERE, "fixtures", "farm-day.store.json")))["farm"]
@@ -166,8 +173,8 @@ def run(name, hour, seconds, script, story_path, expect_stops, expect_reasons, e
         if expect_step is not None and st["step"] != expect_step: problems.append(f"story step {st['step']} want {expect_step}")
     elif expect_stops != ["home"]:
         problems.append("no story.json")
-    print(f"{'PASS' if not problems else 'FAIL'} {name}: {len(steps)} steps, home {100 * share:.0f}%, stops {' > '.join(stops)}; reasons {','.join(got_reasons)}; story {st}")
-    for pr in problems[:12]: print("   ", pr)
+    say(f"{'PASS' if not problems else 'FAIL'} {name}: {len(steps)} steps, home {100 * share:.0f}%, stops {' > '.join(stops)}; reasons {','.join(got_reasons)}; story {st}")
+    for pr in problems[:12]: say("   ", pr)
     return not problems, st
 
 def day(story):
@@ -224,26 +231,47 @@ def night(story):
 def nighthigh(story):
     return run("night-high", 23, 12, [(0, {"ax": rec(**QUIET, area=akey("ax"))})], story, ["home", "camp:ax", "home"], ["newArea", "homeward"], night=True)
 
+def buffered(fn, *a):
+    """Run fn with its printed lines held; returns (ok, lines)."""
+    OUT.buf = []
+    try: return fn(*a)[0], OUT.buf
+    finally: del OUT.buf
+
+def thread(story):
+    """day, then evening on its story.json: the thread must survive the restart."""
+    good, lines = buffered(day, story)
+    before = json.load(open(story)) if os.path.exists(story) else None
+    OUT.buf = []
+    try:
+        good2, st2 = evening(story)
+        if before and st2 and (st2["id"], st2["d"]) != (before["id"], before["d"]):
+            say("FAIL evening: the thread changed across the restart", before, st2); good2 = False
+        return {"day": (good, lines), "evening": (good2, OUT.buf)}
+    finally: del OUT.buf
+
 if __name__ == "__main__":
     which = sys.argv[1] if len(sys.argv) > 1 else "all"
     tmp = tempfile.mkdtemp(prefix="jebstory")
     sp = os.path.join(tmp, "story.json")
+    p = lambda n: os.path.join(tmp, n + "-story.json")
     ok = True
-    if which in ("day", "all"):
-        good, st1 = day(sp); ok &= good
-    if which in ("kinds", "all"):
-        good, _ = kinds(os.path.join(tmp, "kinds-story.json")); ok &= good
-    if which in ("limit", "all"):
-        good, _ = limit(os.path.join(tmp, "limit-story.json")); ok &= good
-    if which in ("evening", "all"):
-        before = json.load(open(sp)) if os.path.exists(sp) else None
-        good, st2 = evening(sp); ok &= good
-        if before and st2 and (st2["id"], st2["d"]) != (before["id"], before["d"]):
-            print("FAIL evening: the thread changed across the restart", before, st2); ok = False
-    if which in ("again", "all"):
-        good, _ = again(os.path.join(tmp, "again-story.json")); ok &= good
-    if which in ("night", "all"):
-        good, _ = night(os.path.join(tmp, "night-story.json")); ok &= good
-        good, _ = nighthigh(os.path.join(tmp, "night2-story.json")); ok &= good
+    if which == "all":
+        with ThreadPoolExecutor(6) as pool:
+            fs = [pool.submit(thread, sp)] + [pool.submit(lambda f=f, n=n: {n: buffered(f, p(n))}) for n, f in
+                  (("kinds", kinds), ("limit", limit), ("again", again), ("night", night), ("night-high", nighthigh))]
+            done = {}
+            for f in fs: done.update(f.result())
+        for n in ("day", "kinds", "limit", "evening", "again", "night", "night-high"):
+            good, lines = done[n]
+            ok &= bool(good)
+            for l in lines: print(l)
+    else:
+        if which == "day": ok &= day(sp)[0]
+        if which == "kinds": ok &= kinds(p("kinds"))[0]
+        if which == "limit": ok &= limit(p("limit"))[0]
+        if which == "evening": ok &= evening(sp)[0]
+        if which == "again": ok &= again(p("again"))[0]
+        if which == "night":
+            ok &= night(p("night"))[0]; ok &= nighthigh(p("night2"))[0]
     print("scripted day:", "all good" if ok else "FAILED")
     sys.exit(0 if ok else 1)

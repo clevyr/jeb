@@ -19,6 +19,7 @@ more than one Jeb and one Blue. A fixture with only desktop-only checks (home-ha
 scene-count, mist, absent, story) needs no band output.
 """
 import json, os, subprocess, sys, time, copy, re
+from concurrent.futures import ThreadPoolExecutor
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FIX = os.path.join(HERE, "fixtures")
@@ -380,12 +381,11 @@ def compare(band_out):
         if m:
             band[m.group(1)] = (int(m.group(2)), int(m.group(3)), m.group(4))
     os.makedirs(os.path.join(FIX, "out"), exist_ok=True)
-    results = []
-    for f in F:
+    def one(f):
         name = f["name"]
         needs_band = any(c[0] not in DESK_ONLY for c in f["checks"])
         if name not in band and needs_band:
-            results.append((name, f["rows"], "n/a", "no band render")); continue
+            return (name, f["rows"], "n/a", "no band render")
         braw = os.path.join(FIX, "out", name + ".band.raw")
         w = 0
         if name in band:
@@ -615,7 +615,8 @@ def compare(band_out):
                 dn = sum(1 for y in range(camp_top + 37, camp_top + 40) for x in range(camp_x + 4, camp_x + 24) if dpx[y * SW + x] == dry)
                 ok = ok and bn > 0 and dn > 0
                 notes.append(f"band soil_dry pixels {bn}, camp tobacco soil_dry pixels {dn}")
-        results.append((name, f["rows"], "pass" if ok else "FAIL", "; ".join(notes)))
+        return (name, f["rows"], "pass" if ok else "FAIL", "; ".join(notes))
+    with ThreadPoolExecutor(min(8, os.cpu_count() or 4)) as pool: results = list(pool.map(one, F))
     for r in results:
         print(f"{r[2]:5} {r[0]:18} [{r[1]}] {r[3]}")
     print(f"-- {sum(1 for r in results if r[2] == 'pass')} of {len(results)} fixtures pass")

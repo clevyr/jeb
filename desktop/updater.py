@@ -491,7 +491,7 @@ def update(a, before_swap):
     stamp = time.strftime("%Y%m%d-%H%M%S", time.gmtime()) + "-" + h[:8]
     snap = os.path.join(HOME, "build", stamp)
     log(f"update {stamp}: " + ("using the prebuilt binary" if a.prebuilt else "building"))
-    gates = [g for g in ("smoke", "parity", "day", "start") if not (a.quick and g in ("parity", "day"))]
+    gates = [g for g in (("smoke",), ("parity", "day"), ("start",)) if not (a.quick and g[0] == "parity")]     # parity and day run together
     steps = 1 + len(gates) + (0 if a.gates_only else 1 + (0 if a.no_watch else 1))     # compile, gates, swap, watch
     status("using the prebuilt binary" if a.prebuilt else "building", step=1, steps=steps)
     try:
@@ -525,17 +525,22 @@ def update(a, before_swap):
     why = build_tools(snap)
     if why:
         return reject("tools", why)
-    for name, fn in (("smoke", lambda: gate_smoke(snap, binary)), ("parity", lambda: gate_parity(snap)),
-                     ("day", lambda: gate_day(snap)), ("start", lambda: gate_start(snap, binary))):
-        if a.quick and name in ("parity", "day"):
-            log(f"update {stamp}: gate {name} skipped (quick)")
-            continue
-        status(f"gate {name}", step=2 + gates.index(name), steps=steps)
+    fns = {"smoke": lambda: gate_smoke(snap, binary), "parity": lambda: gate_parity(snap), "day": lambda: gate_day(snap), "start": lambda: gate_start(snap, binary)}
+    def gate(name):
         t = time.time()
-        ok, why = fn()
+        ok, why = fns[name]()
         log(f"update {stamp}: gate {name} {'ok' if ok else 'FAILED'} ({time.time() - t:.0f} s): {why}")
-        if not ok:
-            return reject(name, why)
+        return ok, why
+    if a.quick:
+        log(f"update {stamp}: gate parity skipped (quick)")
+        log(f"update {stamp}: gate day skipped (quick)")
+    for i, names in enumerate(gates):
+        status("gate " + " + ".join(names), step=2 + i, steps=steps)
+        with concurrent.futures.ThreadPoolExecutor(len(names)) as ex:
+            res = list(ex.map(gate, names))
+        for name, (ok, why) in zip(names, res):
+            if not ok:
+                return reject(name, why)
 
     if a.gates_only:
         log(f"update {stamp}: gates passed (gates-only: nothing installed)"); finish("up-to-date", "gates passed; nothing installed"); return 0
