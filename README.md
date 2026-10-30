@@ -16,41 +16,30 @@ You need a Mac and Claude Code. Claude does the rest, and it takes about five mi
 
 **1. Make sure you can see the repo.** Open [github.com/clevyr/jeb](https://github.com/clevyr/jeb) in your browser while signed in to GitHub. If you get a "not found" page, ask for access first.
 
-**2. Ask Claude to install it.** Open Claude Code in any folder and paste this in:
+**2. Ask Claude to set it up.** Open Claude Code in any folder and paste this in:
 
-    Install Jeb for me from github.com/clevyr/jeb. Do every step yourself, in order, without asking me
+    Set up or update Jeb for me from github.com/clevyr/jeb. Do every step yourself, without asking me
     to run anything. The only thing I do is sign in to GitHub in the browser. Never ask me for an
-    administrator password, to edit my shell profile or PATH, to install Homebrew, or to accept the
-    Xcode license, and never compile anything.
-    1. Find the Mac's architecture with sysctl -n hw.optional.arm64 (1 means arm64, otherwise x86_64).
-    2. Use ~/.jeb/bin/gh, else an existing gh at /opt/homebrew/bin or /usr/local/bin. If there is none,
+    administrator password or sudo, to edit my shell profile or PATH, to install Homebrew, or to
+    accept the Xcode license, and never compile anything.
+    1. Use ~/.jeb/bin/gh, else an existing gh at /opt/homebrew/bin or /usr/local/bin. If there is none,
        download GitHub CLI v2.102.0 from github.com/cli/cli/releases (gh_2.102.0_macOS_arm64.zip on
-       Apple silicon, gh_2.102.0_macOS_amd64.zip on Intel) with curl, check its SHA-256 with shasum
-       -a 256 (arm64: da922c20d1792e5b2cbf375593d7a658acf034c12c84e007e71c76ef959c337e, amd64:
+       Apple silicon, gh_2.102.0_macOS_amd64.zip on Intel; sysctl -n hw.optional.arm64 prints 1 on
+       Apple silicon) with curl, check its SHA-256 with shasum -a 256 (arm64:
+       da922c20d1792e5b2cbf375593d7a658acf034c12c84e007e71c76ef959c337e, amd64:
        b245f24eb2bf5f75b426b4c26da3651a107f8d5b6f4fddfbfccc5679041378b3), stop if it differs, unpack
        it with ditto -x -k, and put its bin/gh at ~/.jeb/bin/gh. Always call gh by its full path.
-    3. If gh auth status fails, run gh auth login --hostname github.com --git-protocol https --web in
+    2. If gh auth status fails, run gh auth login --hostname github.com --git-protocol https --web in
        the background, show me the one-time code it prints and wait while I sign in. Do not run
        gh auth setup-git.
-    4. Get the newest release tag: gh release list -R clevyr/jeb --exclude-drafts --exclude-pre-releases
-       --limit 1 --json tagName --jq '.[0].tagName'. If that fails, tell me my GitHub account needs
-       access to the repo.
-    5. In a fresh folder made with mktemp -d, download three assets of that tag with gh release
-       download <tag> -R clevyr/jeb: Jeb-<tag>-manifest.json, Jeb-<tag>-manifest.json.sig and
-       Jeb-<tag>-macos-<arch>.zip.
-    6. Write a file there with exactly this line (the signer pinned in this README), then verify the
-       manifest: ssh-keygen -Y verify -f <that file> -I anthony@clevyr.com -n jeb-release
-       -s Jeb-<tag>-manifest.json.sig < Jeb-<tag>-manifest.json. Stop if it does not say "Good".
-       anthony@clevyr.com namespaces="jeb-release" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGrfSJyAm3dy3vkC1jKbk2YIxJk9BvoThi605ul1gMZC
-    7. Compare plutil -extract bundles.<arch>.sha256 raw -o - Jeb-<tag>-manifest.json with shasum -a 256 of the
-       zip. Stop if they differ.
-    8. Unpack the zip with ditto -x -k into ~/.jeb/versions/<tag>.
-    9. Run ~/.jeb/versions/<tag>/python/bin/python3 -I ~/.jeb/versions/<tag>/install
-    10. Run ~/.local/bin/jebctl doctor and fix what the doctor skill covers
-        (~/.jeb/current/.claude/skills/jeb-doctor/SKILL.md).
-    11. Tell me to start a new Claude Code session.
+    3. Run mkdir -p ~/.jeb/bin, then gh release download -R clevyr/jeb -p jebctl-macos --clobber -O
+       ~/.jeb/bin/jebctl, then chmod +x ~/.jeb/bin/jebctl, then ~/.jeb/bin/jebctl install. jebctl
+       installs Jeb, or updates it if it is already here. Read what it prints and fix any FIX line it
+       reports. If the release has no jebctl-macos, fetch the setup steps with gh api
+       repos/clevyr/jeb/contents/.claude/skills/jeb-install/SKILL.md -H "Accept: application/vnd.github.raw"
+       and follow them exactly.
 
-Claude does the whole install itself. The only thing you do is sign in to GitHub in your browser. When it's finished it tells you whether everything is healthy. The steps check the release's signature against the signer pinned above before anything runs, so a download that was tampered with is refused.
+Claude does the whole setup itself. The only thing you do is sign in to GitHub in your browser. When it's finished it tells you whether everything is healthy. `jebctl install` checks the release's signature against the signer pinned inside it before anything runs, so a download that was tampered with is refused. The same prompt works later to update or repair Jeb. From then on every action is a `jebctl` command (`update`, `doctor`, `status`, `uninstall`); `~/.local/bin/jebctl` is the link the install makes, and `~/.jeb/bin/jebctl` always works.
 
 **3. Start a new Claude Code session.** Jeb only joins sessions started after the install. The farm looks pretty empty at first and fills in as you work.
 
@@ -73,9 +62,17 @@ It adds an item to the menu bar with:
 
 ![jeb-banjo](docs/screenshots/jeb-banjo.png)
 
+## Updating
+
+Jeb updates itself at login and every 6 hours. **Check for Updates** in the menu checks right now, and so does `jebctl update` in Terminal (it waits for the result). To have Claude do it and report back, paste this into Claude Code:
+
+    Update Jeb: follow ~/.jeb/current/.claude/skills/jeb-update/SKILL.md.
+
+If you installed Jeb before v1.3.0 (a git clone), run `jebctl install` (or click **Check for Updates**, let it finish, then click it once more): it converts the install to the bundle layout.
+
 ## If something looks wrong
 
-The easiest fix is to ask Claude. Paste this into Claude Code, and it finds and fixes the problem itself:
+Run `jebctl doctor`: one line per check, and every `FIX` line says what to do. The easiest fix is to ask Claude. Paste this into Claude Code, and it finds and fixes the problem itself:
 
     Check my Jeb install: follow ~/.jeb/current/.claude/skills/jeb-doctor/SKILL.md and fix what it finds.
 
@@ -89,7 +86,7 @@ It runs a health check and explains each problem in plain words. Some common one
 
 In Terminal:
 
-    ~/.jeb/current/python/bin/python3 -I ~/.jeb/current/uninstall --remove-files
+    ~/.local/bin/jebctl uninstall --remove-files
 
 That removes the app, takes Jeb out of Claude Code and deletes the `~/.jeb` folder. Your farm is kept in case you come back; add `--purge --purge-farm` to remove everything. Installs from before the bundle layout keep a git clone in `~/.jeb/repo` (or `~/jeb`); `--remove-files` removes it too when it has no local changes, otherwise it tells you to drag it to the Trash.
 
@@ -105,6 +102,7 @@ Everything below is detail for people who want to know how Jeb works, install it
 
 - `mod/` is the Claude Code plugin. Its hooks watch your sessions and write anonymized state to the plugin store.
 - `desktop/` is the macOS app (Swift), plus the Python scripts that install, update and look after it.
+- `desktop/cli/` is the native `jebctl` (Swift, Foundation and CryptoKit only). In a release bundle it replaces the `desktop/bin/jebctl` shell launcher and forwards every command to the bundle's Python `desktop/jebctl`; as the standalone `~/.jeb/bin/jebctl` it also runs `install` itself. Build it with `JEB_VERSION=dev desktop/cli/build.sh` (`JEB_OUT` names the output, default `desktop/cli/jebctl`; `JEB_UNIVERSAL=1` builds arm64 and x86_64 and joins them with `lipo`). The release builds the universal one itself.
 - `creative/` is a scheduled builder that can extend the plugin. It's switched off, `./install` doesn't touch it, and nothing in here starts it.
 
 ## Requirements
@@ -117,7 +115,13 @@ Everything below is detail for people who want to know how Jeb works, install it
 
 ## Installing by hand
 
-These are the steps the paste-in prompt runs. Pick `arm64` or `x86_64` for `<arch>` (`sysctl -n hw.optional.arm64` prints 1 on Apple silicon):
+With gh signed in (`gh auth login`), three lines install Jeb; `jebctl` does everything else:
+
+    mkdir -p ~/.jeb/bin
+    gh release download -R clevyr/jeb -p jebctl-macos --clobber -O ~/.jeb/bin/jebctl && chmod +x ~/.jeb/bin/jebctl
+    ~/.jeb/bin/jebctl install
+
+`jebctl install [--dry-run] [--no-agents] [--verbose]` finds gh (`~/.jeb/bin`, Homebrew, else it downloads the pinned v2.102.0 and checks its SHA-256), signs you in to GitHub if needed, picks the newest release, downloads its manifest, signature and this Mac's zip, verifies them, unpacks the zip and runs the bundle's own `install`. If Jeb is already installed it runs `jebctl update` and the doctor instead, and it converts an old git-clone install. `--dry-run` prints the plan and changes nothing. These are the steps it performs (the install skill, `.claude/skills/jeb-install/SKILL.md`, lists the same ones). Pick `arm64` or `x86_64` for `<arch>` (`sysctl -n hw.optional.arm64` prints 1 on Apple silicon):
 
     tag=$(gh release list -R clevyr/jeb --exclude-drafts --exclude-pre-releases --limit 1 --json tagName --jq '.[0].tagName')
     d=$(mktemp -d) && cd "$d"
@@ -130,7 +134,7 @@ These are the steps the paste-in prompt runs. Pick `arm64` or `x86_64` for `<arc
     ~/.jeb/versions/"$tag"/python/bin/python3 -I ~/.jeb/versions/"$tag"/install
     ~/.local/bin/jebctl doctor
 
-The release is a zip per architecture holding the app, the Claude Code plugin, Jeb's scripts and a pinned Python, plus a signed manifest (see [Signed releases](#signed-releases)). It's unpacked into `~/.jeb/versions/<tag>`, and `~/.jeb/current` is a link to the version in use. `./install --dry-run` shows every step without changing anything. It prints one short line per step; add `--verbose` for every command and detail. A teammate never needs git: updates download and verify the next zip the same way, then move the `current` link.
+The release is a zip per architecture holding the app, the Claude Code plugin, Jeb's scripts and a pinned Python, plus a signed manifest (see [Signed releases](#signed-releases)). It's unpacked into `~/.jeb/versions/<tag>`, and `~/.jeb/current` is a link to the version in use. The bundle's own `./install --dry-run` shows every step without changing anything. It prints one short line per step; add `--verbose` for every command and detail. A teammate never needs git: updates download and verify the next zip the same way, then move the `current` link.
 
 The install:
 
@@ -140,9 +144,9 @@ The install:
 4. Adds `~/.jeb/current/mod` to `CLAUDE_CODE_PLUGIN_DIRS` in `~/.claude/settings.json`. It backs that file up to `~/.claude/backups/jeb/` first and leaves your other entries alone. Running it twice is harmless.
 5. Links `jebctl` into `~/.local/bin`. If that folder isn't on your PATH, run it by its full path, or `~/.jeb/current/python/bin/python3 -I ~/.jeb/current/desktop/jebctl` (`./install --add-path` adds it to your shell profile, for developers who want plain `jebctl`).
 
-Installs from before the bundle layout (a git clone in `~/.jeb/repo` or `~/jeb`) convert themselves on their next update: the update downloads the bundle, switches over and leaves the old clone, which `./uninstall --remove-files` or you can delete.
+Installs from before the bundle layout (a git clone in `~/.jeb/repo` or `~/jeb`) convert themselves on their next update (`jebctl install` runs the clone's `follow`, at most twice): the update downloads the bundle, switches over and leaves the old clone, which `./uninstall --remove-files` or you can delete.
 
-`./uninstall` keeps `~/Library/Application Support/Jeb` unless you pass `--purge`, and keeps the plugin's state file unless you pass `--purge-farm`, which backs it up before removing it. It also takes Jeb's `mod/` folder back out of `CLAUDE_CODE_PLUGIN_DIRS` (backing up your settings first) and removes the `jebctl` link; `--remove-files` deletes `~/.jeb`. `--dry-run` shows what it would do, and `--verbose` prints every command and detail.
+`./uninstall` keeps `~/Library/Application Support/Jeb` unless you pass `--purge`, and keeps the plugin's state file unless you pass `--purge-farm`, which backs it up before removing it. It also takes Jeb's `mod/` folder back out of `CLAUDE_CODE_PLUGIN_DIRS` (backing up your settings first) and removes the `jebctl` link; `--remove-files` deletes `~/.jeb` (`jebctl uninstall --remove-files` and `--purge-farm` run this script with every flag). `--dry-run` shows what it would do, and `--verbose` prints every command and detail.
 
 ## Commands
 
@@ -155,7 +159,7 @@ Installs from before the bundle layout (a git clone in `~/.jeb/repo` or `~/jeb`)
     jebctl rollback          # go back to the previous version (downloads it again)
     jebctl reload-agents     # re-write and reload the LaunchAgents after an update
     jebctl screenshot        # same as Save Screenshot, prints the paths
-    jebctl emoji             # animated GIF of Jeb's head for a Slack custom emoji, in ~/Pictures/Jeb
+    jebctl emoji             # animated GIF of Jeb sipping moonshine for a Slack custom emoji (--sprite jeb-idle for the plain head), in ~/Pictures/Jeb
 
 `jebctl screenshot --fixture <name> [--out <dir>] [--hour <h>]` renders one of the test scenes to `<dir>/<name>.png` without touching the running app. `--list` shows the scene names. That's how the screenshots in this README were made (scaled up 3x with `desktop/src/tools/up <in> <out> 3`).
 
@@ -169,7 +173,7 @@ Run `jebctl doctor` first. Every `FIX` line tells you what to do.
 
 **The desktop is empty.** Start a new Claude Code session. The plugin only loads in sessions started after the install, and `doctor` will tell you whether it's registered and has written any state yet.
 
-**Updates stopped.** `jebctl status` shows the last release check and any failed tags. If the download is failing, check `gh auth status`; if it isn't signed in, run `gh auth login --web`. "app download failed; will retry" means the release couldn't be downloaded; nothing is marked failed and the next check tries again. `doctor` also tells you if updates are paused.
+**Updates stopped.** `jebctl update` checks now and waits for the result, printing why if it fails. `jebctl status` shows the last release check and any failed tags. If the download is failing, check `gh auth status`; if it isn't signed in, run `gh auth login --web`. "app download failed; will retry" means the release couldn't be downloaded; nothing is marked failed and the next check tries again. `doctor` also tells you if updates are paused.
 
 **An update failed.** The previous version keeps running and the failed release isn't retried. `jebctl retry-update` drops the newest failed tag and checks again. `update.log` and `release.log` say why.
 
@@ -190,9 +194,10 @@ Nothing is compiled and no git is involved: a release update only downloads, ver
 
 ### Signed releases
 
-Each release carries a signed manifest, and installs only trust signers pinned on that machine, so a release published by anyone else is ignored.
+Each release carries a signed manifest, and installs only trust signers pinned on that machine, so a release published by anyone else is ignored. Releasing stays with the owner: `jebctl release` refuses to run in a release bundle, and without the owner's signing key nothing it produced would be accepted by an install.
 
-- `Jeb-<tag>-manifest.json` lists, per architecture, the zip's name, size and SHA-256, and the Python it carries; `Jeb-<tag>-manifest.json.sig` is its SSH signature in the `jeb-release` namespace.
+- `Jeb-<tag>-manifest.json` lists, per architecture, the zip's name, size and SHA-256, and the Python it carries, plus a `jebctl` entry (name `jebctl-macos`, size and SHA-256 of the universal native jebctl); `Jeb-<tag>-manifest.json.sig` is its SSH signature in the `jeb-release` namespace.
+- `jebctl-macos` is the first thing a new teammate downloads (with gh, so it needs repo access). It is the same binary every bundle carries as `desktop/bin/jebctl`, ad-hoc signed, and it pins the `jeb-release` signer in its source (`signerLine` in `desktop/cli/main.swift`); `./release` refuses to tag when that line differs from `desktop/release-signers`. It checks every release it installs against that pin.
 - `desktop/release-signers` lists the allowed signers (`ssh-keygen` allowed_signers format, namespaces `git,jeb-release`). The key above in this README is the same one, so you can check a download before running anything from it.
 - The install copies the file to `~/Library/Application Support/Jeb/release-signers` (mode 0600) if there isn't one already, and widens an older pin of the same key to cover `jeb-release`. It never adds a key. Later releases can't replace it, so trust is fixed at install time.
 - To rotate keys, update `desktop/release-signers` in a release, then run `install --repin` on each machine.
@@ -282,11 +287,11 @@ Add `--dry-run` to see the version and notes it would use without changing anyth
 
 It validates and tests the plugin, does a universal release build (arm64 and x86_64) and runs the parity checks on that binary. Only if all of that passes does it write the new version to `plugin.json`, commit it as `chore(release): v<version>` and make a signed `v<version>` tag. A failed check leaves nothing behind. It then builds one bundle per architecture: the tag's tree (`git archive`), the prebuilt app and helper tools, and a pinned relocatable Python from [python-build-standalone](https://github.com/astral-sh/python-build-standalone) (release `20261013`, Python 3.12.15, `install_only_stripped`, SHA-256 checked against the pins in `release`, pruned, every Mach-O signature checked, and its standard-library imports smoke-tested). To change the Python, edit the pins at the top of `release` (`PBS_TAG`, `PBS_PY` and the two hashes, taken from that release's `SHA256SUMS`). The zips and a manifest listing their hashes are signed with your signing key, and the manifest is verified against `desktop/release-signers` before anything is published. If building a bundle fails, the local tag stays, nothing is pushed, and it says how to continue.
 
-It then asks once, and on `y` pushes the branch and tag and publishes the GitHub release with the notes, the manifest, its signature and both zips. The old `JebDesktop-<tag>-macos.zip` and the tag message's `app-sha256` are still published while older installs that update from a git clone convert to the bundle layout; they can be dropped later. That last step needs `gh` signed in. Without a terminal it prints the commands instead. `./release bundle --tag <tag> --app <dir> --key <key> --out <dir>` builds the bundles on their own (`--from-tree` uses the working tree instead of a tag).
+It then asks once, and on `y` pushes the branch and tag and publishes the GitHub release with the notes, the manifest, its signature, both zips and `jebctl-macos` (the universal native jebctl, built from `desktop/cli` with the version baked in next to the app zip, and copied into every bundle as `desktop/bin/jebctl`). The old `JebDesktop-<tag>-macos.zip` and the tag message's `app-sha256` are still published while older installs that update from a git clone convert to the bundle layout; they can be dropped later. That last step needs `gh` signed in. Without a terminal it prints the commands instead. `./release bundle --tag <tag> --app <dir> --key <key> --out <dir>` builds the bundles on their own (`--from-tree` uses the working tree instead of a tag).
 
 It doesn't use release-please itself because that tool creates tags on GitHub's side, unsigned, and installs only trust releases signed by a pinned key.
 
-To check a published release the way a new user gets it, run `./release smoke` (or `./release smoke v1.2.0` for another tag; `--dry-run` prints the plan). It works in a sandbox under `.git/jeb-smoke/<tag>/` with a fake home folder, so your own install is never touched: it downloads the release's manifest, signature and zip for this Mac with `gh`, verifies them against `desktop/release-signers`, unpacks the zip into the sandbox's `.jeb/versions/<tag>`, runs the bundled Python's `install --no-agents` (no LaunchAgent, `launchctl` or PATH change), and checks that the prebuilt app is signed and points at the bundle's mod, that `current` and the plugin setting are right, and that exactly one version is on disk. It then runs `jebctl doctor` read-only. Your `gh` configuration is passed through so the real download path is exercised. An earlier sandbox is moved aside to `old-<time>`, not deleted. A pre-release tag (`v1.5.0-rc.1`) is smoked only when it is the newest tag or named explicitly.
+To check a published release the way a new user gets it, run `./release smoke` (or `./release smoke v1.2.0` for another tag; `--dry-run` prints the plan). It works in a sandbox under `.git/jeb-smoke/<tag>/` with a fake home folder, so your own install is never touched: it downloads the release's manifest, signature and zip for this Mac with `gh`, verifies them against `desktop/release-signers`, unpacks the zip into the sandbox's `.jeb/versions/<tag>`, runs the bundled Python's `install --no-agents` (no LaunchAgent, `launchctl` or PATH change), checks that `jebctl-macos` matches the manifest and reports the tag from `--version` (when the manifest lists it), and checks that the prebuilt app is signed and points at the bundle's mod, that `current` and the plugin setting are right, and that exactly one version is on disk. It then runs `jebctl doctor` read-only. Your `gh` configuration is passed through so the real download path is exercised. An earlier sandbox is moved aside to `old-<time>`, not deleted. A pre-release tag (`v1.5.0-rc.1`) is smoked only when it is the newest tag or named explicitly.
 
 Existing installs pick the release up on their next check either way. On GitHub, it's worth protecting `v*` tags and `main` so only the owner can create or move them.
 

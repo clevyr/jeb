@@ -141,7 +141,14 @@ def main(argv):
         act = plugdirs.edit(MOD, False, dry, quiet)
     if not VERBOSE:
         say("would add" if dry and act in ("set", "append") else "ok")
-        say("Dry run only; nothing was changed." if dry else "Done. Start a new Claude Code session to load Jeb.")
+        if dry:
+            say("Dry run only; nothing was changed.")
+    if dry:
+        return 0
+    if not noag:        # a sandbox has no agents loaded; ./release smoke runs the doctor itself
+        say("Health check (jebctl doctor):")
+        subprocess.run(cmd[:3] + ["doctor"])        # same interpreter and jebctl as the install; its result does not fail the install
+    say("Done. Start a new Claude Code session to load Jeb; the desktop fills in once a session has run.")
     return 0
 
 

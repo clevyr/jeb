@@ -43,6 +43,10 @@ desktop/src/parity-status.md
 # Hostile-gate scratch copies
 creative/tools/cases/
 
+# Compiled jebctl (built by desktop/cli/build.sh)
+desktop/cli/jebctl
+desktop/cli/jebctl.*
+
 # Compiled desktop tools (built from the .swift sources beside them)
 desktop/src/tools/png2raw
 desktop/src/tools/detect

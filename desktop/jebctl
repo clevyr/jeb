@@ -38,10 +38,12 @@
                           compile. The bundle's app is gated (smoke, headless start) and swapped in, ~/.jeb/current is pointed at the
                           bundle, and the plists, the plugin entry and the ~/.local/bin link name only ~/.jeb/current paths. It runs with
                           the bundle's own Python (python/bin/python3 -I). --build-from-source and --mode dev are refused.
-  uninstall [--purge] [--dry-run] [--verbose]
+  uninstall [--purge] [--remove-files] [--purge-farm] [--dry-run] [--verbose]
                           one short line per step (--verbose: every command and detail). Bootout, remove the
                           plists and the app; versions and logs stay unless --purge (removes everything in JEB_HOME);
-                          also the ~/.local/bin/jebctl link (only if it points here) and the PATH lines install added
+                          also the ~/.local/bin/jebctl link (only if it points here) and the PATH lines install added.
+                          --remove-files and --purge-farm run the bundle's `uninstall` script with all the flags (it also takes
+                          the plugin entry out of settings.json and deletes ~/.jeb); see ./uninstall
   follow [--gates-only] [--quick] [--build-from-source] [--dry-run]
                           (bundle layout, see below; this describes the git-clone layout.)
                           release mode: fetch tags, then take the newest unseen v* tag that is signed by a
@@ -61,12 +63,17 @@
                           download failed; will retry" and the tag is NOT marked failed (the 6-hourly agent retries).
                           --build-from-source (or JEB_ALLOW_BUILD=1) compiles instead. The gates run on the app.
   release [--bump auto|patch|minor|major] [--parity] [--dry-run]
+                          (owner only, from a development clone, and refused in a release bundle: use ./release)
                           owner side: the clone is clean and on the default branch, a signing key is
                           configured (user.signingkey), then `claude plugin validate mod`, `claude plugin
                           test mod`, a universal release build (and the parity gate with --parity on that
                           same binary), then a local signed tag v<version> whose message carries the SHA-256
                           of the app zip (JebDesktop-<tag>-macos.zip, written to .git/jeb-release-<tag>/ for
-                          ./release to attach; it holds JebDesktop plus the universal detect and png2raw helpers). The version comes from the tags, as release-please does: no tag yet is
+                          ./release to attach; it holds JebDesktop plus the universal detect and png2raw helpers). The universal
+                          native jebctl (desktop/cli, version baked in) is built into the same stage folder, beside that zip, and
+                          ./release puts it in every bundle as desktop/bin/jebctl and attaches it as jebctl-macos; the signer
+                          pinned in its source must equal the jeb-release line of desktop/release-signers or the release stops.
+                          The version comes from the tags, as release-please does: no tag yet is
                           1.0.0; else the last tag raised by --bump (default auto: the level from the
                           Conventional Commits since it; refuses when none is releasable). Only once every
                           check has passed is it written to mod/.claude-plugin/plugin.json and committed
@@ -89,13 +96,19 @@
   emoji [--holiday NAME] [--sprite NAME] [--rows N] [-o FILE]
                           animated GIF of a sprite for a Slack custom emoji (128 x 128, transparent, looping), made by
                           the installed binary (JEB_BIN overrides) in its export mode, which exits before the app
-                          starts, so the running instance is never touched. --sprite default jeb-idle; --rows the top
-                          rows kept (default 20, the menu bar's head; 0 the whole sprite); --holiday NAME uses that
+                          starts, so the running instance is never touched. --sprite default jeb-sip (Jeb taking a pull
+                          from his moonshine jar, 28 rows so the lowered jar stays in frame, 1.2 s a frame like the
+                          farm); --rows the top rows kept (default 20, the menu bar's head, or 28 for the default
+                          sprite; 0 the whole sprite); --holiday NAME uses that
                           holiday's variant (the base when it has none). Default file ~/Pictures/Jeb/jeb-emoji[-NAME].gif.
                           Prints the path and size; warns past Slack's 128 KB limit
   pause-updates | resume-updates
   start | quit            quit writes the marker the watchdog honours; start clears it
-  update-now              the updater without the 60 s debounce (still gated)
+  update | update-now     check for a release now and wait for the result: starts the release agent (as the menu's Check for
+                          Updates does), prints each phase on one line, then `updated to vX`, `vX is current` or the reason;
+                          exit 0 for updated or current, 1 otherwise or when updates are paused or the agent is not loaded;
+                          gives up waiting after 30 minutes (the update goes on; see status). A development install runs
+                          the updater without the 60 s debounce instead (still gated). --dry-run starts nothing
   retry-update            the updater with --force: build the current src again even if that build was
                           rejected or updates are paused, through every gate; ships only if all pass
   plists                  (re)write the LaunchAgent plists into launchd/ only
@@ -597,9 +610,13 @@ def cmd_emoji(args):
     if not os.access(exe, os.X_OK):
         say(f"emoji: no binary at {exe}")
         return 1
+    if opts["--sprite"] is None:      # the default: Jeb sipping moonshine, the jar in frame both up and down
+        opts["--sprite"] = "jeb-sip"
+        if opts["--rows"] is None: opts["--rows"] = "28"
+        os.environ.setdefault("JEB_EMOJI_DELAY", "1.2")
     holiday = opts["--holiday"]
     dest = os.path.abspath(os.path.expanduser(opts["-o"] or os.path.join("~/Pictures/Jeb", "jeb-emoji" + (f"-{holiday}" if holiday else "") + ".gif")))
-    say(f"export {opts['--sprite'] or 'jeb-idle'} with {exe} to {dest}")
+    say(f"export {opts['--sprite']} with {exe} to {dest}")
     if DRY:
         return 0
     os.makedirs(os.path.dirname(dest), exist_ok=True)
@@ -2157,6 +2174,8 @@ def release_plan(last):
 
 def cmd_release(args):
     """Ctrl-C stops it cleanly; what it says depends on how far it got."""
+    if BUNDLE or not os.path.exists(os.path.join(CLONE, ".git")):
+        raise SystemExit("releases are cut from a development clone with ./release")
     done = []
     try:
         release_steps(args, done)
@@ -2165,6 +2184,16 @@ def cmd_release(args):
         if "commit" in done:
             raise SystemExit("release: stopped after the release commit, before the tag; run it again to tag it")
         raise SystemExit("release: stopped; nothing was written")
+
+
+def check_signer_const():
+    """The signer the native jebctl pins (desktop/cli/main.swift) must be the jeb-release signer in desktop/release-signers."""
+    m = re.search(r'^let signerLine = "((?:[^"\\]|\\.)*)"$', open(os.path.join(CODE, "cli", "main.swift")).read(), re.M)
+    const = m.group(1).replace('\\"', '"').split() if m else []
+    ok = len(const) == 4 and const[1] == 'namespaces="jeb-release"'
+    lines = [l.split() for l in open(os.path.join(CODE, "release-signers")).read().splitlines() if l.strip() and not l.startswith("#")]
+    if not (ok and any(len(l) == 4 and "jeb-release" in l[1] and l[0] == const[0] and l[2:] == const[2:] for l in lines)):
+        raise SystemExit("the signer in desktop/cli/main.swift (signerLine) is not the jeb-release signer in desktop/release-signers; fix one of them, no tag")
 
 
 def release_steps(args, done):
@@ -2210,6 +2239,7 @@ def release_steps(args, done):
         version = f"{major}.{minor}.{patch}"
     tag = f"v{version}"
     say(f"releasing {tag}" + (f" (last release {last})" if last else " (first release)"))
+    check_signer_const()
     step("validate plugin", ["claude", "plugin", "validate", "mod"], cwd=CLONE)
     step("test plugin", ["claude", "plugin", "test", "mod"], cwd=CLONE)
     step("release build", ["./build.sh"], cwd=SRC, env=dict(os.environ, JEB_OUT="JebDesktop.dev", JEB_UNIVERSAL="1"))
@@ -2271,6 +2301,9 @@ def release_steps(args, done):
             for chunk in iter(lambda: f.read(1 << 20), b""):
                 h.update(chunk)
         message = f"Jeb {tag}\n\napp-sha256: {h.hexdigest()} {name}"
+        # after the zip, so the older app zip stays as it was; the stage folder is what ./release builds the bundles from
+        step("jebctl (universal)", ["./build.sh"], cwd=os.path.join(CODE, "cli"), env=dict(os.environ, JEB_UNIVERSAL="1", JEB_OUT=os.path.join(stage, "jebctl"), JEB_VERSION=tag))
+        step("jebctl signature", ["codesign", "--verify", os.path.join(stage, "jebctl")])
     step(f"sign tag {tag}" + ("" if os.environ.get("JEB_RELEASE_WRAPPED") else " (asks for the key's passphrase)"),["git", "-C", CLONE, "tag", "-s", tag, "-m", message], tty=True)
     notes = notes or "Maintenance release."
     if DRY:
@@ -2299,6 +2332,61 @@ def cmd_rollback():
     st["built"], st["stamp"] = None, old
     u.record(st, "manual-rollback", f"from {bad} to {old}", old)
     say(f"rolled back {bad} -> {old}; the running app hands over within a few seconds")
+
+
+UPDATE_WAIT, UPDATE_POLL = 30 * 60, 2       # seconds: how long `update` waits for the final result, and how often it looks
+
+
+def read_update_status():
+    try:
+        d = json.load(open(os.path.join(HOME, "update-status.json")))
+        return d if isinstance(d, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def cmd_update():
+    """Check for a release now and wait for the result; the release agent does the work in its own environment."""
+    if mode() != "release":
+        say("a development install ships from the working tree; running the updater now" if not DRY else "a development install ships from the working tree; would run the updater now")
+        if DRY:
+            return 0
+        return subprocess.run(RUN + [os.path.join(CODE, "updater.py"), "--now"], env=dict(os.environ, JEB_HOME=HOME, JEB_MOD=MOD, JEB_APP_DIR=APP_DIR)).returncode
+    if os.path.exists(os.path.join(HOME, "updates-paused")):
+        say("updates are paused; run: jebctl resume-updates")
+        return 1
+    if DRY:
+        say("would start the release agent (launchctl kickstart com.jeb.desktop.release) and wait up to 30 minutes for its result")
+        return 0
+    t0 = int(time.time())
+    os.makedirs(HOME, mode=0o700, exist_ok=True)
+    click = os.path.join(HOME, "check-now")
+    open(click, "w").close()        # the menu's click: the agent skips the quiet wait for it
+    r = subprocess.run(["launchctl", "kickstart", f"gui/{UID}/com.jeb.desktop.release"], capture_output=True)
+    if r.returncode != 0:
+        try:
+            os.unlink(click)
+        except OSError:
+            pass
+        say("the release agent is not loaded; run the install again (or ask Claude to repair Jeb)")
+        return 1
+    say("checking for a new release")
+    seen, deadline = None, time.time() + UPDATE_WAIT
+    while time.time() < deadline:
+        d = read_update_status()
+        if (d.get("at") or 0) >= t0:
+            if d.get("phase") == "done":
+                res, why = d.get("result"), d.get("detail") or ""
+                say(why or str(res))
+                return 0 if res in ("updated", "up-to-date") else 1
+            key = (d.get("phase"), d.get("detail"), d.get("step"))
+            if key != seen and d.get("phase"):
+                seen = key
+                n = f" ({d['step']}/{d['steps']})" if d.get("step") and d.get("steps") else ""
+                say(str(d["phase"]) + n + (f": {d['detail']}" if d.get("detail") else ""))
+        time.sleep(UPDATE_POLL)
+    say("still running; see jebctl status")
+    return 1
 
 
 def cmd_start():
@@ -2350,6 +2438,8 @@ def main(argv):
     elif cmd == "reload-agents": return cmd_reload_agents(args[1:])
     elif cmd == "prune-versions": cmd_prune_versions(args[1:])
     elif cmd == "release": cmd_release(args[1:])
+    elif cmd == "uninstall" and any(a in args for a in ("--remove-files", "--remove-clone", "--purge-farm")):
+        return subprocess.run(RUN + [os.path.join(CLONE, "uninstall")] + argv[1:]).returncode      # the script does the whole removal
     elif cmd == "uninstall": cmd_uninstall("--purge" in args)
     elif cmd == "rollback": cmd_rollback()
     elif cmd == "screenshot": return cmd_screenshot(args[1:])
@@ -2361,16 +2451,15 @@ def main(argv):
         os.path.exists(p) and os.unlink(p); say("updates on")
     elif cmd == "start": cmd_start()
     elif cmd == "quit": cmd_quit()
-    elif cmd in ("update-now", "retry-update") and BUNDLE:
-        if cmd == "retry-update":
-            rs = load_rstate()
-            if rs.get("failed"):
-                rs["failed"].remove(max(rs["failed"], key=lambda t: tag_key(t) or (0, 0, 0)))
-                save_rstate(rs)
+    elif cmd in ("update", "update-now"): return cmd_update()
+    elif cmd == "retry-update" and BUNDLE:
+        rs = load_rstate()
+        if rs.get("failed"):
+            rs["failed"].remove(max(rs["failed"], key=lambda t: tag_key(t) or (0, 0, 0)))
+            save_rstate(rs)
         sys.exit(subprocess.run(["launchctl", "kickstart", "-k", f"gui/{UID}/com.jeb.desktop.release"]).returncode)
-    elif cmd in ("update-now", "retry-update"):
-        flag = "--now" if cmd == "update-now" else "--force"
-        sys.exit(subprocess.run(RUN + [os.path.join(CODE, "updater.py"), flag], env=dict(os.environ, JEB_HOME=HOME, JEB_MOD=MOD, JEB_APP_DIR=APP_DIR)).returncode)
+    elif cmd == "retry-update":
+        sys.exit(subprocess.run(RUN + [os.path.join(CODE, "updater.py"), "--force"], env=dict(os.environ, JEB_HOME=HOME, JEB_MOD=MOD, JEB_APP_DIR=APP_DIR)).returncode)
     else:
         say(__doc__); return 2
     return 0

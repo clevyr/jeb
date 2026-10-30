@@ -25,13 +25,15 @@
                           (`gh release create <tag> --verify-tag --notes-file ... <assets>`), only on y; it refuses when the app zip
                           is missing. Assets: Jeb-<tag>-macos-arm64.zip and -x86_64.zip (the bundles teammates install: tree,
                           prebuilt app, pinned Python), Jeb-<tag>-manifest.json and its .sig (signed with the tag's key in the
-                          `jeb-release` namespace), and the older JebDesktop-<tag>-macos.zip (JebDesktop plus the universal detect and
+                          `jeb-release` namespace), jebctl-macos (the universal native jebctl, also inside every bundle as
+                          desktop/bin/jebctl; its name, size and SHA-256 are in the manifest under "jebctl"; a teammate's first
+                          copy is `gh release download -R clevyr/jeb -p jebctl-macos`), and the older JebDesktop-<tag>-macos.zip (JebDesktop plus the universal detect and
                           png2raw; installs from the git clone use it when it matches the hash in the signed tag; kept during the
                           transition). Without a terminal they print those commands instead.
   ./release bundle --tag vX.Y.Z --out DIR [--ref REF] [--from-tree] [--app DIR] [--key K] [--signers F]
                           builds the release bundles without releasing: Jeb-<tag>-macos-arm64.zip and -x86_64.zip (the tracked tree
-                          from `git archive REF` (default HEAD), or with --from-tree the working tree's files; the prebuilt app from
-                          --app (default .git/jeb-release-<tag>/stage); python-build-standalone, pinned and pruned; bundle.json), then
+                          from `git archive REF` (default HEAD), or with --from-tree the working tree's files; the prebuilt app and the native
+                          jebctl from --app (default .git/jeb-release-<tag>/stage; JebDesktop, detect, png2raw and jebctl); python-build-standalone, pinned and pruned; bundle.json), then
                           Jeb-<tag>-manifest.json signed with --key (default user.signingkey) in the `jeb-release` namespace and verified
                           against the bundle's own desktop/release-signers (--signers replaces that file, for tests with a throwaway key).
   ./release smoke [TAG]   sandboxed end-to-end check of a published release; never touches the real install. TAG defaults to the
@@ -41,7 +43,8 @@
                           `python/bin/python3 -I install --no-agents` (no LaunchAgent, launchctl or PATH change anywhere). It checks
                           the prebuilt app was used, codesign, that JebMod and the settings entry are <home>/.jeb/current/mod, that
                           current resolves and that versions/ holds one folder. Then `jebctl doctor` runs read-only
-                          (JEB_NO_LAUNCHCTL=1) and its output is shown. Exit 1 on any failure. JEB_SMOKE_REPO overrides owner/name.
+                          (JEB_NO_LAUNCHCTL=1) and its output is shown. When the manifest lists jebctl it also downloads jebctl-macos and
+                          checks its SHA-256 against the manifest and that `--version` names the tag. Exit 1 on any failure. JEB_SMOKE_REPO overrides owner/name.
   --dry-run               change nothing: no file, tag or push (smoke: prints the plan).
 """
 import glob, hashlib, json, os, plistlib, pwd, re, shutil, signal, subprocess, sys, tempfile, time
@@ -356,7 +359,8 @@ def verify_manifest(manifest, sig, signers):
 
 
 def make_bundles(tag, ref, app_dir, out, key, signers=None, from_tree=False):
-    """Build Jeb-<tag>-macos-{arm64,x86_64}.zip plus the signed manifest in out; returns the paths to upload (manifest, signature, zips).
+    """Build Jeb-<tag>-macos-{arm64,x86_64}.zip plus the signed manifest and jebctl-macos in out; returns the paths to upload (manifest, signature, zips, jebctl).
+    app_dir holds JebDesktop, detect, png2raw and the universal jebctl, which each bundle carries as desktop/bin/jebctl.
     signers overrides the bundle's desktop/release-signers (tests: a throwaway key). Self-verifies the signature against the bundle's
     own release-signers, the file an install pins."""
     version = tag.lstrip("v")
@@ -372,6 +376,9 @@ def make_bundles(tag, ref, app_dir, out, key, signers=None, from_tree=False):
             if signers:
                 shutil.copyfile(signers, os.path.join(root, "desktop", "release-signers"))
             shutil.copytree(app_dir, os.path.join(root, "app"), symlinks=True)
+            if not os.path.isfile(os.path.join(root, "app", "jebctl")):
+                fail(f"the app folder {app_dir} has no jebctl (the native build from desktop/cli); no bundle")
+            os.replace(os.path.join(root, "app", "jebctl"), os.path.join(root, "desktop", "bin", "jebctl"))     # replaces the sh launcher; the git tree keeps it for clones
             w = fetch_python(arch, root)
             if w:
                 warns.append(w)
@@ -389,10 +396,17 @@ def make_bundles(tag, ref, app_dir, out, key, signers=None, from_tree=False):
                 fail(f"ditto could not make {name}")
             bundles[arch] = {"name": name, "sha256": sha256_of(zp), "size": os.path.getsize(zp)}
             say(f"  {name}: {bundles[arch]['size'] // 1024 // 1024} MB, sha256 {bundles[arch]['sha256'][:16]}")
+        ctl = os.path.join(out, "jebctl-macos")
+        shutil.copyfile(os.path.join(app_dir, "jebctl"), ctl)
+        os.chmod(ctl, 0o755)
+        if subprocess.run(["codesign", "--verify", ctl], capture_output=True).returncode != 0:
+            fail("the staged jebctl fails codesign --verify")
+        jebctl = {"name": "jebctl-macos", "sha256": sha256_of(ctl), "size": os.path.getsize(ctl)}
+        say(f"  jebctl-macos: {jebctl['size'] // 1024} KB, sha256 {jebctl['sha256'][:16]}")
         man = os.path.join(out, f"Jeb-{tag}-manifest.json")
         with open(man, "w") as f:
             json.dump({"schema": 1, "repo": REPO, "tag": tag, "version": version, "commit": commit,
-                       "created": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "python": PBS_PY, "bundles": bundles}, f, indent=2)
+                       "created": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "python": PBS_PY, "bundles": bundles, "jebctl": jebctl}, f, indent=2)
             f.write("\n")
         sig = man + ".sig"
         if os.path.exists(sig):
@@ -408,7 +422,7 @@ def make_bundles(tag, ref, app_dir, out, key, signers=None, from_tree=False):
         shutil.rmtree(work, ignore_errors=True)
     for w in warns:
         say("warning: " + w)
-    return [man, sig] + [os.path.join(out, b["name"]) for b in bundles.values()]
+    return [man, sig] + [os.path.join(out, b["name"]) for b in bundles.values()] + [ctl]
 
 
 def signing_key():
@@ -436,7 +450,7 @@ def bundle_cmd(argv):
         say(__doc__); return 2
     app = opts.get("app") or os.path.join(CLONE, git("rev-parse", "--git-path", f"jeb-release-{opts['tag']}").stdout.strip(), "stage")
     if not os.path.isdir(app):
-        fail(f"{app} is not a folder (the app folder holds JebDesktop, detect and png2raw)")
+        fail(f"{app} is not a folder (the app folder holds JebDesktop, detect, png2raw and jebctl)")
     paths = make_bundles(opts["tag"], opts.get("ref", "HEAD"), app, opts["out"], opts.get("key") or signing_key(), opts.get("signers"), from_tree)
     say("made:\n" + "\n".join("  " + p for p in paths))
     return 0
@@ -481,6 +495,21 @@ def newest_tag(repo):
     if not tags:
         fail(f"no published v* release in {repo}")
     return max(tags, key=lambda t: [int(x) for x in t[1:].split(".")])
+
+
+def smoke_jebctl(dl, tag, repo, env, want):
+    """The release's jebctl-macos: its SHA-256 and size equal the signed manifest's, and --version names the tag. Returns (ok, why)."""
+    r = subprocess.run(["gh", "release", "download", tag, "-R", repo, "-p", "jebctl-macos", "-D", dl], env=env, capture_output=True, text=True, timeout=300)
+    p = os.path.join(dl, "jebctl-macos")
+    if r.returncode != 0 or not os.path.isfile(p):
+        return False, "gh release download jebctl-macos failed: " + (r.stderr.strip().splitlines() or ["?"])[-1][:200]
+    if want.get("sha256") != sha256_of(p) or want.get("size") != os.path.getsize(p):
+        return False, "jebctl-macos does not match the signed manifest"
+    os.chmod(p, 0o755)
+    v = subprocess.run([p, "--version"], env=env, capture_output=True, text=True, timeout=30)
+    if v.returncode != 0 or tag not in v.stdout:
+        return False, f"jebctl-macos --version said {v.stdout.strip()!r}, not {tag}"
+    return True, ""
 
 
 def smoke_case(sandbox, home, tag, repo):
@@ -543,6 +572,10 @@ def smoke_case(sandbox, home, tag, repo):
         entries = ""
     if os.path.join(cur, "mod") not in entries.split(os.pathsep):
         return bad("settings.json does not list ~/.jeb/current/mod")
+    if doc.get("jebctl"):
+        ok, why = smoke_jebctl(dl, tag, repo, env, doc["jebctl"])
+        if not ok:
+            return bad(why)
     left = [n for n in os.listdir(os.path.dirname(ver))]
     if left != [tag]:
         return bad("versions/ holds " + ", ".join(left))
@@ -559,7 +592,7 @@ def smoke(tag, dry):
     sandbox = os.path.join(root, tag)
     say(f"smoke {tag} from {repo}\n  sandbox {sandbox} (fake HOME inside; an earlier one is moved to {os.path.join(root, 'old-<time>')})\n"
         f"  gh release download (manifest, signature, this Mac's zip), verify, unpack into <home>/.jeb/versions/<tag>, run the bundle's own\n"
-        f"  python/bin/python3 -I install --no-agents; then jebctl doctor (JEB_NO_LAUNCHCTL=1)")
+        f"  python/bin/python3 -I install --no-agents; then jebctl doctor (JEB_NO_LAUNCHCTL=1); jebctl-macos is checked when the manifest lists it")
     if dry:
         say("dry run: nothing was created.")
         return 0

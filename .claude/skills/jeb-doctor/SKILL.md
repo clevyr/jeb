@@ -5,12 +5,13 @@ description: Diagnose a Jeb install on this Mac (app, LaunchAgents, plugin regis
 
 # Jeb doctor
 
-1. Run `~/.local/bin/jebctl doctor`, or `~/.jeb/current/python/bin/python3 -I ~/.jeb/current/desktop/jebctl doctor` if that link is missing (a git-clone install from before the bundle layout: `/usr/bin/python3 -I ~/.jeb/repo/desktop/jebctl doctor`). It is read-only. Each line is `ok` or `FIX <what>: <fix>`, and it ends with `all good` or `N problem(s)`.
+1. Run `~/.local/bin/jebctl doctor`, or `~/.jeb/bin/jebctl doctor` if that link is missing (both run the installed Jeb's own doctor; a git-clone install from before the bundle layout: `/usr/bin/python3 -I ~/.jeb/repo/desktop/jebctl doctor`). It is read-only. Each line is `ok` or `FIX <what>: <fix>`, and it ends with `all good` or `N problem(s)`.
 2. Apply these fixes yourself, without asking the user to run anything, and tell them in one plain line each what was wrong and what you did:
    - `~/.local/bin/jebctl start` (the desktop was quit from the menu, or is not running);
    - `~/.local/bin/jebctl resume-updates` (updates are paused; someone paused them on purpose, so ask first);
    - `~/.local/bin/jebctl reload-agents` (the LaunchAgent plists are stale after an update);
-   - repair: run the install again, `~/.jeb/current/python/bin/python3 -I ~/.jeb/current/install` with no flags (missing app, LaunchAgents or plugin registration). If `~/.jeb/current` itself is broken, follow the jeb-install steps to download the newest release again;
+   - updates look stuck, or the user asks to update: follow the jeb-update skill (`~/.jeb/current/.claude/skills/jeb-update/SKILL.md`);
+   - repair: run the install again, `~/.jeb/current/python/bin/python3 -I ~/.jeb/current/install` with no flags (missing app, LaunchAgents or plugin registration). If `~/.jeb/current` itself is broken, run `~/.jeb/bin/jebctl install` (or follow the jeb-install steps) to download the newest release again;
    - gh not signed in: run `gh auth login --hostname github.com --git-protocol https --web` in the background, show the user the one-time code and wait while they sign in, and do not run `gh auth setup-git`. Call gh by its full path (`~/.jeb/bin/gh`, `/opt/homebrew/bin/gh` or `/usr/local/bin/gh`).
    Anything else: explain it in plain words and do not change it without the user's approval.
 3. If more detail is needed, read `~/Library/Application Support/Jeb/update.log`, `release.log` and `watchdog.log`. Older installs may still be at `~/.claude/jeb-desktop` until migrated (`jebctl migrate`); the doctor's "state folder" line says which is in use. Point to logs by path only.
