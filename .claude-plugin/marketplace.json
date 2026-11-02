@@ -1,0 +1,12 @@
+{
+  "name": "jeb",
+  "owner": { "name": "Clevyr" },
+  "metadata": { "description": "Jeb, a tobacco-farmer companion that lives beside your Claude Code sessions" },
+  "plugins": [
+    {
+      "name": "jeb",
+      "source": "./mod",
+      "description": "Jeb's link to the Jeb desktop app: watches your sessions without changing anything and keeps the farm and the anonymous live records the desktop shows"
+    }
+  ]
+}

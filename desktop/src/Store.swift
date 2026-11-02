@@ -14,7 +14,23 @@
 
 import Foundation
 
-let storePath = env["JEB_STORE_PATH"] ?? NSHomeDirectory() + "/.claude/plugins/store/jeb_inline-129385bc4c17.json"
+/// The store file: JEB_STORE_PATH; else the plugin's own (jeb@jeb) when it exists, else the older jeb@inline one while that is all
+/// there is, else jeb@jeb's (the mod creates it on its first run under Claude Code's plugin system).
+func resolveStorePath() -> String {
+    if let p = env["JEB_STORE_PATH"] { return p }
+    let dir = env["JEB_STORE_DIR"] ?? NSHomeDirectory() + "/.claude/plugins/store"
+    let new = dir + "/jeb_jeb-8dcd56be8054.json", old = dir + "/jeb_inline-129385bc4c17.json"
+    let fm = FileManager.default
+    return !fm.fileExists(atPath: new) && fm.fileExists(atPath: old) ? old : new
+}
+
+var storePath = resolveStorePath()
+
+/// While on the older file, look again (one stat): the new one appearing switches the app over without a restart.
+func refreshStorePath() {
+    guard env["JEB_STORE_PATH"] == nil, storePath.hasSuffix("/jeb_inline-129385bc4c17.json") else { return }
+    storePath = resolveStorePath()
+}
 
 enum StoreLimits {
     static let fileBytes = 8 << 20     // a bigger file is not read at all
@@ -122,7 +138,7 @@ func isToken(_ s: String) -> Bool {
 /// queue) at most once per DEBOUNCE_MS burst of events.
 final class StoreWatcher {
     static let debounce = 0.008
-    private let path: String
+    private var path: String
     private let onChange: () -> Void
     private var fileSource: DispatchSourceFileSystemObject?
     private var dirSource: DispatchSourceFileSystemObject?
@@ -169,6 +185,9 @@ final class StoreWatcher {
         let source = DispatchSource.makeFileSystemObjectSource(fileDescriptor: fd, eventMask: [.write, .rename, .delete], queue: .main)
         source.setEventHandler { [weak self] in
             guard let self else { return }
+            // The store moved to the plugin's own file: follow it.
+            refreshStorePath()
+            if storePath != self.path { self.path = storePath; self.watchedInode = 0; self.reopens += 1; self.openFile() }
             // An entry came or went: if our file source lost its file, pick the new one up.
             if self.fileSource == nil || !self.sameInode() { self.reopens += 1; self.openFile() }
             self.fire()
@@ -211,6 +230,7 @@ final class StoreSource {
     /// Re-reads if the file changed (by mtime, size and inode) or `force`.
     /// Returns which parts changed.
     func refresh(force: Bool = false) -> (farm: Bool, live: Bool, areas: Bool) {
+        refreshStorePath()
         var st = stat()
         guard stat(storePath, &st) == 0 else { return (false, false, false) }
         let mtime = Date(timeIntervalSince1970: Double(st.st_mtimespec.tv_sec) + Double(st.st_mtimespec.tv_nsec) / 1e9)

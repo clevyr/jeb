@@ -5,12 +5,13 @@ migrate() moves it (the old path then stays behind as a symlink, so the running 
 LaunchAgents' log paths keep working). Shared by jebctl, updater.py and watchdog.py; the Swift app resolves the
 same way in Heartbeat.swift. Stdlib only; paths are computed at call time so tests can point $HOME elsewhere.
 Also the install's shared lookups: dev_dir and use_dev_dir (fall back to the Command Line Tools when an unlicensed Xcode
-would block git), find_gh,
-find_claude, and the standard places ~/.jeb/bin (gh; JEB_TOOLS_DIR), ~/.jeb/versions/<tag> (one unpacked release bundle: its
+would block git),
+find_claude, and the standard places ~/.jeb/bin (JEB_TOOLS_DIR), ~/.jeb/versions/<tag> (one unpacked release bundle: its
 tree, the universal app and a private Python) and ~/.jeb/current (a symlink to the live one; LaunchAgents and settings only name it).
-Also read_bundle, host_arch, macho_archs (a stdlib Mach-O reader) and pin_python.
+Also read_bundle, host_arch, macho_archs (a stdlib Mach-O reader) and pin_python, and release_base, fetch, latest_tag and
+feed_tags: releases over plain HTTPS, no API or sign-in.
 """
-import fcntl, json, os, plistlib, shutil, struct, subprocess, sys
+import fcntl, json, os, plistlib, re, shutil, struct, subprocess, sys, time
 
 CLT = "/Library/Developer/CommandLineTools"
 SYS_PATH = "/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin"
@@ -113,17 +114,120 @@ def _exe(p):
     return os.path.isfile(p) and os.access(p, os.X_OK)
 
 
-def find_gh():
-    """Absolute path of gh: Jeb's own copy ($JEB_TOOLS_DIR or ~/.jeb/bin), Homebrew's, then anything on PATH."""
-    for p in (os.path.join(tools_dir(), "gh"), "/opt/homebrew/bin/gh", "/usr/local/bin/gh"):
-        if _exe(p):
-            return p
-    return shutil.which("gh", path=os.environ.get("PATH", "") + os.pathsep + SYS_PATH)
+TAG = re.compile(r"v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")
+
+
+class FetchError(OSError):
+    """A download that failed, in plain words. .status: the HTTP code (404: no such release or asset), None for the network."""
+    def __init__(self, msg, status=None):
+        super().__init__(msg)
+        self.status = status
+
+
+class TooBig(FetchError):
+    """More bytes than the cap (for a bundle: than its signed size): the asset is wrong, not the network."""
+
+
+def release_base(repo):
+    """Where releases are read: https://github.com/<repo>/releases, or $JEB_RELEASE_BASE (tests: a server laid out like GitHub)."""
+    return (os.environ.get("JEB_RELEASE_BASE") or f"https://github.com/{repo}/releases").rstrip("/")
+
+
+def _open(url, timeout):
+    import socket, ssl, urllib.error, urllib.request
+
+    class _HttpsOnly(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, req, fp, code, msg, headers, newurl):
+            if req.full_url.startswith("https:") and not newurl.startswith("https:"):
+                raise urllib.error.HTTPError(req.full_url, code, "redirect away from https refused", headers, fp)
+            return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+    host = url.split("/")[2]
+    try:
+        return urllib.request.build_opener(_HttpsOnly).open(urllib.request.Request(url, headers={"User-Agent": "jebctl"}), timeout=timeout)
+    except urllib.error.HTTPError as e:
+        raise FetchError(f"{url.rstrip('/').rsplit('/', 1)[-1]} not found (HTTP 404)" if e.code == 404 else f"HTTP {e.code} from {host}", e.code)
+    except (urllib.error.URLError, socket.timeout, ssl.SSLError, OSError) as e:
+        raise FetchError(f"could not reach {host} ({getattr(e, 'reason', e)})")
+
+
+def fetch(url, dest=None, limit=1 << 16, timeout=60, total=900):
+    """GET url (redirects followed, https never downgraded). With dest: streamed to dest.part, renamed over dest last, and the
+    final URL returned; without: the body. More than limit bytes raises TooBig; so does a longer Content-Length. FetchError otherwise."""
+    end = time.monotonic() + total
+    r = _open(url, timeout)
+    try:
+        n = r.headers.get("Content-Length")
+        if n and n.isdigit() and int(n) > limit:
+            raise TooBig(f"{url.rstrip('/').rsplit('/', 1)[-1]} is larger than {limit} bytes")
+        if not dest:
+            body = r.read(limit + 1)
+            if len(body) > limit:
+                raise TooBig(f"{url.rstrip('/').rsplit('/', 1)[-1]} is larger than {limit} bytes")
+            return body
+        part, got = dest + ".part", 0
+        fd = os.open(part, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        try:
+            with os.fdopen(fd, "wb") as f:
+                while True:
+                    b = r.read(1 << 20)
+                    if not b:
+                        break
+                    got += len(b)
+                    if got > limit:
+                        raise TooBig(f"{dest.rsplit('/', 1)[-1]} is larger than {limit} bytes")
+                    if time.monotonic() > end:
+                        raise FetchError(f"download of {dest.rsplit('/', 1)[-1]} took longer than {total} s")
+                    f.write(b)
+            os.replace(part, dest)
+        except BaseException:
+            try:
+                os.unlink(part)
+            except OSError:
+                pass
+            raise
+        return r.geturl()
+    except (OSError, ValueError) as e:
+        if isinstance(e, FetchError):
+            raise
+        raise FetchError(f"could not read {url.split('/')[2]} ({e})")
+    finally:
+        r.close()
+
+
+def latest_tag(base, timeout=60):
+    """The newest published tag: /latest redirects to /tag/<tag> (the page is not read); a static test server answers the bare tag."""
+    from urllib.parse import urlsplit
+    try:
+        r = _open(base + "/latest", timeout)
+    except FetchError as e:
+        raise FetchError(f"no published release at {base} (HTTP 404; is the repository public?)", 404) if e.status == 404 else e
+    try:
+        m = re.search(r"/tag/(v\d+\.\d+\.\d+)$", urlsplit(r.geturl()).path)
+        if m:
+            return m.group(1)
+        body = r.read(257).decode("utf-8", "replace").strip()
+    except OSError as e:
+        raise FetchError(f"could not read {base} ({e})")
+    finally:
+        r.close()
+    if len(body) <= 256 and TAG.fullmatch(body):
+        return body
+    raise FetchError(f"no published release at {base}")
+
+
+def feed_tags(base):
+    """The tags in the releases feed (<base>.atom), newest first; [] when it cannot be read."""
+    try:
+        text = fetch(base + ".atom", limit=1 << 20).decode("utf-8", "replace")
+    except FetchError:
+        return []
+    return list(dict.fromkeys(t for t in re.findall(r'/releases/tag/(v\d+\.\d+\.\d+)"', text) if TAG.fullmatch(t)))
 
 
 def find_claude():
     """Claude Code's CLI: on PATH, or where its installers put it."""
-    for p in (os.path.expanduser("~/.local/bin/claude"), os.path.expanduser("~/.claude/local/claude")):
+    for p in (os.path.expanduser("~/.local/bin/claude"), os.path.expanduser("~/.claude/local/claude"), "/opt/homebrew/bin/claude", "/usr/local/bin/claude"):
         if _exe(p):
             return p
     return shutil.which("claude")

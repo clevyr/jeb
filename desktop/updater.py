@@ -39,7 +39,7 @@ com.jeb.desktop.update-finished so the app can announce the run without polling.
 import argparse, concurrent.futures, fcntl, glob, hashlib, importlib.util, json, os, plistlib, re, shutil, subprocess, sys, tempfile, time, ctypes
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
-import jebhome
+import jebhome, plugdirs
 jebhome.pin_python()        # a bundle's code runs on the bundle's Python, through ~/.jeb/current when started from there
 
 jebhome.use_dev_dir()       # before anything runs git or xcrun: fall back to the Command Line Tools if Xcode's license blocks
@@ -62,7 +62,6 @@ HEALTHY_SECS = 180      # a new build that has run this long, awake and not wait
 NO_BEAT_SECS = 240      # no heartbeat of the new stamp by then: nothing picked it up
 STALE = 10
 KEEP_VERSIONS = 1 if os.path.isfile(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "bundle.json")) else 3      # a release bundle keeps one spare app: one version on disk
-STORE = os.path.expanduser("~/.claude/plugins/store/jeb_inline-129385bc4c17.json")
 MOD = os.environ.get("JEB_MOD") or os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "mod")
 
 
@@ -309,7 +308,7 @@ def _gate_start(snap, binary, scratch):
     store = os.path.join(scratch, "store.json")
     note = ""
     try:
-        data = json.load(open(STORE))
+        data = json.load(open(plugdirs.store_path()))
         keep = {k: v for k, v in data.items() if k in ("farm", "areas") or k.startswith("live:")}
         del data
     except FileNotFoundError:

@@ -1,14 +1,11 @@
 // jebctl: the one command a teammate runs. Inside a release bundle (<root>/desktop/bin/jebctl) and as a standalone copy
 // it forwards every command to the installed Jeb's Python jebctl (python/bin/python3 -I desktop/jebctl). A standalone
-// copy (~/.jeb/bin/jebctl, fetched with gh) also answers `install` itself: gh, GitHub sign-in, the newest release,
-// its signature and hashes, the unpack, then the bundle's own install. Foundation and CryptoKit only; desktop/cli/build.sh.
+// copy (~/.jeb/bin/jebctl, fetched with curl) also answers `install` itself: the newest release (github.com/<repo>/releases/latest,
+// a web redirect: no sign-in, no API), its signature and hashes, the unpack, then the bundle's own install. Foundation and CryptoKit only; desktop/cli/build.sh.
 import Foundation
 import CryptoKit
 
 let repo = "clevyr/jeb"
-let ghVersion = "2.102.0"
-let ghSHA = ["arm64": "da922c20d1792e5b2cbf375593d7a658acf034c12c84e007e71c76ef959c337e",
-             "amd64": "b245f24eb2bf5f75b426b4c26da3651a107f8d5b6f4fddfbfccc5679041378b3"]
 // Must equal the jeb-release line in desktop/release-signers (./release checks it) and the one in the jeb-install skill.
 let signerLine = "anthony@clevyr.com namespaces=\"jeb-release\" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGrfSJyAm3dy3vkC1jKbk2YIxJk9BvoThi605ul1gMZC"
 let signerWho = "anthony@clevyr.com"
@@ -17,8 +14,8 @@ let fm = FileManager.default
 let env = ProcessInfo.processInfo.environment
 let home = env["HOME"] ?? NSHomeDirectory()
 let jebDir = home + "/.jeb"
-let toolsDir = env["JEB_TOOLS_DIR"] ?? jebDir + "/bin"
 let current = jebDir + "/current"
+let releases = { (b: String) in b.hasSuffix("/") ? String(b.dropLast()) : b }(env["JEB_RELEASE_BASE"] ?? "https://github.com/\(repo)/releases")
 let usage = """
 jebctl: manage Jeb on this Mac.
   jebctl install [--dry-run] [--no-agents] [--verbose]   set Jeb up (or update it when it is installed)
@@ -67,7 +64,7 @@ func execForward(_ python: String, _ script: String, _ args: [String]) -> Never 
 
 struct Result { var status: Int32; var out: String; var err: String }
 
-/// Runs a program. capture: collect stdout and stderr; otherwise they are inherited (gh login, the installs).
+/// Runs a program. capture: collect stdout and stderr; otherwise they are inherited (the installs).
 /// stdin: a file to feed it.
 @discardableResult
 func run(_ path: String, _ args: [String], capture: Bool = true, stdin: String? = nil) -> Result {
@@ -116,67 +113,83 @@ func tempDir() -> String {
 
 func step(_ s: String) { say("  " + s) }
 
-func findGH() -> String? {
-    [toolsDir + "/gh", "/opt/homebrew/bin/gh", "/usr/local/bin/gh"].first(where: isFile)
+/// Collects one GET: redirects followed (never from https to anything else), the body refused past limit.
+final class Grab: NSObject, URLSessionDataDelegate {
+    let limit: Int
+    var url: URL?, status = 0, data = Data(), why: String?
+    let sem = DispatchSemaphore(value: 0)
+    init(_ limit: Int) { self.limit = limit }
+    func urlSession(_ s: URLSession, task: URLSessionTask, willPerformHTTPRedirection r: HTTPURLResponse, newRequest q: URLRequest, completionHandler done: @escaping (URLRequest?) -> Void) {
+        done(task.currentRequest?.url?.scheme == "https" && q.url?.scheme != "https" ? nil : q)
+    }
+    func urlSession(_ s: URLSession, dataTask t: URLSessionDataTask, didReceive r: URLResponse, completionHandler done: @escaping (URLSession.ResponseDisposition) -> Void) {
+        url = r.url
+        status = (r as? HTTPURLResponse)?.statusCode ?? 200      // file:// answers no status
+        done(status == 200 ? .allow : .cancel)
+    }
+    func urlSession(_ s: URLSession, dataTask t: URLSessionDataTask, didReceive d: Data) {
+        data.append(d)
+        if data.count > limit { why = "larger than \(limit) bytes"; t.cancel() }
+    }
+    func urlSession(_ s: URLSession, task: URLSessionTask, didCompleteWithError e: Error?) {
+        if why == nil && status != 0 && status != 200 { why = status == 404 ? "not found (HTTP 404)" : "HTTP \(status)" }
+        else if why == nil, let e = e { why = e.localizedDescription }
+        sem.signal()
+    }
 }
 
-func download(_ url: String, to dest: String) -> String? {
+func session(_ delegate: URLSessionDelegate? = nil) -> URLSession {
+    let c = URLSessionConfiguration.ephemeral
+    c.timeoutIntervalForRequest = 60; c.timeoutIntervalForResource = 900
+    c.httpAdditionalHeaders = ["User-Agent": "jebctl/\(jebctlVersion)"]
+    return URLSession(configuration: c, delegate: delegate, delegateQueue: nil)
+}
+
+/// GET url, redirects followed: (final URL, body, nil) or (final URL or nil, nil, reason); non-HTTP (file://) responses pass; body refused past limit.
+func get(_ url: String, limit: Int) -> (URL?, Data?, String?) {
+    guard let u = URL(string: url) else { return (nil, nil, "bad URL") }
+    let g = Grab(limit), s = session(g)
+    s.dataTask(with: u).resume()
+    g.sem.wait()
+    s.finishTasksAndInvalidate()
+    return g.why == nil ? (g.url, g.data, nil) : (g.url, nil, g.why)
+}
+
+/// url into dest: downloadTask, HTTP 200 only, expectedContentLength (when known) and the file's size must equal size (nil: at most 1 MB),
+/// URLSession's temp file moved to dest + ".part", renamed to dest last. nil or the reason ("not found (HTTP 404)", "HTTP n", localizedDescription).
+func save(_ url: String, to dest: String, size: Int?) -> String? {
     guard let u = URL(string: url) else { return "bad URL" }
-    var req = URLRequest(url: u)
-    req.timeoutInterval = 120
     var out: String? = "no answer"
     let sem = DispatchSemaphore(value: 0)
-    URLSession.shared.dataTask(with: req) { data, resp, err in
-        if let err = err { out = err.localizedDescription }
-        else if let h = resp as? HTTPURLResponse, h.statusCode != 200 { out = "HTTP \(h.statusCode)" }
-        else if let d = data, (try? d.write(to: URL(fileURLWithPath: dest))) != nil { out = nil }
-        else { out = "could not save the download" }
-        sem.signal()
+    session().downloadTask(with: u) { tmp, resp, err in
+        defer { sem.signal() }
+        if let err = err { out = err.localizedDescription; return }
+        let code = (resp as? HTTPURLResponse)?.statusCode ?? 200
+        guard code == 200, let tmp = tmp else { out = code == 404 ? "not found (HTTP 404)" : "HTTP \(code)"; return }
+        let have = (try? fm.attributesOfItem(atPath: tmp.path)[.size] as? Int) ?? -1
+        let n = resp?.expectedContentLength ?? -1
+        guard have >= 0, size.map({ have == $0 && (n < 0 || n == Int64($0)) }) ?? (have <= 1 << 20) else { out = "the size does not match what was expected"; return }
+        let part = dest + ".part"
+        try? fm.removeItem(atPath: part)
+        do { try fm.moveItem(atPath: tmp.path, toPath: part); try? fm.removeItem(atPath: dest); try fm.moveItem(atPath: part, toPath: dest); out = nil }
+        catch { try? fm.removeItem(atPath: part); out = "could not save the download" }
     }.resume()
     sem.wait()
     return out
 }
 
-/// gh by full path; downloads the pinned GitHub CLI into the tools folder when none is installed.
-func ensureGH(dry: Bool) -> String {
-    if let g = findGH() { step("GitHub CLI: \(g)"); return g }
-    let arch = hostArch() == "arm64" ? "arm64" : "amd64"
-    let name = "gh_\(ghVersion)_macOS_\(arch).zip"
-    if dry { step("GitHub CLI: would download \(name) into \(toolsDir)"); return toolsDir + "/gh" }
-    let tmp = tempDir()
-    defer { try? fm.removeItem(atPath: tmp) }
-    let zip = tmp + "/" + name
-    if let why = download("https://github.com/cli/cli/releases/download/v\(ghVersion)/\(name)", to: zip) {
-        die("jebctl: could not download the GitHub CLI (\(why)). Check the network and run again.")
-    }
-    guard sha256(zip) == ghSHA[arch] else { die("jebctl: the GitHub CLI download does not match its pinned SHA-256; refusing it.") }
-    let x = tmp + "/x"
-    guard run("/usr/bin/ditto", ["-x", "-k", zip, x]).status == 0,
-          let en = fm.enumerator(atPath: x),
-          let rel = en.compactMap({ $0 as? String }).first(where: { $0.hasSuffix("/bin/gh") || $0 == "bin/gh" }) else {
-        die("jebctl: could not unpack the GitHub CLI.")
-    }
-    try? fm.createDirectory(atPath: toolsDir, withIntermediateDirectories: true)
-    let dest = toolsDir + "/gh"
-    try? fm.removeItem(atPath: dest)
-    do { try fm.copyItem(atPath: x + "/" + rel, toPath: dest) } catch { die("jebctl: could not place gh in \(toolsDir): \(error.localizedDescription)") }
-    chmod(dest, 0o755)
-    step("GitHub CLI \(ghVersion): installed at \(dest) (SHA-256 checked)")
-    return dest
+/// The newest published tag: the final URL of <releases>/latest ends /tag/<tag>; a test server answers the bare tag (body <= 256 B).
+func latestTag() -> (String?, String?) {
+    let (u, body, why) = get(releases + "/latest", limit: 256)
+    let ok = { (t: String) in t.range(of: #"^v\d+\.\d+\.\d+$"#, options: .regularExpression) != nil }
+    if let t = u?.path.components(separatedBy: "/tag/").last, u?.path.contains("/tag/") == true, ok(t) { return (t, nil) }
+    if let b = body, let t = String(data: b, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines), ok(t) { return (t, nil) }
+    return (nil, why ?? "no published release")
 }
 
-func ensureSignedIn(_ gh: String, dry: Bool) {
-    if dry && !isFile(gh) { step("GitHub sign-in: would check, and sign in through the browser if needed"); return }
-    if run(gh, ["auth", "status"]).status == 0 { step("GitHub: signed in"); return }
-    if dry { step("GitHub: not signed in; would run gh auth login --web"); return }
-    step("GitHub: sign in with the code below (a browser window opens)")
-    run(gh, ["auth", "login", "--hostname", "github.com", "--git-protocol", "https", "--web"], capture: false)
-    if run(gh, ["auth", "status"]).status != 0 { die("jebctl: GitHub sign-in did not finish; run jebctl install again.") }
-    step("GitHub: signed in")
-}
-
-func verifyRelease(_ dir: String, tag: String, arch: String) {
-    let man = "\(dir)/Jeb-\(tag)-manifest.json", sig = man + ".sig", zip = "\(dir)/Jeb-\(tag)-macos-\(arch).zip"
+/// The signed manifest (checked against the pinned signer) and what it says about this Mac's zip.
+func verifyManifest(_ dir: String, tag: String, arch: String) -> (sha: String, size: Int) {
+    let man = "\(dir)/Jeb-\(tag)-manifest.json", sig = man + ".sig"
     let signers = dir + "/signers"
     try? (signerLine + "\n").write(toFile: signers, atomically: true, encoding: .utf8)
     let v = run("/usr/bin/ssh-keygen", ["-Y", "verify", "-f", signers, "-I", signerWho, "-n", "jeb-release", "-s", sig], stdin: man)
@@ -187,8 +200,12 @@ func verifyRelease(_ dir: String, tag: String, arch: String) {
           doc["tag"] as? String == tag,
           let b = (doc["bundles"] as? [String: Any])?[arch] as? [String: Any],
           let want = b["sha256"] as? String, let size = b["size"] as? Int else { die("jebctl: the manifest is malformed or names another tag; refusing it.") }
+    return (want, size)
+}
+
+func checkZip(_ zip: String, sha: String, size: Int) {
     let have = (try? fm.attributesOfItem(atPath: zip)[.size] as? Int) ?? -1
-    guard sha256(zip) == want, have == size else { die("jebctl: the download does not match the signed manifest; refusing it.") }
+    guard sha256(zip) == sha, have == size else { die("jebctl: the download does not match the signed manifest; refusing it.") }
     step("sha256 and size: match the manifest")
 }
 
@@ -234,27 +251,28 @@ func install(_ args: [String]) -> Int32 {
     say("Installing Jeb\(dry ? " (dry run)" : "")")
     let arch = hostArch()
     step("architecture: \(arch)")
-    let gh = ensureGH(dry: dry)
-    ensureSignedIn(gh, dry: dry)
+    let (found, why) = env["JEB_RELEASE_TAG"].map { ($0, nil) } ?? latestTag()      // JEB_RELEASE_TAG: tests only; the signature still binds the tag
+    guard let tag = found else {
+        if why?.contains("404") == true { die("jebctl: \(releases) has no published release (HTTP 404; is the repository public?)") }
+        die("jebctl: could not reach GitHub (\(why ?? "?")); check the network and run jebctl install again")
+    }
+    step("newest release: \(tag)")
     if dry {
-        step("would find the newest release of \(repo), download its manifest, signature and \(arch) zip,")
+        step("would download its manifest, signature and \(arch) zip from \(releases)/download/\(tag)/,")
         step("verify the signature and hashes, unpack into \(jebDir)/versions/<tag> and run the bundle's own install")
         say("Dry run only; nothing was changed.")
         return 0
     }
-    let l = run(gh, ["release", "list", "-R", repo, "--exclude-drafts", "--exclude-pre-releases", "--limit", "1", "--json", "tagName", "--jq", ".[0].tagName"])
-    let tag = l.out.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard l.status == 0, tag.range(of: #"^v\d+\.\d+\.\d+$"#, options: .regularExpression) != nil else {
-        die("jebctl: could not read the releases of \(repo); your GitHub account needs access to it.")
-    }
-    step("newest release: \(tag)")
     let tmp = tempDir()
     defer { try? fm.removeItem(atPath: tmp) }
     let man = "Jeb-\(tag)-manifest.json", zname = "Jeb-\(tag)-macos-\(arch).zip"
-    let d = run(gh, ["release", "download", tag, "-R", repo, "-p", man, "-p", man + ".sig", "-p", zname, "-D", tmp])
-    guard d.status == 0 else { die("jebctl: the download failed: \((d.err.split(separator: "\n").last).map(String.init) ?? "?")") }
+    for n in [man, man + ".sig"] {
+        if let why = save("\(releases)/download/\(tag)/\(n)", to: tmp + "/" + n, size: nil) { die("jebctl: could not download \(n) (\(why)).") }
+    }
+    let want = verifyManifest(tmp, tag: tag, arch: arch)
+    if let why = save("\(releases)/download/\(tag)/\(zname)", to: tmp + "/" + zname, size: want.size) { die("jebctl: could not download \(zname) (\(why)).") }
     step("downloaded \(zname)")
-    verifyRelease(tmp, tag: tag, arch: arch)
+    checkZip(tmp + "/" + zname, sha: want.sha, size: want.size)
     let ver = unpack(zip: tmp + "/" + zname, tag: tag)
     step("running the bundle's install")
     return run(ver + "/python/bin/python3", ["-I", ver + "/install"] + args, capture: false).status

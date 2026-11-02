@@ -5,11 +5,13 @@
                     deletes everything in the desktop's folder (JEB_HOME: versions, logs, state; passed through).
   jebctl link:      ~/.local/bin/jebctl is removed when it points at this clone, and the two PATH lines `./install` added to
                     the shell profile (backup first).
-  settings.json:    this install's mod/ entry (and an old clone's, in a bundle) is removed from CLAUDE_CODE_PLUGIN_DIRS (backup first).
-  --purge-farm      also removes the farm file(s) ~/.claude/plugins/store/jeb_inline-*.json, after a backup.
+  Claude Code:      `claude plugin uninstall jeb@jeb` and `claude plugin marketplace remove jeb` (Jeb's own marketplace only; the plugin's
+                    data and the farm stay unless --purge-farm). This install's mod/ entry (and an old clone's, in a bundle) is removed
+                    from CLAUDE_CODE_PLUGIN_DIRS in settings.json (backup first).
+  --purge-farm      also removes the farm file(s) ~/.claude/plugins/store/jeb_jeb-*.json and jeb_inline-*.json, after a backup.
                     Default: the farm is kept.
   --remove-files    last step (--remove-clone is the old name): deletes ~/.jeb entirely (the installed bundle, its Python, the
-                    tools folder with gh), and an old git clone of Jeb when release-state names one and it has no local changes.
+                    ~/.jeb/bin: the standalone jebctl, and an older install's gh), and an old git clone of Jeb when release-state names one and it has no local changes.
                     A git clone layout deletes only the standard clone ~/.jeb/repo (any other location is refused) and ~/.jeb/bin.
                     Default: the files stay.
   --verbose         every command and detail; by default one short line per step.
@@ -49,14 +51,15 @@ def main(argv):
         say(f"the desktop part failed (exit {rc}); settings.json and the farm were left alone")
         return rc
     legacy = legacy_state()
-    act = plugdirs.edit(MOD, True, dry, say if verbose else lambda *a: None)
+    plugdirs.unregister(farm, dry, say if verbose else lambda *a: None, jebhome.current_dir() if BUNDLED else CLONE)
+    plugdirs.edit(MOD, True, dry, say if verbose else lambda *a: None)
     for old in (legacy.get("legacy_clone"), legacy.get("legacy_mod")):
         if BUNDLED and old:
             plugdirs.edit(old if old.endswith("/mod") else os.path.join(old, "mod"), True, dry, say if verbose else lambda *a: None)
     if not verbose:
-        say("  plugin setting ... " + ("not set" if act == "absent" else "would remove" if dry else "removed"))
+        say("  plugin ... " + ("would unregister" if dry else "unregistered from Claude Code"))
     store = os.environ.get("JEB_STORE_DIR") or os.path.expanduser("~/.claude/plugins/store")
-    files = sorted(glob.glob(os.path.join(store, "jeb_inline-*.json")))
+    files = sorted(glob.glob(os.path.join(store, "jeb_inline-*.json")) + glob.glob(os.path.join(store, "jeb_jeb-*.json")))
     if farm:
         for f in files:
             if verbose:

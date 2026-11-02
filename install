@@ -16,7 +16,7 @@
                           ~/.bash_profile, else ~/.profile; backup first). The PATH is optional: without it one line says
                           to run ~/.local/bin/jebctl.
   --build-from-source     release mode only: compile the app when no verified prebuilt one can be downloaded (or JEB_ALLOW_BUILD=1).
-                          By default release mode never compiles: it needs gh signed in to GitHub (signed in to GitHub) and stops with a plain reason when the prebuilt app cannot be had.
+                          By default release mode never compiles: it downloads the release's app over HTTPS and stops with a plain reason when the prebuilt app cannot be had.
   --dev                   owner mode: runs from the working tree; local src edits ship through the update gates (compiles; needs
                           swiftc from the Command Line Tools).
   --verbose               every command and detail; by default one short line per step.
@@ -25,9 +25,11 @@
 A git clone (developers) still installs the old way and converts to a bundle on its first release-mode follow.
 Preflight (git clone, release mode): macOS, /usr/bin/python3 and git (DEVELOPER_DIR points at the Command Line Tools only when the
 selected Xcode fails, e.g. its license was never accepted); claude missing is only a note.
-Steps: preflight, `desktop/jebctl install` (first build through the gates, LaunchAgents, start), then the mod folder
-added to CLAUDE_CODE_PLUGIN_DIRS in ~/.claude/settings.json (backup first). --dry-run changes nothing.
-Env overrides (tests): JEB_HOME, JEB_APP_DIR, JEB_LAUNCHAGENTS, JEB_SETTINGS, JEB_BACKUPS, JEB_BIN_DIR, JEB_PROFILE, JEB_TOOLS_DIR, JEB_NO_LAUNCHCTL.
+Steps: preflight, `desktop/jebctl install` (first build through the gates, LaunchAgents, start), then the mod registered through Claude
+Code's plugin system (`claude plugin marketplace add` + `claude plugin install jeb@jeb`; options and the farm carry over from the old
+jeb@inline id, and Jeb's own CLAUDE_CODE_PLUGIN_DIRS entry is removed from ~/.claude/settings.json, backup first). --dev keeps the
+CLAUDE_CODE_PLUGIN_DIRS entry (hot reload). --dry-run changes nothing.
+Env overrides (tests): JEB_HOME, JEB_APP_DIR, JEB_LAUNCHAGENTS, JEB_SETTINGS, JEB_BACKUPS, JEB_STORE_DIR, JEB_BIN_DIR, JEB_PROFILE, JEB_TOOLS_DIR, JEB_NO_LAUNCHCTL.
 """
 import json, os, shutil, subprocess, sys
 
@@ -132,17 +134,27 @@ def main(argv):
     if not VERBOSE:
         print("  Claude Code plugin ...", end=" ", flush=True)
     quiet = say if VERBOSE else (lambda *a: None)
-    if BUNDLED:
-        act = plugdirs.edit(os.path.join(jebhome.current_dir(), "mod"), False, dry, quiet)
-        old = (load_rstate().get("legacy_mod") or "")
-        if old and os.path.realpath(old) != os.path.realpath(os.path.join(jebhome.current_dir(), "mod")):
-            plugdirs.edit(old, True, dry, quiet)        # a git clone's entry from before this bundle
+    msgs = []
+    if dev:
+        act = plugdirs.edit(MOD, False, dry, quiet)         # a dev clone keeps loading through CLAUDE_CODE_PLUGIN_DIRS (hot reload)
+        res = "would add" if dry and act in ("set", "append") else "ok"
     else:
-        act = plugdirs.edit(MOD, False, dry, quiet)
-    if not VERBOSE:
-        say("would add" if dry and act in ("set", "append") else "ok")
-        if dry:
-            say("Dry run only; nothing was changed.")
+        old = (load_rstate().get("legacy_mod") or "") if BUNDLED else MOD       # a git clone's entry from before this bundle
+        res = plugdirs.register(jebhome.current_dir() if BUNDLED else CLONE, dry, say if VERBOSE else msgs.append, [old])
+        if res != "ok":
+            if not VERBOSE:
+                say("not registered")
+            say({"no-claude": "note: Claude Code is not installed, so Jeb is not registered yet; run ./install again after installing it",
+                 "conflict": 'note: a Claude Code marketplace named "jeb" already points elsewhere; Jeb was left as it was (run jebctl doctor)',
+                 "failed": "note: Claude Code refused the plugin install; Jeb was left as it was (run ./install again, or jebctl doctor)"}[res])
+            res = None
+    if not VERBOSE and res:
+        say(res)
+    for m in msgs:
+        if m.startswith("moved"):
+            say("  " + m)
+    if dry and not VERBOSE:
+        say("Dry run only; nothing was changed.")
     if dry:
         return 0
     if not noag:        # a sandbox has no agents loaded; ./release smoke runs the doctor itself

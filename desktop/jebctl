@@ -22,7 +22,7 @@
                           no verified tag it stays on the cloned commit. --repin replaces the pin (key rotation).
                           Release mode never compiles: the release's prebuilt app (and its detect and png2raw helpers)
                           is used when it checks out (see follow); every gate still runs. With no verified prebuilt (no
-                          gh, not signed in to GitHub, no access, no asset, a hash mismatch) the install stops
+                          network, no asset, a hash mismatch) the install stops
                           with a plain reason. --build-from-source (or JEB_ALLOW_BUILD=1) is the escape hatch: it
                           compiles as dev mode does (needs the Command Line Tools).
                           Last, `jebctl` is linked into ~/.local/bin (JEB_BIN_DIR); a different file already at that
@@ -43,7 +43,7 @@
                           plists and the app; versions and logs stay unless --purge (removes everything in JEB_HOME);
                           also the ~/.local/bin/jebctl link (only if it points here) and the PATH lines install added.
                           --remove-files and --purge-farm run the bundle's `uninstall` script with all the flags (it also takes
-                          the plugin entry out of settings.json and deletes ~/.jeb); see ./uninstall
+                          the plugin out of Claude Code (jeb@jeb and the "jeb" marketplace) and deletes ~/.jeb); see ./uninstall
   follow [--gates-only] [--quick] [--build-from-source] [--dry-run]
                           (bundle layout, see below; this describes the git-clone layout.)
                           release mode: fetch tags, then take the newest unseen v* tag that is signed by a
@@ -57,7 +57,7 @@
                           Progress and the final result (and why a check did nothing) go to JEB_HOME/update-status.json,
                           which the menu bar shows; the menu's click file JEB_HOME/check-now is cleared at the start.
                           The release's app (JebDesktop-<tag>-macos.zip: JebDesktop, detect and png2raw, universal) is
-                          downloaded with gh (found by absolute path: ~/.jeb/bin, Homebrew, PATH) and used only when
+                          downloaded over HTTPS from github.com/<repo>/releases/download/<tag>/ (no sign-in) and used only when
                           its SHA-256 equals the app-sha256 line in the signed tag message and it holds this Mac's
                           architecture. Release mode never compiles: with no usable app the run stops with "app
                           download failed; will retry" and the tag is NOT marked failed (the 6-hourly agent retries).
@@ -65,7 +65,7 @@
   release [--bump auto|patch|minor|major] [--parity] [--dry-run]
                           (owner only, from a development clone, and refused in a release bundle: use ./release)
                           owner side: the clone is clean and on the default branch, a signing key is
-                          configured (user.signingkey), then `claude plugin validate mod`, `claude plugin
+                          configured (user.signingkey), then `claude plugin validate mod` and `validate .` (the marketplace), `claude plugin
                           test mod`, a universal release build (and the parity gate with --parity on that
                           same binary), then a local signed tag v<version> whose message carries the SHA-256
                           of the app zip (JebDesktop-<tag>-macos.zip, written to .git/jeb-release-<tag>/ for
@@ -120,9 +120,9 @@
 
 JEB_HOME (state root), JEB_SRC (the app source, default src/ beside this script), JEB_APP_DIR (default
 ~/Applications), JEB_LAUNCHAGENTS (default ~/Library/LaunchAgents), JEB_BIN_DIR (default ~/.local/bin), JEB_PROFILE and
-JEB_BACKUPS and JEB_TOOLS_DIR (gh, default ~/.jeb/bin) override the defaults, mostly for tests. JEB_NO_LAUNCHCTL=1 (sandbox)
+JEB_BACKUPS and JEB_TOOLS_DIR (the standalone jebctl, default ~/.jeb/bin) override the defaults, and JEB_RELEASE_BASE (where releases are read; a test server), mostly for tests. JEB_NO_LAUNCHCTL=1 (sandbox)
 skips the launchctl calls.
-Bundle layout, follow: the newest published release (gh release list) newer than the installed one is downloaded (manifest,
+Bundle layout, follow: the newest published release (github.com/<repo>/releases/latest, a web redirect, not the API) newer than the installed one (when that one was rejected, the older ones from releases.atom) is downloaded (manifest,
 signature, this Mac's zip), verified against the pinned signers for the `jeb-release` namespace, unpacked beside the live version, gated,
 then ~/.jeb/current is switched and the older folder removed (one version on disk). A git clone converts to this layout on its first
 release-mode follow when a bundle release exists; the clone is left on disk (release-state legacy_clone).
@@ -733,9 +733,34 @@ def cmd_doctor():
     except SystemExit as e:
         env_dirs = None
         say(f"      {e}")
-    check(any(plugdirs.same(e, MOD) for e in (env_dirs or "").split(os.pathsep) if e.strip()), f"plugin registered in {plugdirs.settings_path()}", FIX("run: ./install again"))
-    store_dir = os.environ.get("JEB_STORE_DIR") or os.path.expanduser("~/.claude/plugins/store")
-    stores = sorted(glob.glob(os.path.join(store_dir, "jeb_inline-*.json")))
+    listed = [e for e in (env_dirs or "").split(os.pathsep) if e.strip()]
+    if m == "dev":
+        check(any(plugdirs.same(e, MOD) for e in listed), f"plugin registered in {plugdirs.settings_path()}", FIX("run: ./install again"))
+    elif cl:
+        _, plug, mkt = plugdirs.info()
+        legacy = plugdirs.legacy_entries()
+        want = None
+        try:
+            want = json.load(open(os.path.join(LIVE if BUNDLE else CLONE, "mod", ".claude-plugin", "plugin.json"))).get("version")
+        except (OSError, ValueError):
+            pass
+        if plug and legacy:
+            check(False, f"Jeb is loaded twice (jeb@jeb and {legacy[0]} in CLAUDE_CODE_PLUGIN_DIRS)", FIX("run install (moves Jeb to Claude Code's plugin system)"))
+        elif legacy:
+            check(False, f"Jeb still loads through CLAUDE_CODE_PLUGIN_DIRS ({legacy[0]})", FIX("run install (moves Jeb to Claude Code's plugin system)"))
+        else:
+            check(bool(plug) and plug.get("enabled") is not False, f"plugin {plugdirs.PLUGIN_ID} installed and enabled in Claude Code", FIX("run: ./install again"))
+        if plug:
+            check(not want or plug.get("version") == want, f"plugin version {plug.get('version')} matches the mod ({want})", FIX("run: jebctl follow, or ./install again (claude plugin update jeb@jeb)"))
+        if mkt:
+            mp = mkt.get("path") or mkt.get("installLocation") or ""
+            check(plugdirs.same(mp, LIVE if BUNDLE else CLONE), f'marketplace "{plugdirs.MARKET}" points at {LIVE if BUNDLE else CLONE}', FIX(f"it points at {mp}; run: claude plugin marketplace remove jeb, then ./install again"))
+        elif plug:
+            check(False, f'marketplace "{plugdirs.MARKET}" is registered', FIX("run: ./install again"))
+    else:
+        check(any(plugdirs.same(e, MOD) for e in listed), f"plugin registered in {plugdirs.settings_path()}", FIX("install Claude Code, then run: ./install again"))
+    sp = plugdirs.store_path()
+    stores = [sp] if os.path.exists(sp) else []
     if check(bool(stores), "mod store file", "start a new Claude Code session so the plugin loads"):
         try:
             data = json.load(open(stores[0]))
@@ -750,27 +775,18 @@ def cmd_doctor():
         last = None
     check(last not in ("rolled-back", "rejected", "rollback-failed", "swap-failed"), f"last update result: {last or 'none'}", f"see {os.path.join(HOME, 'update.log')}; run: jebctl status")
     say(f"ok    state folder: {HOME}" + (" (older location; run: jebctl migrate)" if HOME == jebhome.old_path() and not os.environ.get("JEB_HOME") else ""))
-    gh = jebhome.find_gh()
     if m == "release":
         check(os.path.isfile(SIGNERS), "release signers pinned", FIX("run: ./install --repin (needs desktop/release-signers in the clone)"))
         if BUNDLE and os.path.isfile(SIGNERS):
             check(any((key_line(l) or (0, None))[1] and "jeb-release" in key_line(l)[1][1] for l in open(SIGNERS).read().splitlines()), "a pinned signer covers jeb-release", FIX(""))
-        if check(bool(gh), "gh (GitHub tool) found", FIX("")):
-            try:
-                r = subprocess.run([gh, "auth", "status"], capture_output=True, text=True, timeout=15)
-                text = r.stdout + r.stderr
-                if r.returncode == 0:
-                    check(True, "gh signed in to GitHub")
-                elif re.search(r"error connecting|dial tcp|no such host|timed? ?out|network|offline", text, re.I):
-                    say("skip  gh sign-in not checked: no network")
-                else:
-                    check(False, "gh signed in to GitHub", FIX(""))
-            except subprocess.TimeoutExpired:
-                say("skip  gh sign-in not checked: GitHub did not answer in 15 s")
-            except OSError:
-                check(False, "gh runs", FIX(""))
-    else:
-        say("ok    " + ("gh available: updates use the release's prebuilt app" if gh else "gh not found (optional): dev updates build from source"))
+        try:
+            t = jebhome.latest_tag(release_base(), timeout=15)
+            check(True, f"GitHub releases reachable (newest {t})")
+        except jebhome.FetchError as e:
+            if e.status is None:
+                say(f"skip  GitHub releases not checked: {e}")
+            else:
+                check(False, f"GitHub releases reachable ({e})", "open github.com/clevyr/jeb/releases in a browser; a proxy or firewall must allow github.com and release-assets.githubusercontent.com")
     say("all good" if not bad else f"{len(bad)} problem(s)")
     return 1 if bad else 0
 
@@ -1065,6 +1081,23 @@ def cmd_install(args):
         raise
 
 
+def refresh_standalone():
+    """An existing standalone jebctl (JEB_TOOLS_DIR, default ~/.jeb/bin: what the README's curl line fetched) becomes this bundle's
+    desktop/bin/jebctl, copied beside it and renamed over, so an older one that needed gh retires. Only a Mach-O replaces it (the git
+    tree has an sh launcher there) and nothing is created; gh in that folder is never touched."""
+    src, dst = os.path.join(CODE, "bin", "jebctl"), os.path.join(jebhome.tools_dir(), "jebctl")
+    if not os.path.isfile(dst) or os.path.islink(dst) or not jebhome.macho_archs(src) or os.path.realpath(src) == os.path.realpath(dst):
+        return
+    (say if DRY else detail)(f"{'would refresh' if DRY else 'refresh'} {dst} from {src}")
+    if not DRY:
+        try:
+            shutil.copyfile(src, dst + ".new")
+            os.chmod(dst + ".new", 0o755)
+            os.replace(dst + ".new", dst)
+        except OSError as e:
+            say(f"warning: could not refresh {dst}: {e}")
+
+
 def install_bundle(args):
     """Install from an unpacked release bundle (~/.jeb/versions/<tag>): no git, no compile; the prebuilt app is gated and swapped in,
     then ~/.jeb/current points at the bundle and the plists, the plugin entry and the jebctl link use only that path."""
@@ -1131,6 +1164,7 @@ def install_bundle(args):
             rs["legacy_mod"] = old_mod
         save_rstate(rs)
     finish_install("release", args)
+    refresh_standalone()
     if not DRY:
         prune_versions()
 
@@ -1419,21 +1453,13 @@ def app_name(tag):
     return f"JebDesktop-{tag}-macos.zip"
 
 
+APP_ZIP_MAX = 64 << 20                 # the most an app zip may be (v1.4.0's is 1.4 MB)
 HELPERS = ("detect", "png2raw")        # the gate helpers the release zip carries beside JebDesktop (updater.GATE_TOOLS)
 
 
 def allow_build(args):
     """Release mode never compiles unless asked: --build-from-source or JEB_ALLOW_BUILD=1."""
     return "--build-from-source" in args or os.environ.get("JEB_ALLOW_BUILD") == "1"
-
-
-def gh_reason(err, gh):
-    """A plain reason for a failed gh call."""
-    if re.search(r"saml|sso|auth login|not logged|authentication|GH_TOKEN|gh auth|HTTP 40[13]", err, re.I):
-        return f"GitHub sign-in needed: run `{gh} auth login --hostname github.com --git-protocol https --web`, or ask Claude to repair Jeb"
-    if re.search(r"HTTP 404|not found", err, re.I):
-        return "GitHub did not show the release (404): this GitHub account may not have access to clevyr/jeb"
-    return "the download from GitHub failed (" + err.strip()[:150] + ")"
 
 
 def fetch_app(tag, log=say, build=True):
@@ -1450,23 +1476,14 @@ def fetch_app(tag, log=say, build=True):
     if not m or m.group(2) != name:
         no(f"{tag} has no app-sha256 line"); return None
     want = m.group(1)
-    gh = jebhome.find_gh()
-    if not gh:
-        no("GitHub's gh tool was not found (ask Claude to repair Jeb, it installs it)"); return None
-    url = git("remote", "get-url", "origin").stdout.strip()
-    r = re.search(r"github\.com[:/]([^/\s]+/[^/\s]+?)(?:\.git)?/?$", url)
-    if not r:
-        no(f"origin is not a GitHub repo ({url[:80]})"); return None
     dest = os.path.join(HOME, "staging", tag + "-app")
     shutil.rmtree(dest, ignore_errors=True)
     os.makedirs(dest, mode=0o700)
     zp = os.path.join(dest, name)
     try:
-        p = subprocess.run([gh, "release", "download", tag, "-R", r.group(1), "-p", name, "-D", dest, "--clobber"], capture_output=True, text=True, timeout=300, env=dict(os.environ, GH_PROMPT_DISABLED="1"))
-    except (OSError, subprocess.TimeoutExpired) as e:
-        no(f"download failed ({type(e).__name__})"); return None
-    if p.returncode != 0 or not os.path.isfile(zp):
-        no(gh_reason(p.stderr + p.stdout, gh)); return None
+        jebhome.fetch(f"{release_base()}/download/{tag}/{name}", zp, limit=APP_ZIP_MAX)
+    except jebhome.FetchError as e:
+        no(f"download failed ({e})"); return None
     h = hashlib.sha256()
     with open(zp, "rb") as f:
         for chunk in iter(lambda: f.read(1 << 20), b""):
@@ -1543,6 +1560,7 @@ def follow(gates_only, u, S, build=False, quick=False):
         rlog("follow: not in release mode; nothing to do"); stop("not in release mode"); return 0
     if os.path.exists(os.path.join(HOME, "updates-paused")):
         rlog("follow: updates are paused; skipping"); stop("updates are paused"); return 0
+    ensure_plugin()
     if not os.path.isfile(SIGNERS):
         rlog(f"follow: no pinned release signers ({SIGNERS}); not updating (install from a clone that ships desktop/release-signers)"); stop("no pinned release signers"); return 0
     if not gates_only and not DRY and convert_clone(u, S, quick):
@@ -1785,6 +1803,13 @@ def release_repo():
     return r.group(1) if r else "clevyr/jeb"
 
 
+def release_base():
+    return jebhome.release_base(release_repo())
+
+
+MANIFEST_MAX = 64 << 10                # the most a manifest or its signature may be (a manifest is under 1 KB)
+
+
 def verify_manifest(manifest, sig, tag):
     """None when the manifest is signed for `jeb-release` by a pinned signer and names this tag; else the reason."""
     if not os.path.isfile(SIGNERS):
@@ -1811,11 +1836,9 @@ def verify_manifest(manifest, sig, tag):
 
 def fetch_bundle(tag, log=say):
     """Download, verify and unpack release `tag` into ~/.jeb/versions/<tag>. Returns (path, None), or (None, (why, permanent)):
-    permanent (a bad signature, tag, hash, size or content) means the tag is never retried; network, sign-in or a missing asset
+    permanent (a bad signature, tag, hash, size or content) means the tag is never retried; network or a missing asset
     retries later. Nothing is left half-done: the unpack goes to versions/.<tag>.partial and is renamed last."""
-    arch, repo, gh = jebhome.host_arch(), release_repo(), jebhome.find_gh()
-    if not gh:
-        return None, ("GitHub's gh tool was not found (ask Claude to repair Jeb, it installs it)", False)
+    arch, base = jebhome.host_arch(), release_base()
     vd = jebhome.versions_dir()
     dl, part, final = os.path.join(HOME, "staging", tag + "-dl"), os.path.join(vd, f".{tag}.partial"), os.path.join(vd, tag)
     man, zname = f"Jeb-{tag}-manifest.json", f"Jeb-{tag}-macos-{arch}.zip"
@@ -1827,23 +1850,31 @@ def fetch_bundle(tag, log=say):
         return done((None, (why, True)))
     shutil.rmtree(dl, ignore_errors=True)
     os.makedirs(dl, mode=0o700)
-    try:
-        p = subprocess.run([gh, "release", "download", tag, "-R", repo, "-p", man, "-p", man + ".sig", "-p", zname, "-D", dl, "--clobber"],
-                           capture_output=True, text=True, timeout=300, env=dict(os.environ, GH_PROMPT_DISABLED="1"))
-    except (OSError, subprocess.TimeoutExpired) as e:
-        return done((None, (f"download failed ({type(e).__name__})", False)))
     paths = [os.path.join(dl, n) for n in (man, man + ".sig", zname)]
-    if p.returncode != 0 or not all(os.path.isfile(x) for x in paths):
-        return done((None, (gh_reason(p.stderr + p.stdout, gh) if p.returncode != 0 else f"{tag} has no {', '.join(n for n, x in zip((man, man + '.sig', zname), paths) if not os.path.isfile(x))}", False)))
+    try:
+        for n, x in zip((man, man + ".sig"), paths):
+            jebhome.fetch(f"{base}/download/{tag}/{n}", x, limit=MANIFEST_MAX)
+    except jebhome.TooBig as e:
+        return bad(str(e))
+    except jebhome.FetchError as e:
+        return done((None, (f"{tag}: {e}", False)))
     why = verify_manifest(paths[0], paths[1], tag)
     if why:
         return bad(why)
     want = (json.load(open(paths[0])).get("bundles") or {}).get(arch)
+    if not isinstance(want, dict) or want.get("name") != zname or not isinstance(want.get("size"), int) or isinstance(want.get("size"), bool):
+        return bad(f"{zname} does not match the signed manifest (hash or size)")
+    try:
+        jebhome.fetch(f"{base}/download/{tag}/{zname}", paths[2], limit=want["size"])
+    except jebhome.TooBig:
+        return bad(f"{zname} is larger than the signed manifest says")
+    except jebhome.FetchError as e:
+        return done((None, (f"{tag}: {e}", False)))
     h = hashlib.sha256()
     with open(paths[2], "rb") as f:
         for chunk in iter(lambda: f.read(1 << 20), b""):
             h.update(chunk)
-    if not isinstance(want, dict) or want.get("name") != zname or want.get("sha256") != h.hexdigest() or want.get("size") != os.path.getsize(paths[2]):
+    if want.get("sha256") != h.hexdigest() or want["size"] != os.path.getsize(paths[2]):
         return bad(f"{zname} does not match the signed manifest (hash or size)")
     shutil.rmtree(part, ignore_errors=True)
     os.makedirs(vd, mode=0o755, exist_ok=True)
@@ -1905,17 +1936,13 @@ def undo_flip(prev, new):
     shutil.rmtree(new, ignore_errors=True)
 
 
-def list_tags(gh, repo):
-    """The published (not draft, not pre-release) v* tags, newest first; raises OSError with a plain reason when gh fails."""
-    try:
-        p = subprocess.run([gh, "release", "list", "-R", repo, "--exclude-drafts", "--exclude-pre-releases", "--limit", "30", "--json", "tagName"],
-                           capture_output=True, text=True, timeout=120, env=dict(os.environ, GH_PROMPT_DISABLED="1"))
-        if p.returncode != 0:
-            raise OSError(gh_reason(p.stderr + p.stdout, gh))
-        tags = [x.get("tagName") for x in json.loads(p.stdout)]
-    except (subprocess.TimeoutExpired, ValueError, AttributeError) as e:
-        raise OSError(f"the release list failed ({type(e).__name__})")
-    return sorted((t for t in tags if isinstance(t, str) and tag_key(t)), key=tag_key, reverse=True)
+def new_tags(cur, skip):
+    """Tags newer than cur (None: any) and not in skip, newest first, without the API: the latest release; only when that one is
+    in skip, the older ones from the releases feed (a bad release cannot block the real ones). Raises jebhome.FetchError."""
+    base = release_base()
+    ok = lambda t: tag_key(t) and (cur is None or tag_key(t) > tag_key(cur)) and t not in skip
+    latest = jebhome.latest_tag(base)
+    return ([latest] if ok(latest) else []) if latest not in skip else [t for t in jebhome.feed_tags(base) if ok(t)]
 
 
 def installed_tag():
@@ -1926,6 +1953,21 @@ def installed_tag():
 def record_installed(rs, tag, u):
     rs.setdefault("installed", []).append({"tag": tag, "stamp": (u.load_state() or {}).get("stamp"), "at": int(time.time())})
     rs["installed"] = rs["installed"][-20:]
+
+
+def ensure_plugin(sync=False):
+    """Release bundle: moves Jeb onto Claude Code's plugin system when it is not there yet (an install from before v1.5.0 that updated
+    itself: its legacy CLAUDE_CODE_PLUGIN_DIRS entry goes once jeb@jeb is installed), or, with sync, refreshes it after an update.
+    Logged; never fails the follow."""
+    try:
+        if sync:
+            if not plugdirs.sync():
+                rlog("plugin: claude plugin update jeb@jeb did not run clean; run jebctl doctor")
+        elif plugdirs.legacy_entries() or not plugdirs.info()[1]:
+            res = plugdirs.register(LIVE, DRY, rlog)
+            rlog(f"plugin: registering {plugdirs.PLUGIN_ID}: {res}")
+    except (SystemExit, OSError, ValueError, subprocess.SubprocessError) as e:
+        rlog(f"plugin: could not update Claude Code's plugin registration ({e})")
 
 
 def follow_bundle(gates_only, u, S, quick=False):
@@ -1940,23 +1982,20 @@ def follow_bundle(gates_only, u, S, quick=False):
         rlog("follow: updates are paused; skipping"); stop("updates are paused"); return 0
     if not os.path.isfile(SIGNERS):
         rlog(f"follow: no pinned release signers ({SIGNERS}); not updating"); stop("no pinned release signers"); return 0
-    cur, repo, gh, rs = installed_tag(), release_repo(), jebhome.find_gh(), load_rstate()
+    cur, rs = installed_tag(), load_rstate()
     if not cur or not tag_key(cur):
         rlog("follow: cannot tell which release is installed; skipping"); stop("cannot tell the installed release"); return 0
-    if not gh:
-        rlog("follow: gh was not found; will try again later"); stop("gh not found; will retry"); return 0
     S("checking GitHub")
     try:
-        tags = list_tags(gh, repo)
-    except OSError as e:
+        new = new_tags(cur, rs.get("failed", []))
+    except jebhome.FetchError as e:
         rlog(f"follow: {e}; will try again later"); stop("could not reach GitHub; will retry"); return 0
     rs["checked"] = int(time.time())
     save_rstate(rs)
-    new = [t for t in tags if tag_key(t) > tag_key(cur) and t not in rs.get("failed", [])]
     if not new:
-        rlog(f"follow: {cur} is current"); stop(f"{cur} is current", "up-to-date"); return 0
+        rlog(f"follow: {cur} is current"); ensure_plugin(True); stop(f"{cur} is current", "up-to-date"); return 0
     if DRY:
-        say(f"would download {new[0]} ({repo}), verify its signed manifest, run the gates, point {LIVE} at it, then remove {cur}")
+        say(f"would download {new[0]} ({release_base()}), verify its signed manifest, run the gates, point {LIVE} at it, then remove {cur}")
         return 0
     tag = ver = None
     for t in new:       # newest first: a bogus far-future tag cannot block the real releases
@@ -1989,6 +2028,7 @@ def follow_bundle(gates_only, u, S, quick=False):
         rlog(f"follow: now on {tag}")
         record_installed(rs, tag, u)
         rs["layout"] = "bundle"
+        ensure_plugin(True)
     else:
         rlog(f"follow: {tag} not installed (updater exit {rc}); will try again later")
     rs["last"] = {"at": int(time.time()), "tag": tag, "result": result, "app": "prebuilt"}
@@ -2059,13 +2099,10 @@ def convert_clone(u, S, quick=False):
     def no(why):
         rlog(f"convert: not converted ({why}); staying on the git clone")
         return False
-    gh = jebhome.find_gh()
-    if not gh:
-        return no("gh was not found")
     widen_signers(os.path.join(CODE, "release-signers"))
     try:
-        tags = [t for t in list_tags(gh, release_repo()) if t not in rs.get("bundle_failed", [])]
-    except OSError as e:
+        tags = new_tags(None, rs.get("bundle_failed", []))
+    except jebhome.FetchError as e:
         return no(str(e))
     if not tags:
         return no("no release to convert to")
@@ -2084,7 +2121,6 @@ def convert_clone(u, S, quick=False):
             rs.setdefault("bundle_failed", []).append(tag)
             save_rstate(rs)
         return no(f"{tag} did not pass the gates (updater exit {rc})")
-    quiet = lambda *a: None
     py = os.path.join(LIVE, "python", "bin", "python3")
     live_ctl = os.path.join(LIVE, "desktop", "jebctl")
     subprocess.run([py, "-I", live_ctl, "plists"], env=scrubbed_env(), capture_output=True)       # the bundle's plists, written by the bundle's own code
@@ -2098,10 +2134,10 @@ def convert_clone(u, S, quick=False):
     rs["last"] = {"at": int(time.time()), "tag": tag, "result": "ok", "app": "prebuilt"}
     save_rstate(rs)
     try:
-        plugdirs.edit(os.path.join(LIVE, "mod"), False, False, quiet)
-        plugdirs.edit(os.path.join(CLONE, "mod"), True, False, quiet)
-    except (SystemExit, OSError) as e:
-        rlog(f"convert: could not update the plugin setting ({e}); open Claude Code sessions keep the old path")
+        res = plugdirs.register(LIVE, False, rlog, [MOD])      # the clone's CLAUDE_CODE_PLUGIN_DIRS entry goes once jeb@jeb is installed
+        rlog(f"convert: plugin {plugdirs.PLUGIN_ID}: {res}")
+    except (SystemExit, OSError, ValueError) as e:
+        rlog(f"convert: could not update the plugin registration ({e}); open Claude Code sessions keep the old path")
     if link_state(os.path.join(LIVE, "desktop", "bin", "jebctl")) in ("ours", "older"):
         link_jebctl(os.path.join(LIVE, "desktop", "bin", "jebctl"))
     spawn_reload()
@@ -2241,6 +2277,7 @@ def release_steps(args, done):
     say(f"releasing {tag}" + (f" (last release {last})" if last else " (first release)"))
     check_signer_const()
     step("validate plugin", ["claude", "plugin", "validate", "mod"], cwd=CLONE)
+    step("validate marketplace", ["claude", "plugin", "validate", "."], cwd=CLONE)
     step("test plugin", ["claude", "plugin", "test", "mod"], cwd=CLONE)
     step("release build", ["./build.sh"], cwd=SRC, env=dict(os.environ, JEB_OUT="JebDesktop.dev", JEB_UNIVERSAL="1"))
     if "--parity" in args:
