@@ -11,7 +11,7 @@ tree, the universal app and a private Python) and ~/.jeb/current (a symlink to t
 Also read_bundle, host_arch, macho_archs (a stdlib Mach-O reader) and pin_python, and release_base, fetch, latest_tag and
 feed_tags: releases over plain HTTPS, no API or sign-in.
 """
-import fcntl, json, os, plistlib, re, shutil, struct, subprocess, sys, time
+import fcntl, http.client, json, os, plistlib, re, shutil, struct, subprocess, sys, time
 
 CLT = "/Library/Developer/CommandLineTools"
 SYS_PATH = "/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin"
@@ -147,7 +147,7 @@ def _open(url, timeout):
         return urllib.request.build_opener(_HttpsOnly).open(urllib.request.Request(url, headers={"User-Agent": "jebctl"}), timeout=timeout)
     except urllib.error.HTTPError as e:
         raise FetchError(f"{url.rstrip('/').rsplit('/', 1)[-1]} not found (HTTP 404)" if e.code == 404 else f"HTTP {e.code} from {host}", e.code)
-    except (urllib.error.URLError, socket.timeout, ssl.SSLError, OSError) as e:
+    except (urllib.error.URLError, socket.timeout, ssl.SSLError, http.client.HTTPException, OSError) as e:
         raise FetchError(f"could not reach {host} ({getattr(e, 'reason', e)})")
 
 
@@ -187,7 +187,7 @@ def fetch(url, dest=None, limit=1 << 16, timeout=60, total=900):
                 pass
             raise
         return r.geturl()
-    except (OSError, ValueError) as e:
+    except (OSError, ValueError, http.client.HTTPException) as e:
         if isinstance(e, FetchError):
             raise
         raise FetchError(f"could not read {url.split('/')[2]} ({e})")
@@ -207,7 +207,7 @@ def latest_tag(base, timeout=60):
         if m:
             return m.group(1)
         body = r.read(257).decode("utf-8", "replace").strip()
-    except OSError as e:
+    except (OSError, http.client.HTTPException) as e:
         raise FetchError(f"could not read {base} ({e})")
     finally:
         r.close()

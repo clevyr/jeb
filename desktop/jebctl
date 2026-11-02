@@ -1560,7 +1560,6 @@ def follow(gates_only, u, S, build=False, quick=False):
         rlog("follow: not in release mode; nothing to do"); stop("not in release mode"); return 0
     if os.path.exists(os.path.join(HOME, "updates-paused")):
         rlog("follow: updates are paused; skipping"); stop("updates are paused"); return 0
-    ensure_plugin()
     if not os.path.isfile(SIGNERS):
         rlog(f"follow: no pinned release signers ({SIGNERS}); not updating (install from a clone that ships desktop/release-signers)"); stop("no pinned release signers"); return 0
     if not gates_only and not DRY and convert_clone(u, S, quick):
@@ -1955,17 +1954,22 @@ def record_installed(rs, tag, u):
     rs["installed"] = rs["installed"][-20:]
 
 
-def ensure_plugin(sync=False):
-    """Release bundle: moves Jeb onto Claude Code's plugin system when it is not there yet (an install from before v1.5.0 that updated
-    itself: its legacy CLAUDE_CODE_PLUGIN_DIRS entry goes once jeb@jeb is installed), or, with sync, refreshes it after an update.
-    Logged; never fails the follow."""
+def ensure_plugin():
+    """Release bundle, after an update (or when it is current): moves Jeb onto Claude Code's plugin system when it is not there yet (an
+    install from before v1.5.0 that updated itself: its legacy CLAUDE_CODE_PLUGIN_DIRS entry goes once jeb@jeb is installed), else
+    refreshes jeb@jeb only when its version differs from the mod's. Logged; never fails the follow."""
     try:
-        if sync:
-            if not plugdirs.sync():
-                rlog("plugin: claude plugin update jeb@jeb did not run clean; run jebctl doctor")
-        elif plugdirs.legacy_entries() or not plugdirs.info()[1]:
+        _, plug, _ = plugdirs.info()
+        if plugdirs.legacy_entries() or not plug:
             res = plugdirs.register(LIVE, DRY, rlog)
             rlog(f"plugin: registering {plugdirs.PLUGIN_ID}: {res}")
+            return
+        try:
+            want = json.load(open(os.path.join(LIVE, "mod", ".claude-plugin", "plugin.json"))).get("version")
+        except (OSError, ValueError):
+            want = None
+        if want and plug.get("version") != want and not plugdirs.sync(DRY, rlog):
+            rlog("plugin: claude plugin update jeb@jeb did not run clean; run jebctl doctor")
     except (SystemExit, OSError, ValueError, subprocess.SubprocessError) as e:
         rlog(f"plugin: could not update Claude Code's plugin registration ({e})")
 
@@ -1993,7 +1997,7 @@ def follow_bundle(gates_only, u, S, quick=False):
     rs["checked"] = int(time.time())
     save_rstate(rs)
     if not new:
-        rlog(f"follow: {cur} is current"); ensure_plugin(True); stop(f"{cur} is current", "up-to-date"); return 0
+        rlog(f"follow: {cur} is current"); ensure_plugin(); stop(f"{cur} is current", "up-to-date"); return 0
     if DRY:
         say(f"would download {new[0]} ({release_base()}), verify its signed manifest, run the gates, point {LIVE} at it, then remove {cur}")
         return 0
@@ -2028,7 +2032,7 @@ def follow_bundle(gates_only, u, S, quick=False):
         rlog(f"follow: now on {tag}")
         record_installed(rs, tag, u)
         rs["layout"] = "bundle"
-        ensure_plugin(True)
+        ensure_plugin()
     else:
         rlog(f"follow: {tag} not installed (updater exit {rc}); will try again later")
     rs["last"] = {"at": int(time.time()), "tag": tag, "result": result, "app": "prebuilt"}

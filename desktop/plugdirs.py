@@ -253,6 +253,10 @@ def register(source, dry, say, extra=()):
         say(f"store: copied {os.path.basename(old)} to {os.path.basename(new)}")
     opts = _options()
     if plug:
+        rc, out = claude("marketplace", "update", MARKET)
+        if rc != 0:
+            say(f"claude plugin marketplace update failed: {out[-200:]}")
+            return "failed"
         rc, out = claude("update", PLUGIN_ID)
     else:
         rc, out = claude("install", PLUGIN_ID, "--scope", "user", *[a for k, v in opts.items() for a in ("--config", f"{k}={v}")])
@@ -270,13 +274,20 @@ def register(source, dry, say, extra=()):
     return "ok"
 
 
-def sync():
+def sync(dry, say):
     """After an update: refresh the marketplace and jeb@jeb. True when both commands ran clean (or Jeb is not registered)."""
     cl, plug, mkt = info()
     if not cl or not plug:
         return True
-    a, _ = claude("marketplace", "update", MARKET)
-    b, _ = claude("update", PLUGIN_ID)
+    if dry:
+        say(f"would run: claude plugin marketplace update {MARKET}; claude plugin update {PLUGIN_ID}")
+        return True
+    a, out = claude("marketplace", "update", MARKET)
+    if a != 0:
+        say(f"claude plugin marketplace update failed: {out[-200:]}")
+    b, out = claude("update", PLUGIN_ID)
+    if b != 0:
+        say(f"claude plugin update failed: {out[-200:]}")
     return a == 0 and b == 0
 
 

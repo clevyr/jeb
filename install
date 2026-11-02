@@ -144,6 +144,8 @@ def main(argv):
         if res != "ok":
             if not VERBOSE:
                 say("not registered")
+                for m in msgs:
+                    say("  " + m)
             say({"no-claude": "note: Claude Code is not installed, so Jeb is not registered yet; run ./install again after installing it",
                  "conflict": 'note: a Claude Code marketplace named "jeb" already points elsewhere; Jeb was left as it was (run jebctl doctor)',
                  "failed": "note: Claude Code refused the plugin install; Jeb was left as it was (run ./install again, or jebctl doctor)"}[res])
