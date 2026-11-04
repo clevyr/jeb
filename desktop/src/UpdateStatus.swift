@@ -58,28 +58,31 @@ enum UpdateText {
         return n < 60 ? "\(n) s" : "\(n / 60) min"
     }
 
-    private static func cut(_ t: String) -> String { t.count > 60 ? String(t.prefix(59)) + "…" : t }
+    static func cut(_ t: String) -> String { t.count > 60 ? String(t.prefix(59)) + "…" : t }
 
-    private static func updatedText(_ s: UpdateStatus) -> String {
-        "Updated to " + (s.detail.lowercased().hasPrefix("updated to ") ? cut(String(s.detail.dropFirst(11))) : cut(s.detail))
+    private static func updatedVersion(_ s: UpdateStatus) -> String {
+        s.detail.lowercased().hasPrefix("updated to ") ? cut(String(s.detail.dropFirst(11))) : cut(s.detail)
     }
 
-    /// The notification for a finished run, or nil when it stays silent: a transient error ("... will retry"), an
-    /// up-to-date result nobody asked for (only a menu click gets the answer), or a run still going.
-    static func notification(_ s: UpdateStatus) -> (title: String, body: String)? {
+    private static func updatedText(_ s: UpdateStatus) -> String { "Updated to " + updatedVersion(s) }
+
+    /// What a finished run tells the user, or nil when it stays silent: a transient error ("... will retry"), an up-to-date
+    /// result nobody asked for (only a menu click gets the answer), a repeat of an earlier rejection, or a run still going.
+    static func news(_ s: UpdateStatus) -> UpdateNews? {
         guard let r = s.result else { return nil }
-        let body: String
         switch r {
-        case "up-to-date": guard s.clicked else { return nil }; body = "Up to date — no update available"
-        case "updated": body = updatedText(s)
+        case "up-to-date":
+            guard s.clicked else { return nil }
+            let m = s.detail.range(of: #"^(\S+) is current$"#, options: .regularExpression)
+            return .upToDate(m.map { String(s.detail[$0].dropLast(" is current".count)) })
+        case "updated": return .updated(updatedVersion(s))
         case "failed":      // a periodic run that finds the rejected source again only repeats the earlier failure
             guard s.clicked || !s.detail.hasPrefix("no changes since") else { return nil }
-            body = "Update failed: " + cut(s.detail)
-        case "rolled-back": body = "Update rolled back: " + cut(s.detail)
-        case "error": guard !s.detail.hasSuffix("will retry") else { return nil }; body = "Update error: " + cut(s.detail)
+            return .failed(s.detail)
+        case "rolled-back": return .rolledBack(s.detail)
+        case "error": return s.detail.hasSuffix("will retry") ? nil : .error(s.detail)
         default: return nil
         }
-        return ("Jeb", body)
     }
 
     static func resultLine(_ s: UpdateStatus, zone: TimeZone = .current) -> String? {

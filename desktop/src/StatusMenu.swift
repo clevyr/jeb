@@ -28,6 +28,8 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     private var agent: (mode: String, label: String, lock: String)?
     private var clickedAt: Double?
     private var refreshTimer: Timer?
+    /// Shows one of every banner (main.swift wires it to the notifier).
+    var onSample: (() -> Void)?
 
     init(app: App) {
         self.app = app
@@ -90,6 +92,20 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         let follow = action("Follow the Action", #selector(toggleBroadcastFollow))
         follow.state = app.broadcastFollow ? .on : .off
         menu.addItem(follow)
+        let prefs = NotifyPrefsFile.load()
+        let notify = NSMenu()
+        let updates = action("Updates", #selector(toggleNotifyUpdates))
+        updates.state = prefs.updates ? .on : .off
+        notify.addItem(updates)
+        let holidays = action("Holiday Greetings", #selector(toggleNotifyHolidays))
+        holidays.state = prefs.holidays ? .on : .off
+        notify.addItem(holidays)
+        let sound = action("Sound", #selector(toggleNotifySound))
+        sound.state = prefs.sound ? .on : .off
+        notify.addItem(sound)
+        notify.addItem(.separator())
+        notify.addItem(action("Show Sample Banners", #selector(showSampleBanners)))
+        menu.addItem(submenu("Notifications", notify))
 
         menu.addItem(.separator())
         agent = updateAgent()
@@ -213,6 +229,26 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     @objc private func toggleBroadcast() { app.toggleBroadcast() }
 
     @objc private func toggleBroadcastFollow() { app.broadcastFollow.toggle() }
+
+    @objc private func toggleNotifyUpdates() {
+        NotifyPrefsFile.update { $0.updates.toggle() }
+        log("menu: update notifications \(NotifyPrefsFile.load().updates ? "on" : "off")")
+    }
+
+    @objc private func toggleNotifyHolidays() {
+        NotifyPrefsFile.update { $0.holidays.toggle() }
+        log("menu: holiday greetings \(NotifyPrefsFile.load().holidays ? "on" : "off")")
+    }
+
+    @objc private func toggleNotifySound() {
+        NotifyPrefsFile.update { $0.sound.toggle() }
+        log("menu: banner sound \(NotifyPrefsFile.load().sound ? "on" : "off")")
+    }
+
+    @objc private func showSampleBanners() {
+        log("menu: sample banners")
+        onSample?()
+    }
 
     @objc private func togglePause() {
         app.manualPause.toggle()

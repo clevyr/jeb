@@ -3,6 +3,9 @@ band scale (feet on the sprite's bottom row)."""
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from typing import Callable
+
 from PIL import Image, ImageDraw
 
 from pixel import Sprite, blank, outline, rgb
@@ -93,16 +96,28 @@ def _witch_paint(name: str) -> tuple[int, int, int, int]:
     return rgb('witch_sleeve' if name == 'shirt' else name)
 
 
-def jeb(eyes: str = 'open', mouth: str = 'smile', pose: str = 'stand', beat: int = 0, witch: bool = False):
+@dataclass(frozen=True)
+class Costume:
+    """A holiday's look for Jeb (`<pose>--<name>`): the same pose and face with
+    a different body layer and a hat drawn in the headroom above."""
+    name: str
+    paint: Callable[[str], tuple[int, int, int, int]]  # colour lookup for the body and arms
+    body: Callable[[ImageDraw.ImageDraw, bool], None]  # the body layer (boots to shoulders), given whether the arms hang
+    keeps_straw_hat: bool  # the everyday hat stays on, with the costume drawn over it
+    raised_arms: bool  # salute and wave raise the arm clear of the hat, as the witch's do
+    hat: Callable[[ImageDraw.ImageDraw], None]  # drawn on the taller box (feet on its bottom row), once for every pose
+    post: Callable[[Image.Image], None] | None = None  # a pass over the finished taller box, before the outline
+
+
+def jeb(eyes: str = 'open', mouth: str = 'smile', pose: str = 'stand', beat: int = 0, costume: Costume | None = None):
     """One Jeb frame. `pose` decides the arms and any held prop; `beat`
-    picks the alternate frame of a working pose. `witch` is the Halloween
-    variant: same pose and face, a robe and sleeves, and a tall hat in the
-    headroom above."""
+    picks the alternate frame of a working pose. `costume` is a holiday
+    variant: same pose and face, its own body and hat in the headroom above."""
     img, d = blank(JEB_W, BODY_H)
-    c = _witch_paint if witch else rgb
+    c = costume.paint if costume else rgb
     arms = pose in ('stand', 'sleep')
-    if witch:
-        _witch_robe(d, arms)
+    if costume:
+        costume.body(d, arms)
     else:
         _jeb_base(d, arms=arms)
     if pose == 'banjo':
@@ -178,16 +193,17 @@ def jeb(eyes: str = 'open', mouth: str = 'smile', pose: str = 'stand', beat: int
     full, fd = blank(JEB_W, JEB_H)
     full.alpha_composite(img, (0, BODY_DY))
     _jeb_big_head(fd, eyes, mouth)
-    if not witch:
+    if not costume or costume.keeps_straw_hat:
         _jeb_big_hat(fd)
-    _jeb_head_props(fd, pose, beat, witch)
-    if not witch:
+    _jeb_head_props(fd, pose, beat, costume)
+    if not costume:
         return outline(full)
     # the same body at the bottom of a taller box, the hat in the rows above
     tall, td = blank(JEB_W, JEB_H + HEADROOM)
     tall.alpha_composite(full, (0, HEADROOM))
-    _witch_hat(td)
-    _sleeve_edges(tall)
+    costume.hat(td)
+    if costume.post:
+        costume.post(tall)
     return outline(tall)
 
 
@@ -252,9 +268,10 @@ def _jeb_big_hat(d: ImageDraw.ImageDraw) -> None:
         d.point((x, 5), fill=c('hat_dark'))
 
 
-def _jeb_head_props(d: ImageDraw.ImageDraw, pose: str, beat: int, witch: bool = False) -> None:
+def _jeb_head_props(d: ImageDraw.ImageDraw, pose: str, beat: int, costume: Costume | None = None) -> None:
     """What he holds up near his head, drawn over the big head."""
-    c = _witch_paint if witch else rgb
+    c = costume.paint if costume else rgb
+    raised = bool(costume and costume.raised_arms)
     if pose == 'jar':
         d.rectangle([15, 19, 16, 23], fill=c('shirt'))  # arm raised
         d.rectangle([15, 11, 19, 19], fill=c('glass'))  # jar beside his head
@@ -268,7 +285,7 @@ def _jeb_head_props(d: ImageDraw.ImageDraw, pose: str, beat: int, witch: bool = 
         d.rectangle([9, 15, 13, 19], fill=c('amber'))
         d.line([9, 13, 13, 13], fill=c('steel'))
         d.rectangle([12, 19, 15, 20], fill=c('skin'))
-    elif pose == 'salute' and witch:
+    elif pose == 'salute' and raised:
         # the hand stays three rows under the brim; the forearm and its
         # shadow keep it apart from the face
         d.line([4, 21, 1, 16], fill=c('shirt'), width=2)  # upper arm, elbow out
@@ -279,7 +296,7 @@ def _jeb_head_props(d: ImageDraw.ImageDraw, pose: str, beat: int, witch: bool = 
         d.line([4, 21, 1, 16], fill=c('shirt'), width=2)  # upper arm, elbow out
         d.line([1, 16, 3, 10], fill=c('shirt'), width=2)  # forearm to the brow
         d.line([2, 8, 9, 7], fill=c('skin'), width=2)  # flat hand at the brim, over the eye
-    elif pose == 'wave' and witch:
+    elif pose == 'wave' and raised:
         y = 10 if beat == 0 else 11
         d.rectangle([15, 15, 16, 22], fill=c('shirt'))
         d.rectangle([17, y + 4, 17, 15], fill=c('shirt'))  # forearm steps out past the ear
@@ -369,16 +386,83 @@ def _sleeve_edges(img: Image.Image) -> None:
         px[x, y] = col
 
 
+# The Santa hat: a red cone leaning right, its tip flopped over to a white pom-pom, on a fur band. Rows 1-11 of the taller box.
+_SANTA_CONE = {11: (4, 15), 10: (4, 15), 9: (5, 14), 8: (6, 13), 7: (7, 12), 6: (8, 12), 5: (9, 12), 4: (10, 13), 3: (11, 14), 2: (12, 16), 1: (14, 16)}
+
+
+def _santa_hat(d: ImageDraw.ImageDraw) -> None:
+    c = rgb
+    for y, (x0, x1) in _SANTA_CONE.items():
+        d.line([x0, y, x1, y], fill=c('red'))
+        d.point((x1, y), fill=c('red_dark'))  # shaded side
+    d.line([16, 3, 16, 4], fill=c('red'))  # the tip flops over
+    d.line([17, 3, 17, 4], fill=c('red_dark'))
+    d.rectangle([16, 5, 18, 7], fill=c('white'))  # pom-pom
+    d.point((18, 7), fill=c('cloud'))
+    d.rectangle([3, 12, 16, 14], fill=c('white'))  # fur band
+    d.line([3, 14, 16, 14], fill=c('cloud'))
+    d.point([(5, 13), (8, 13), (11, 13), (14, 13)], fill=c('cloud'))
+
+
+def _scarf(d: ImageDraw.ImageDraw, base: str, stripe: str, edge: str) -> None:
+    """A scarf wrapped at the neck (rows 15-16 of the body layer, under the beard) with a tail down the right side."""
+    c = rgb
+    d.rectangle([5, 15, 14, 16], fill=c(base))
+    for x in (6, 9, 12):
+        d.line([x, 15, x, 16], fill=c(stripe))
+    d.line([5, 16, 14, 16], fill=c(edge))
+    d.rectangle([12, 17, 13, 22], fill=c(base))
+    d.line([12, 19, 13, 19], fill=c(stripe))
+    d.line([12, 22, 13, 22], fill=c(edge))
+
+
+def _santa_body(d: ImageDraw.ImageDraw, arms: bool = True) -> None:
+    _jeb_base(d, arms=arms)
+    _scarf(d, 'flannel_green', 'white', 'flannel_green_dark')
+
+
+def _harvest_body(d: ImageDraw.ImageDraw, arms: bool = True) -> None:
+    _jeb_base(d, arms=arms)
+    _scarf(d, 'foliage_gold', 'foliage_orange', 'amber_dark')
+
+
+def _harvest_hat(d: ImageDraw.ImageDraw) -> None:
+    """Autumn leaves tucked in the straw hat's band (rows 11-12 of the taller box) and a small cluster of broad leaves fanned out from its right end."""
+    c = rgb
+    for x, y, col in ((6, 11, 'foliage_red'), (7, 11, 'foliage_red'), (7, 12, 'foliage_orange'), (8, 12, 'foliage_orange'),
+                      (9, 11, 'foliage_gold'), (10, 12, 'foliage_gold'), (10, 11, 'foliage_orange'), (11, 11, 'foliage_red'), (6, 12, 'foliage_red')):
+        d.point((x, y), fill=c(col))
+    # a cluster of three broad leaves fanned out from the band's right end: red up-left, orange up-right, gold out to the side
+    red, red_edge, orange, orange_edge, gold, stem = 'foliage_red', 'red_dark', 'foliage_orange', 'copper_dark', 'foliage_gold', 'amber_dark'
+    leaves = (
+        [(10, 5, red_edge), (9, 6, red_edge), (10, 6, red), (11, 6, red_edge), (9, 7, red), (10, 7, red), (11, 7, red_edge), (10, 8, red), (11, 8, red_edge)]
+        + [(14, 6, orange_edge), (13, 7, orange_edge), (14, 7, orange), (15, 7, orange_edge), (13, 8, orange), (14, 8, orange), (15, 8, orange_edge), (14, 9, orange_edge)]
+        + [(16, 9, stem), (17, 9, gold), (15, 10, stem), (16, 10, gold), (17, 10, gold), (18, 10, stem), (16, 11, stem), (17, 11, stem)]
+        + [(12, 9, stem), (12, 10, stem), (13, 10, stem), (14, 10, stem)]
+    )
+    for x, y, col in leaves:
+        d.point((x, y), fill=c(col))
+
+WITCH = Costume('halloween', _witch_paint, _witch_robe, keeps_straw_hat=False, raised_arms=True, hat=_witch_hat, post=_sleeve_edges)
+HARVEST = Costume('thanksgiving', rgb, _harvest_body, keeps_straw_hat=True, raised_arms=False, hat=_harvest_hat)
+SANTA = Costume('christmas', rgb, _santa_body, keeps_straw_hat=False, raised_arms=True, hat=_santa_hat)
+# the only holidays that dress Jeb up: religious and cultural holidays get a banner badge, never a costume
+COSTUMES = [WITCH, HARVEST, SANTA]
+
+
 def jeb_sprites() -> list[Sprite]:
     base = _jeb_base_sprites()
-    # every pose wears the same witch costume as a --halloween variant
-    return base + [Sprite(f'{sp.name}--halloween', w.frames, list(sp.ms), sp.anchor)
-                   for sp, w in zip(base, _jeb_base_sprites(witch=True))]
+    out = list(base)
+    # every pose wears each holiday's costume as a --<holiday> variant
+    for costume in COSTUMES:
+        out += [Sprite(f'{sp.name}--{costume.name}', w.frames, list(sp.ms), sp.anchor)
+                for sp, w in zip(base, _jeb_base_sprites(costume))]
+    return out
 
 
-def _jeb_base_sprites(witch: bool = False) -> list[Sprite]:
+def _jeb_base_sprites(costume: Costume | None = None) -> list[Sprite]:
     def j(*args: str | int) -> Image.Image:
-        return jeb(*args, witch=witch)
+        return jeb(*args, costume=costume)
 
     return [
         Sprite('jeb-idle', [j(), j(), j(), j('shut')], [900, 900, 900, 160]),

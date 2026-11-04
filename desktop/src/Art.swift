@@ -49,10 +49,11 @@ final class Art {
     private let sprites: [String: Sprite]
     private var cache: [String: CGImage] = [:]
 
-    /// The holiday whose `<base>--<holiday>` variants stand in for their base sprites (Holiday.swift). Read at most once a
-    /// minute; a test can set it and call refreshHoliday().
-    var holidayName: () -> String? = { Holiday.current() }
-    private var activeHoliday: String?
+    /// The active holidays, main days first (Holiday.swift). Read at most once a minute; a test can set it and call
+    /// refreshHoliday(). The first with `<base>--<holiday>` variants dresses the sprites (the costume).
+    var holidayNames: () -> [String] = { Holiday.current() }
+    private var activeHolidays: [String] = []
+    private var activeCostume: String?
     private var variants: [String: String] = [:]
     private var holidayChecked = -Double.infinity
     /// How many rows taller than its base a holiday variant may be.
@@ -69,17 +70,31 @@ final class Art {
         sprites = all
     }
 
-    /// Re-reads the holiday and rebuilds the base-to-variant map; true when the holiday changed. A variant stands in only
+    /// The active holidays, main days first, for the badges and the tab colour (JEB_HOLIDAY forces them).
+    var holidays: [String] {
+        if abs(CFAbsoluteTimeGetCurrent() - holidayChecked) >= 60 { refreshHoliday() }
+        return activeHolidays
+    }
+
+    /// The active holiday whose costume variants are drawn, if any.
+    var costume: String? {
+        if abs(CFAbsoluteTimeGetCurrent() - holidayChecked) >= 60 { refreshHoliday() }
+        return activeCostume
+    }
+
+    /// Re-reads the holidays and rebuilds the base-to-variant map; true when they changed. A variant stands in only
     /// when its width and frame count match its base and it is at most `variantHeadroom` rows taller (a costume's tall
     /// hat); every draw anchors a sprite at its feet, so a taller one grows upward. Otherwise it is skipped, quietly.
     @discardableResult
     func refreshHoliday() -> Bool {
         holidayChecked = CFAbsoluteTimeGetCurrent()
-        let now = holidayName()
-        guard now != activeHoliday else { return false }
-        activeHoliday = now
+        let now = holidayNames()
+        guard now != activeHolidays else { return false }
+        activeHolidays = now
+        let dressed = now.first { h in sprites.keys.contains { $0.hasSuffix("--" + h) } }
+        activeCostume = dressed
         variants = [:]
-        if let h = now {
+        if let h = dressed {
             for (key, v) in sprites where key.hasSuffix("--" + h) {
                 let base = String(key.dropLast(h.count + 2))
                 if let b = sprites[base], b.w == v.w, v.h >= b.h, v.h <= b.h + Art.variantHeadroom, b.frames.count == v.frames.count { variants[base] = key }
@@ -168,12 +183,12 @@ final class Art {
 
     func images(_ name: String) -> [CGImage] { (0..<frameCount(name)).map { image(name, $0) } }
 
-    /// The top `rows` rows of a sprite's first frame, each pixel `scale` x `scale`
+    /// The top `rows` rows of a sprite's frame (the first by default), each pixel `scale` x `scale`
     /// (whole-number scaling, so it stays crisp), or nil if the art lacks it.
-    func image(_ name: String, rows: Int, scale: Int) -> CGImage? {
+    func image(_ name: String, rows: Int, scale: Int, frame: Int = 0) -> CGImage? {
         guard let s = sprites[resolve(name)], rows <= s.h else { return nil }
-        let w = s.w * scale, h = rows * scale
-        let pixels = (0..<(w * h)).map { i in palette[Int(s.frames[0][(i / w / scale) * s.w + (i % w) / scale])] }
+        let w = s.w * scale, h = rows * scale, f = s.frames[frame % s.frames.count]
+        let pixels = (0..<(w * h)).map { i in palette[Int(f[(i / w / scale) * s.w + (i % w) / scale])] }
         return makeImage(width: w, height: h, pixels: pixels)
     }
 

@@ -1,28 +1,48 @@
-// Tells the user how an update run ended, with a macOS notification. The updater posts the Darwin notification
-// com.jeb.desktop.update-finished once, after it has written the final jebHome/update-status.json; this observes it, reads
-// the file once and lets UpdateStatus.swift decide whether the result speaks. No polling and no record of what was told:
-// one push per finished run, and the new app after a swap is the one running when the updater writes the final "updated".
+// Tells the user how an update run ended, on Jeb's own banner (Banner.swift draws it; no macOS notification, so no permission
+// and no System Settings entry). The updater posts the Darwin notification com.jeb.desktop.update-finished once, after it has
+// written the final jebHome/update-status.json; this observes it, reads the file once and lets UpdateStatus.swift decide whether
+// the result speaks. No polling and no record of what was told: one push per finished run, and the new app after a swap is the one
+// running when the updater writes the final "updated".
 //
-// UNUserNotificationCenter needs an app bundle; a raw binary, JEB_BENCH and JEB_MENU_TEST only log what would be posted.
-// The banner carries Jeb's head (the menu bar's, scaled up) as an attachment; if it cannot be made the banner goes without.
+// The same notifier greets on a holiday (once per holiday per year, 9:00-21:00 local, silent; Greeting.due in JebLines.swift)
+// and honours jebHome/notifications.json, which the menu's Notifications submenu writes (the app is its only writer).
+//
+// A raw binary, JEB_BENCH and JEB_MENU_TEST only log what would be shown; JEB_BANNER=1 lets a raw binary show banners.
+// JEB_MENU_TEST=1 also listens for the distributed notification com.jeb.desktop.notify-test, object "update" or "greet".
+// JEB_GREET_TEST=1 lets a forced JEB_HOLIDAY greet and a bench or test run record it (testing only).
 
 import Foundation
-import UserNotifications
-import ImageIO
-import UniformTypeIdentifiers
 
 /// Must match FINISHED_NOTIFICATION in updater.py.
 private let finishedName = "com.jeb.desktop.update-finished"
 
-final class UpdateNotifier: NSObject, UNUserNotificationCenterDelegate {
+/// jebHome/notifications.json: {"updates":true,"holidays":true,"greeted":{"halloween":2026}}. Main thread only; unknown keys are kept.
+enum NotifyPrefsFile {
+    static let path = jebHome + "/notifications.json"
+    static func load() -> NotifyPrefs { NotifyPrefs.decode(try? Data(contentsOf: URL(fileURLWithPath: path))).prefs }
+    static func update(_ change: (inout NotifyPrefs) -> Void) {
+        var (prefs, raw) = NotifyPrefs.decode(try? Data(contentsOf: URL(fileURLWithPath: path)))
+        change(&prefs)
+        ensurePrivateDir(jebHome)
+        writePrivate(prefs.encode(over: raw) + "\n", to: path)
+    }
+}
+
+final class UpdateNotifier {
     private let statusFile = jebHome + "/update-status.json"
-    private var asked = false
-    private var loggedHeadFailure = false
-    /// The current art (main.swift gives `{ desktop.art }`, so a reload or a holiday change is seen).
-    var art: (() -> Art)?
-    private let headFile = jebHome + "/notify-head.png"
-    private let headScale = 8
-    private let live = Bundle.main.bundleIdentifier != nil && env["JEB_BENCH"] == nil && env["JEB_MENU_TEST"] != "1"
+    private let live: Bool
+    private let banner: Banner?
+    private var greetedDry = Set<String>()      // greetings only logged (not shown), so each is logged once
+
+    /// Shows banners in an app bundle, or in a raw binary with JEB_BANNER=1; never under JEB_BENCH or JEB_MENU_TEST.
+    static var liveDefault: Bool { env["JEB_BENCH"] == nil && env["JEB_MENU_TEST"] != "1" && (Bundle.main.bundleIdentifier != nil || env["JEB_BANNER"] == "1") }
+
+    /// `art` is the current art (main.swift gives `{ desktop.art }`, so a reload or a holiday change is seen); `look` is the
+    /// day's look (the farm's night, winter, the main screen's area camp) read each time a banner is drawn.
+    init(art: @escaping () -> Art?, look: @escaping () -> BannerLook = { BannerLook.now() }, show: Bool = UpdateNotifier.liveDefault) {
+        live = show
+        banner = show ? Banner(art: art, look: look) : nil
+    }
 
     func start() {
         CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), Unmanaged.passUnretained(self).toOpaque(), { _, observer, _, _, _ in
@@ -30,6 +50,33 @@ final class UpdateNotifier: NSObject, UNUserNotificationCenterDelegate {
             let me = Unmanaged<UpdateNotifier>.fromOpaque(observer).takeUnretainedValue()
             DispatchQueue.main.async { me.finished() }
         }, finishedName as CFString, nil, .deliverImmediately)
+        unlink(jebHome + "/update-notified")        // an old build's record; nothing reads it
+        for name in (try? FileManager.default.contentsOfDirectory(atPath: jebHome)) ?? [] where name.hasPrefix("notify-") && (name.hasSuffix(".png") || name.hasSuffix(".png.tmp")) {
+            unlink(jebHome + "/" + name)            // the old notifications' head attachments; nothing makes them now
+        }
+        startGreeting()
+        if env["JEB_MENU_TEST"] == "1" {
+            DistributedNotificationCenter.default().addObserver(forName: .init("com.jeb.desktop.notify-test"), object: nil, queue: .main) { [weak self] note in
+                switch note.object as? String { case "update": self?.finished(); case "greet": self?.greetTick(); default: break }
+            }
+        }
+    }
+
+    /// The first check a minute after start (past the takeover), then every minute: due is cheap and the file says what was done.
+    private func startGreeting() {
+        let t = Timer(timeInterval: 60, repeats: true) { [weak self] _ in self?.greetTick() }
+        RunLoop.main.add(t, forMode: .common)
+    }
+
+    private func greetTick() {
+        guard NotifyPrefsFile.load().holidays else { return }
+        let now = nowDate()
+        let hour = Calendar.current.component(.hour, from: now)
+        guard let due = Greeting.due(now: now, hour: hour, calendar: .current, greeted: NotifyPrefsFile.load().greeted, env: env) else { return }
+        let id = "jeb-greeting-\(due.holiday)-\(due.season)"
+        if live || env["JEB_GREET_TEST"] == "1" { NotifyPrefsFile.update { $0.greeted[due.holiday] = due.season } }      // recorded first: a crash never greets twice
+        else if !greetedDry.insert(id).inserted { return }
+        post(id: id, JebLines.greeting(due.holiday, season: due.season))
     }
 
     private func finished() {
@@ -37,63 +84,34 @@ final class UpdateNotifier: NSObject, UNUserNotificationCenterDelegate {
             log("notify: finished, but no readable status")
             return
         }
-        guard let note = UpdateText.notification(status) else { return }
-        post(note.title, note.body)
-    }
-
-    private func post(_ title: String, _ body: String) {
-        guard live else {
-            log("notify: would post \"\(title)\": \(body) (with Jeb's head attached)")
+        guard let news = UpdateText.news(status) else { return }
+        let holidays = Holiday.current()
+        if !NotifyPrefsFile.load().updates {
+            guard status.clicked else { log("notify: updates off, quiet"); return }
+            post(id: "jeb-update", JebLines.updatesOff(holiday: holidays.first))
             return
         }
-        let center = UNUserNotificationCenter.current()
-        if !asked {
-            asked = true
-            center.delegate = self
-            center.requestAuthorization(options: [.alert, .sound]) { granted, error in
-                log("notify: authorization \(granted ? "granted" : "denied")\(error.map { " (\($0))" } ?? "")")
-            }
-        }
-        let content = UNMutableNotificationContent()
-        content.title = title
-        content.body = body
-        content.sound = .default
-        if let head = headAttachment() { content.attachments = [head] }
-        center.add(UNNotificationRequest(identifier: "jeb-update", content: content, trigger: nil)) { error in
-            if let error = error { log("notify: post failed: \(error)") }
-        }
+        post(id: "jeb-update", JebLines.update(news, seed: "\(status.result ?? "")|\(status.detail)|\(Int(status.started))", holidays: holidays))
     }
 
-    /// The menu bar's head (StatusMenu.setIcon: the top 20 rows of jeb-idle) at a whole-number scale, centred on a transparent
-    /// square, written 0600 and atomically to jebHome; nil (logged once) if any step fails.
-    private func headAttachment() -> UNNotificationAttachment? {
-        func fail(_ why: String) -> UNNotificationAttachment? {
-            if !loggedHeadFailure { loggedHeadFailure = true; log("notify: posting without the head: \(why)") }
-            return nil
+    /// JEB_NOTIFY_PREVIEW (main.swift) and the menu's Show Sample Banners: every kind of banner once, queued at once, with
+    /// made-up facts; done() when the last is gone (at once when banners are only logged). The greeting is the current holiday's
+    /// (JEB_HOLIDAY forces one); none outside a holiday.
+    func preview(done: @escaping () -> Void) {
+        let hs = Holiday.current(), seed = String(Int(Date().timeIntervalSince1970))
+        // A fresh id per run, so a sample never replaces one still waiting from an earlier run.
+        for (kind, note) in JebLines.samples(seed: seed, holidays: hs, on: nowDate(), calendar: .current) {
+            post(id: (kind.hasPrefix("greeting") ? "jeb-greeting-preview-" : "jeb-preview-") + kind + "-" + seed, note)
         }
-        guard let art = art?() else { return fail("no art") }
-        guard let head = art.image("jeb-idle", rows: art.headRows("jeb-idle", 20), scale: headScale) else { return fail("art has no jeb-idle head") }
-        let side = max(head.width, head.height)
-        guard let ctx = CGContext(data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: 0,
-                                  space: CGColorSpace(name: CGColorSpace.sRGB)!,
-                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return fail("no canvas") }
-        ctx.interpolationQuality = .none
-        ctx.draw(head, in: CGRect(x: (side - head.width) / 2, y: (side - head.height) / 2, width: head.width, height: head.height))
-        let png = NSMutableData()
-        guard let image = ctx.makeImage(), let dest = CGImageDestinationCreateWithData(png, UTType.png.identifier as CFString, 1, nil) else { return fail("no encoder") }
-        CGImageDestinationAddImage(dest, image, nil)
-        guard CGImageDestinationFinalize(dest) else { return fail("encode failed") }
-        let tmp = headFile + ".tmp"
-        try? FileManager.default.createDirectory(atPath: jebHome, withIntermediateDirectories: true)
-        unlink(tmp)
-        guard FileManager.default.createFile(atPath: tmp, contents: png as Data, attributes: [.posixPermissions: 0o600]),
-              rename(tmp, headFile) == 0 else { unlink(tmp); return fail("cannot write \(headFile)") }
-        do { return try UNNotificationAttachment(identifier: "jeb-head", url: URL(fileURLWithPath: headFile), options: nil) }
-        catch { return fail("attach failed: \(error)") }
+        guard let banner = banner else { done(); return }
+        banner.onIdle = { [weak banner] in banner?.onIdle = nil; done() }
     }
 
-    /// An accessory app is never frontmost, so without this the banner would be dropped.
-    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler done: @escaping (UNNotificationPresentationOptions) -> Void) {
-        done([.banner, .sound])
+    private func post(id: String, _ note: Note) {
+        guard let banner = banner else {
+            log("notify: would show [\(id)] \"\(note.title)\" / \(note.subtitle): \(note.body.replacingOccurrences(of: "\n", with: " / ")) (\(note.sprite))")
+            return
+        }
+        banner.show(note, id: id)
     }
 }

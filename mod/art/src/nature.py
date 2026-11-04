@@ -283,6 +283,30 @@ def drift_flake():
     return img
 
 
+def badge(rows: list[str], legend: dict[str, str]):
+    """A holiday badge for the desktop banner's tab row: the picture in `rows` ('.' clear, at most 7x7) inside an ink outline."""
+    img, d = blank(len(rows[0]) + 2, len(rows) + 2)
+    for y, row in enumerate(rows):
+        for x, ch in enumerate(row):
+            if ch != '.':
+                d.point((x + 1, y + 1), fill=c(legend[ch]))
+    return outline(img)
+
+
+# One 9x9-or-smaller picture per holiday (Holiday.names): firework, heart, shamrock, egg, flag, pumpkin, turkey, holly.
+# No sacred text or figures, no animals.
+BADGES = {
+    'newyear': (['...y...', '.f.y.f.', '..fyf..', 'yyywyyy', '..fyf..', '.f.y.f.', '...y...'], {'y': 'yellow', 'f': 'fire', 'w': 'white'}),
+    'valentines': (['.pp.pp.', 'pwppppp', 'ppppppr', '.ppppr.', '..prr..', '...r...'], {'p': 'pink', 'w': 'white', 'r': 'red'}),
+    'stpatricks': (['.gg.gg.', 'glggggg', '.ggggg.', '..ggg..', '...s...', '...s...'], {'g': 'green', 'l': 'leaf', 's': 'green_dark'}),
+    'easter': (['..ppp..', '.ppppp.', '.pwppp.', 'ppppppp', 'yyyyyyy', 'ppppppp', '.ppppp.'], {'p': 'pink', 'y': 'yellow', 'w': 'white'}),
+    'july4': (['pDwDwww', 'pwDwrrr', 'pDwDwww', 'prrrrrr', 'pwwwwww', 'p......', 'p......'], {'p': 'tan', 'D': 'water', 'r': 'red', 'w': 'white'}),
+    'halloween': (['...s...', '.fffff.', 'fffffff', 'fiffifi', 'fffffff', 'fiiiiif', '.fffff.'], {'s': 'green_dark', 'f': 'fire', 'i': 'ink'}),
+    'thanksgiving': (['.rfyfr.', 'rfyyyfr', 'fyyyyyf', '.ooooo.', '.ooeoo.', '..oro..', '..a.a..'], {'r': 'red', 'f': 'fire', 'y': 'yellow', 'o': 'tan', 'e': 'ink', 'a': 'amber'}),
+    'christmas': (['.gg.gg.', 'gGgggGg', '.ggGgg.', '..rrr..', '..rwr..', '...r...'], {'g': 'green', 'G': 'green_dark', 'r': 'red', 'w': 'white'}),
+}
+
+
 def unlock_sprites() -> list[Sprite]:
     out = [
         Sprite('birdhouse', [birdhouse()]),
@@ -307,6 +331,7 @@ def unlock_sprites() -> list[Sprite]:
         Sprite('star-streak', [star_streak()]),
         Sprite('drift-flake', [drift_flake()]),
     ]
+    out += [Sprite(f'badge-{name}', [badge(*BADGES[name])]) for name in BADGES]
     out += [Sprite(f'woodpile-{n}', [woodpile(n)]) for n in range(1, 5)]
     out += [Sprite(f'garden-{n}', [garden(n)]) for n in range(4)]
     out += [Sprite(f'drift-leaf-{i}', [drift_leaf(t)]) for i, t in enumerate(('foliage_orange', 'foliage_red', 'foliage_gold'))]

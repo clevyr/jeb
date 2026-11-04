@@ -25,15 +25,15 @@
 // Files: main.swift (entry point, windows, the one Story, pausing, reloads, stats),
 // Store.swift, Farm.swift, Live.swift, Story.swift (which place, the trips and their
 // lines), FarmScene.swift (the valley), Valley.swift, Strip.swift, Homestead.swift,
-// Camp.swift, Road.swift, Cast.swift, Broadcast.swift (the Broadcast Window), Holiday.swift, Art.swift, PixelArt.swift, StatusMenu.swift, UpdateNotifier.swift, IconExport.swift, EmojiExport.swift,
+// Camp.swift, Road.swift, Cast.swift, Broadcast.swift (the Broadcast Window), Holiday.swift, Art.swift, PixelArt.swift, StatusMenu.swift, UpdateStatus.swift, JebLines.swift, BannerArt.swift and Banner.swift (Jeb's own notification banner), UpdateNotifier.swift, IconExport.swift, EmojiExport.swift,
 // Heartbeat.swift (install hooks), Probe.swift, Bench.swift (also Save Screenshot's renderer; JEB_SHOT_DIR its folder).   Build: ./build.sh   Live: ./run-live.sh
 // JEB_MOD the mod folder (default the bundle's JebMod, else mod/ beside desktop/ from the executable); JEB_ART_PATH the art file (default the mod's); JEB_ICONSET=<dir> writes the app icon's .iconset PNGs there and exits (tools/bundle.sh; nothing else starts); JEB_EMOJI=<out.gif> writes a 128 px animated GIF of a sprite for a Slack custom emoji and exits (JEB_EMOJI_SPRITE default jeb-idle, JEB_EMOJI_ROWS top rows kept, default 20, 0 = all, JEB_EMOJI_DELAY seconds per frame, default jeb-idle's blink timing, else 0.5; JEB_HOLIDAY picks a variant; jebctl emoji); JEB_PID_FILE a file the running
-// instance keeps its pid in. JEB_NO_PAUSE=1 turns off the occlusion pause (for
+// instance keeps its pid in. Banners (Banner.swift): JEB_NOTIFY_PREVIEW=1 shows one of every kind and exits (nothing else starts; no bundle needed); JEB_BANNER_CHECK=1 renders them all offscreen, checks the numbers and exits 0 or 1 (JEB_HOLIDAY adds the greeting and costumes); JEB_BANNER_SECONDS the dwell; JEB_BANNER_TEST=1 a test hook; JEB_BANNER=1 lets a raw binary show banners; JEB_REDUCE_MOTION=1 forces the fade-only entrance. JEB_NO_PAUSE=1 turns off the occlusion pause (for
 // measuring); JEB_IDLE_SECONDS sets the idle pause (default 120 s without a change
 // to what the farm shows); JEB_FPS the frame rate asked for while something passes
 // on the road or in the sky (default 60), JEB_CALM_FPS otherwise (default 30);
 // measuring only: JEB_FORCE_PAUSE=1; JEB_HOUR fixes the hour, JEB_NOW the clock (ms);
-// JEB_HOLIDAY=<name>|none forces a holiday's sprite variants (or turns them off; Holiday.swift; always off under JEB_BENCH unless forced);
+// JEB_HOLIDAY=<name>[,<name>...]|none forces holidays (a comma list for several at once) and their sprite variants (or turns them off; Holiday.swift; always off under JEB_BENCH unless forced);
 // JEB_STORE_PATH another store (fixtures, the latency test); JEB_PLACE=home|<token> (with
 // JEB_PLACE_SINCE seconds) where the story starts, JEB_STORY_SCALE=N story durations N times
 // shorter, JEB_STORY_PATH another story.json (none is written under JEB_BENCH unless set). JEB_BROADCAST_ROWS the scene rows the Broadcast Window's view holds (default 96), JEB_BROADCAST_PAD the scene px kept clear around everything on stage (default 6), JEB_BROADCAST_LOG=1 logs its framing. JEB_SPACES=all goes back to one window
@@ -683,9 +683,14 @@ let artSource = ArtSource(path: artPath)
 // app (hand-over, windows, status item, timers, heartbeat), so it never touches a running instance.
 if let dir = env["JEB_ICONSET"] {
     guard artSource.refresh(), let art = artSource.art else { log("icon export: no usable art at \(artPath)"); exit(1) }
-    art.holidayName = { nil } // the bundle's icon is always the base head
+    art.holidayNames = { [] } // the bundle's icon is always the base head
     if let problem = exportIconset(art: art, to: dir) { log("icon export: \(problem)"); exit(1) }
     exit(0)
+}
+// Banner check (JEB_BANNER_CHECK=1): offscreen and by numbers, nothing else starts.
+if env["JEB_BANNER_CHECK"] == "1" {
+    guard artSource.refresh(), let art = artSource.art else { log("banner check: no usable art at \(artPath)"); exit(1) }
+    exit(bannerCheck(art: art))
 }
 // Emoji export (jebctl emoji): same place and rules as the icon export; nothing else starts.
 if let out = env["JEB_EMOJI"] {
@@ -700,6 +705,16 @@ if let out = env["JEB_EMOJI"] {
         if bytes > 128 * 1024 { log("emoji export: warning, \(bytes) bytes is over Slack's 128 KB limit") }
     }) { log("emoji export: \(problem)"); exit(1) }
     exit(0)
+}
+// Banner preview (JEB_NOTIFY_PREVIEW=1): each kind of banner once, then exit; nothing else starts.
+if env["JEB_NOTIFY_PREVIEW"] == "1" {
+    guard artSource.refresh(), let art = artSource.art else { log("notify preview: no usable art at \(artPath)"); exit(1) }
+    // Prohibited, not accessory: a process started from a shell is made frontmost when it finishes launching, which would
+    // take the keyboard from the app being typed in. A banner never needs to be active.
+    NSApplication.shared.setActivationPolicy(.prohibited)
+    let notifier = UpdateNotifier(art: { art }, show: true)
+    notifier.preview { exit(0) }
+    NSApplication.shared.run()
 }
 guard artSource.refresh(), let art = artSource.art else {
     log("no usable art at \(artPath)")
@@ -723,9 +738,13 @@ desktop.start()
 if env["JEB_PROBE"] == "1" { desktop.startProbe() }
 let statusMenu = StatusMenu(app: desktop)
 desktop.onArt = { statusMenu.setIcon(art: $0) }
-let updateNotifier = UpdateNotifier()
-updateNotifier.art = { desktop.art }
+/// The banner's look: the farm's night and winter, and the area camp drawn on the main screen (none anywhere else).
+func bannerLook() -> BannerLook {
+    BannerLook.now(area: desktop.windows.first { $0.screen == NSScreen.main }?.scene.areaLook)
+}
+let updateNotifier = UpdateNotifier(art: { desktop.art }, look: bannerLook)
 updateNotifier.start()
+statusMenu.onSample = { updateNotifier.preview {} }
 log("started (occlusion pause \(noPause ? "off" : "on"), idle pause after \(Int(idleSeconds)) s, art \(artPath))")
 
 /// Stops cleanly (SIGUSR1: a newer instance has taken over; the menu's Quit).

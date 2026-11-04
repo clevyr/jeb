@@ -27,6 +27,13 @@ import QuartzCore
 let applyLog = env["JEB_APPLY_LOG"] == "1"
 func isNightHour(_ hour: Int) -> Bool { hour >= 21 || hour < 6 }
 
+/// The moon's frame (0-7, new to waning) on `date`: its age in the synodic month, in eighths.
+func moonPhase(_ date: Date) -> Int {
+    let days = date.timeIntervalSince1970 / 86_400 + 2440587.5 - 2451550.1
+    let phase = (days.truncatingRemainder(dividingBy: 29.530588853) / 29.530588853 + 1).truncatingRemainder(dividingBy: 1)
+    return Int((phase * 8).rounded()) % 8
+}
+
 /// The clock: the real one, or a fixed moment for a fixture render (JEB_NOW, ms since the epoch).
 let fixedNow: Date? = env["JEB_NOW"].flatMap(Double.init).map { Date(timeIntervalSince1970: $0 / 1000) }
 func nowDate() -> Date { fixedNow ?? Date() }
@@ -708,6 +715,8 @@ final class FarmScene {
     private var landTheme: AreaTheme?
     /// Measuring only: whether the land is an area's, and how many of its sprites the camp stands.
     var areaThemed: Bool { landTheme != nil }
+    /// What the banner takes from an area camp's look (BannerArt.swift); nil anywhere else.
+    var areaLook: AreaLook? { landTheme.map { AreaLook(palette: $0.area.palette, weather: $0.area.weather, mood: $0.area.mood) } }
     var areaPlaced: Int { camp?.areaPlaced ?? 0 }
 
     /// Paints the current place's land (its own variant) if the sky's colours, the tint or the variant changed.
@@ -742,9 +751,7 @@ final class FarmScene {
         var frac: CGFloat
         let image: CGImage
         if isNight {
-            let days = now.timeIntervalSince1970 / 86_400 + 2440587.5 - 2451550.1
-            let phase = (days.truncatingRemainder(dividingBy: 29.530588853) / 29.530588853 + 1).truncatingRemainder(dividingBy: 1)
-            image = art.image("moon", Int((phase * 8).rounded()) % 8)
+            image = art.image("moon", moonPhase(now))
             frac = CGFloat(((hour < 21 ? hour + 24 : hour) - 21) / 9)
         } else {
             image = art.image("sun")

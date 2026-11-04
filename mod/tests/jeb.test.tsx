@@ -4712,7 +4712,9 @@ test('VI21 britches: a daytime midsummer happening that stands still, speaks twi
   expect(restOf({ id: 'britches', t: 10, dur: 80 })).toBe(0)
 })
 
-test('VI22 every Jeb pose has a halloween variant: same width and frames, 8 rows taller, feet on the bottom row', () => {
+const COSTUMES = ['halloween', 'thanksgiving', 'christmas']
+
+test('VI22 every Jeb pose has a costume variant for halloween, thanksgiving and christmas: same width and frames, 8 rows taller, feet on the bottom row', () => {
   const poses = ['idle', 'happy', 'spooked', 'wink', 'think', 'sleep', 'banjo', 'sip', 'hoe', 'broom',
     'book', 'stir', 'salute', 'wave', 'hold', 'jar']
   const pixels = (frame: string, w: number, h: number) => {
@@ -4724,9 +4726,9 @@ test('VI22 every Jeb pose has a halloween variant: same width and frames, 8 rows
     expect(out.length).toBe(w * h)
     return out
   }
-  for (const pose of poses) {
+  for (const costume of COSTUMES) for (const pose of poses) {
     const base = PIXEL_SPRITES[`jeb-${pose}`]
-    const variant = PIXEL_SPRITES[`jeb-${pose}--halloween`]
+    const variant = PIXEL_SPRITES[`jeb-${pose}--${costume}`]
     expect(variant).toBeDefined()
     expect(variant.w).toBe(base.w)
     expect(variant.h).toBe(base.h + 8)
@@ -4734,18 +4736,21 @@ test('VI22 every Jeb pose has a halloween variant: same width and frames, 8 rows
     variant.frames.forEach((frame: string, i: number) => {
       expect(frame).not.toBe(base.frames[i])
       const px = pixels(frame, variant.w, variant.h)
-      // the hat's tip outline reaches row 0, and the feet stay on the bottom row
-      expect(px.slice(0, variant.w).some(p => p !== 0)).toBe(true)
+      // the hat's tip outline reaches row 0 (the harvest leaf cluster tops out at row 4, four rows above the crown), and the feet stay on the bottom row
+      const top = Math.floor(px.findIndex(p => p !== 0) / variant.w)
+      if (costume === 'thanksgiving') expect(top).toBe(4)
+      else expect(top).toBe(0)
       const bottom = (f: string, w: number, h: number) => pixels(f, w, h).slice(-w).map(p => p !== 0)
       expect(bottom(frame, variant.w, variant.h)).toEqual(bottom(base.frames[i], base.w, base.h))
-      // the brim is at least as wide as the straw hat's
+      // the hat's brim row is at least as wide as the straw hat's (the witch's brim is row 13; the others keep the straw hat)
+      if (costume !== 'halloween') return
       const wide = (p: number[], row: number) => p.slice(row * variant.w, (row + 1) * variant.w).filter(v => v !== 0).length
       expect(wide(px, 13)).toBeGreaterThanOrEqual(wide(pixels(base.frames[i], base.w, base.h), 5))
     })
   }
 })
 
-test('VI23 the witch hat is identical in every halloween frame, with no orphan pixels', () => {
+test('VI23 each costume hat is identical in every frame of its costume, with no orphan pixels; the witch tip is plain', () => {
   const pixels = (frame: string) => {
     const raw = atob(frame)
     const out: number[] = []
@@ -4754,10 +4759,11 @@ test('VI23 the witch hat is identical in every halloween frame, with no orphan p
     }
     return out
   }
-  const names = Object.keys(PIXEL_SPRITES).filter(n => /^jeb-.*--halloween$/.test(n))
-  expect(names.length).toBe(16)
-  const hat = pixels(PIXEL_SPRITES['jeb-idle--halloween'].frames[0]).slice(0, 20 * 15).join(',')
   const bad: string[] = []
+  for (const costume of COSTUMES) {
+  const names = Object.keys(PIXEL_SPRITES).filter(n => new RegExp(`^jeb-.*--${costume}$`).test(n))
+  expect(names.length).toBe(16)
+  const hat = pixels(PIXEL_SPRITES[`jeb-idle--${costume}`].frames[0]).slice(0, 20 * 15).join(',')
   for (const name of names) {
     const { w, h, frames } = PIXEL_SPRITES[name]
     frames.forEach((frame: string, i: number) => {
@@ -4767,7 +4773,7 @@ test('VI23 the witch hat is identical in every halloween frame, with no orphan p
         if (p !== ref[n]) bad.push(`${name}#${i} hat ${n % w},${Math.floor(n / w)}`)
       })
       // the bent tip (rows 0-4) is plain: outline, robe and its shade only
-      expect(new Set(px.slice(0, w * 5).filter(p => p !== 0)).size).toBeLessThanOrEqual(3)
+      if (costume === 'halloween') expect(new Set(px.slice(0, w * 5).filter(p => p !== 0)).size).toBeLessThanOrEqual(3)
       for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
           if (!px[y * w + x]) continue
@@ -4778,9 +4784,57 @@ test('VI23 the witch hat is identical in every halloween frame, with no orphan p
       }
     })
   }
-  expect(bad).toEqual([])
-  const idle = PIXEL_SPRITES['jeb-idle--halloween'].frames
+  const idle = PIXEL_SPRITES[`jeb-idle--${costume}`].frames
   expect(idle[3]).not.toBe(idle[2])
+  }
+  expect(bad).toEqual([])
+})
+
+test('VI23c the harvest leaf cluster: broad autumn leaves, rows 4-12 only, no tall single-colour column above the crown, same in every pose and frame', () => {
+  const pixels = (frame: string) => {
+    const raw = atob(frame)
+    const out: number[] = []
+    for (let i = 0; i < raw.length; i += 2) {
+      for (let n = 0; n < raw.charCodeAt(i); n++) out.push(raw.charCodeAt(i + 1))
+    }
+    return out
+  }
+  const names = Object.keys(PIXEL_SPRITES).filter(n => /^jeb-.*--thanksgiving$/.test(n))
+  expect(names.length).toBe(16)
+  const w = 20
+  const crownTop = 8
+  const ref = pixels(PIXEL_SPRITES['jeb-idle--thanksgiving'].frames[0])
+  const leaves = ['foliage_red', 'foliage_orange', 'foliage_gold'].map(n => PIXEL_COLOUR[n])
+  // all three leaf colours are present in the cluster, and no wheat or corn colours sit on the hat
+  const used = new Set(ref.slice(0, w * 13).filter(p => p !== 0))
+  for (const leaf of leaves) expect(used.has(leaf)).toBe(true)
+  for (const gone of ['leaf_dry', 'corn']) expect(used.has(PIXEL_COLOUR[gone])).toBe(false)
+  // nothing above row 4, and the cluster is wider than it is tall (broad leaves, not a stalk)
+  expect(ref.slice(0, w * 4).every(p => p === 0)).toBe(true)
+  const cols = new Set<number>()
+  for (let y = 4; y < crownTop; y++) for (let x = 0; x < w; x++) if (ref[y * w + x]) cols.add(x)
+  expect(cols.size).toBeGreaterThanOrEqual(8)
+  // no column above the crown holds a run of more than 3 pixels of one colour, and no row is a lone pixel wide column
+  for (let x = 0; x < w; x++) {
+    let run = 1
+    for (let y = 5; y < crownTop; y++) {
+      const here = ref[y * w + x]
+      run = here !== 0 && here === ref[(y - 1) * w + x] ? run + 1 : 1
+      expect(run).toBeLessThanOrEqual(3)
+    }
+  }
+  // identical rows 0-12 in every pose and frame
+  const cluster = ref.slice(0, w * 13).join(',')
+  for (const name of names) PIXEL_SPRITES[name].frames.forEach((frame: string, i: number) => {
+    expect([name, i, pixels(frame).slice(0, w * 13).join(',') === cluster]).toEqual([name, i, true])
+  })
+})
+
+test('VI23b only halloween, thanksgiving and christmas have costume variants; every other holiday gets a badge and a tab colour only', () => {
+  const dressed = new Set(Object.keys(PIXEL_SPRITES).filter(n => n.includes('--')).map(n => n.split('--')[1]))
+  expect([...dressed].sort()).toEqual([...COSTUMES].sort())
+  const base = Object.keys(PIXEL_SPRITES).filter(n => n.includes('--')).map(n => n.split('--')[0])
+  for (const name of base) expect(PIXEL_SPRITES[name]).toBeDefined()
 })
 
 test('VI24 witch sleeves have a dark outer edge, raised hands stand clear of the brim, and the hem star is the same in every frame', () => {
@@ -4823,5 +4877,34 @@ test('VI24 witch sleeves have a dark outer edge, raised hands stand clear of the
     const wave = at('jeb-wave--halloween', i)
     expect(handTop(wave, 18)).toBeGreaterThanOrEqual(18)
     expect(wave[(18 + i) * W + 18]).toBe(skin)
+  }
+})
+
+test('VI25 every holiday has a banner badge: one frame, at most 9x9 so it fits the tab row, an ink outline, no hyphen pair in its name', () => {
+  const holidays = ['newyear', 'valentines', 'stpatricks', 'easter', 'july4', 'halloween', 'thanksgiving', 'christmas']
+  // exactly one badge per holiday: no stray badges, none missing
+  expect(Object.keys(PIXEL_SPRITES).filter(n => n.startsWith('badge-')).sort()).toEqual(holidays.map(h => `badge-${h}`).sort())
+  const pixels = (frame: string) => {
+    const raw = atob(frame)
+    const out: number[] = []
+    for (let i = 0; i < raw.length; i += 2) {
+      for (let n = 0; n < raw.charCodeAt(i); n++) out.push(raw.charCodeAt(i + 1))
+    }
+    return out
+  }
+  for (const holiday of holidays) {
+    const name = `badge-${holiday}`
+    expect(name).not.toContain('--')
+    const { w, h, frames } = PIXEL_SPRITES[name]
+    expect(frames.length).toBe(1)
+    expect(w).toBeLessThanOrEqual(9)
+    expect(h).toBeLessThanOrEqual(9)
+    const px = pixels(frames[0])
+    expect(px.length).toBe(w * h)
+    // the box's edge is all outline or clear, and some of it is ink
+    const edge = px.filter((_, n) => n % w === 0 || n % w === w - 1 || n < w || n >= w * (h - 1))
+    expect(edge.every(p => p === 0 || p === PIXEL_COLOUR.ink)).toBe(true)
+    expect(px.filter(p => p === PIXEL_COLOUR.ink).length).toBeGreaterThan(10)
+    expect(px.filter(p => p !== 0).length).toBeGreaterThan(30)
   }
 })
