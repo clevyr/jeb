@@ -1,5 +1,5 @@
 #!/bin/sh
-# Builds jebctl, the native command teammates run (Foundation and CryptoKit only). Every command is forwarded to the
+# Builds jebctl, the native command you run (Foundation and CryptoKit only). Every command is forwarded to the
 # installed Jeb's Python jebctl except `install` and `--version`, which a standalone copy answers itself. JEB_OUT names
 # the output (default jebctl), JEB_VERSION the version it reports (default dev). JEB_UNIVERSAL=1 builds arm64 and
 # x86_64 (macOS 12) and joins them with lipo; the release ships that binary.

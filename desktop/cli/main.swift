@@ -1,4 +1,4 @@
-// jebctl: the one command a teammate runs. Inside a release bundle (<root>/desktop/bin/jebctl) and as a standalone copy
+// jebctl: the one command you run. Inside a release bundle (<root>/desktop/bin/jebctl) and as a standalone copy
 // it forwards every command to the installed Jeb's Python jebctl (python/bin/python3 -I desktop/jebctl). A standalone
 // copy (~/.jeb/bin/jebctl, fetched with curl) also answers `install` itself: the newest release (github.com/<repo>/releases/latest,
 // a web redirect: no sign-in, no API), its signature and hashes, the unpack, then the bundle's own install. Foundation and CryptoKit only; desktop/cli/build.sh.

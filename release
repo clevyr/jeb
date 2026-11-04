@@ -23,10 +23,10 @@
                           v<version>, whose message carries the SHA-256 of the app zip. On success they ask
                           once, then push <base> and <tag> and publish the GitHub release with those notes and the assets
                           (`gh release create <tag> --verify-tag --notes-file ... <assets>`), only on y; it refuses when the app zip
-                          is missing. Assets: Jeb-<tag>-macos-arm64.zip and -x86_64.zip (the bundles teammates install: tree,
+                          is missing. Assets: Jeb-<tag>-macos-arm64.zip and -x86_64.zip (the bundles users install: tree,
                           prebuilt app, pinned Python), Jeb-<tag>-manifest.json and its .sig (signed with the tag's key in the
                           `jeb-release` namespace), jebctl-macos (the universal native jebctl, also inside every bundle as
-                          desktop/bin/jebctl; its name, size and SHA-256 are in the manifest under "jebctl"; a teammate's first
+                          desktop/bin/jebctl; its name, size and SHA-256 are in the manifest under "jebctl"; a new user's first
                           copy is a curl of github.com/clevyr/jeb/releases/latest/download/jebctl-macos), and the older JebDesktop-<tag>-macos.zip (JebDesktop plus the universal detect and
                           png2raw; installs from the git clone use it when it matches the hash in the signed tag; kept during the
                           transition). Without a terminal they print those commands instead.
@@ -171,8 +171,21 @@ def unlock_key():
     return int(env["SSH_AGENT_PID"])
 
 
+def check_notices(root=CLONE):
+    """Fail unless THIRD-PARTY-NOTICES.md names the pinned python-build-standalone tag and CPython version (the bundles ship that Python)."""
+    path = os.path.join(root, "THIRD-PARTY-NOTICES.md")
+    want = f"python-build-standalone: {PBS_TAG} (CPython {PBS_PY.split('+')[0]})"
+    try:
+        lines = open(path, encoding="utf-8").read().splitlines()
+    except OSError:
+        lines = None
+    if lines is None or want not in (l.strip() for l in lines):
+        fail(f"THIRD-PARTY-NOTICES.md is missing or does not carry the line '{want}'; regenerate the notices from the new python-build-standalone release's full archive (python/PYTHON.json and python/licenses/) and update that line")
+
+
 def release(dry, bump):
     no_private_keys()
+    check_notices()
     agent = None if dry else unlock_key()
     try:
         return release_run(dry, bump)
@@ -226,6 +239,8 @@ def release_run(dry, bump):
 
 # ---- bundles: Jeb-<tag>-macos-<arch>.zip (the tree, the prebuilt app, a pruned Python) and the signed manifest ----
 
+# THIRD-PARTY-NOTICES.md reproduces this build's licences: regenerate it from the new release's full archive whenever the tag or CPython version
+# changes (check_notices fails the release until its python-build-standalone line matches).
 # python-build-standalone, pinned: a release at least two weeks old, install_only_stripped, CPython 3.12. Bump the tag, the filenames
 # and the hashes together (the hashes come from the release's SHA256SUMS).
 PBS_TAG = "20261013"
@@ -237,7 +252,7 @@ PBS = {
                "d09998f85752b646873a8a6bc7eea442a0d251b1c8d2413aa8ea06ef131c3335"),
 }
 PBS_CACHE = os.path.expanduser("~/Library/Caches/jeb-release")
-TREE = ("install", "uninstall", "LICENSE", "desktop", "mod", ".claude-plugin", ".claude/skills")       # what a bundle copies from the repo, beside app/ and python/ (the skills: the doctor guide the README points at; .claude-plugin: the marketplace Claude Code installs the mod from)
+TREE = ("install", "uninstall", "LICENSE", "THIRD-PARTY-NOTICES.md", "desktop", "mod", ".claude-plugin", ".claude/skills")       # what a bundle copies from the repo, beside app/ and python/ (the skills: the doctor guide the README points at; .claude-plugin: the marketplace Claude Code installs the mod from)
 PRUNE = ("lib/python3.*/test", "lib/python3.*/idlelib", "lib/python3.*/tkinter", "lib/python3.*/turtledemo", "lib/python3.*/ensurepip",
          "lib/python3.*/site-packages/pip*", "lib/python3.*/lib-dynload/_tkinter*", "lib/tcl*", "lib/tk*", "lib/itcl*", "lib/thread*",
          "include", "share", "lib/pkgconfig", "lib/libtcl*", "lib/libtk*")
@@ -513,7 +528,7 @@ def smoke_jebctl(dl, tag, base, want):
 
 
 def smoke_case(sandbox, home, tag, base, pinned):
-    """Download the release the way a teammate's Claude does (its jebctl-macos, checked against the signed manifest), run that
+    """Download the release the way a new user's Claude does (its jebctl-macos, checked against the signed manifest), run that
     `install --no-agents`, check. pinned: the tag was named, so the binary is told it (else it finds the newest itself). Returns (ok, text)."""
     import jebhome
     t0 = time.time()

@@ -1,11 +1,11 @@
 ---
 name: jeb-install
-description: Set up Jeb (the Claude Code mod plus the macOS desktop app) from github.com/clevyr/jeb on a teammate's Mac: install, update, repair or remove it. Use when the user asks to install, update, repair or remove Jeb, or pastes the README's prompt.
+description: Set up Jeb (the Claude Code mod plus the macOS desktop app) from github.com/clevyr/jeb on a user's Mac: install, update, repair or remove it. Use when the user asks to install, update, repair or remove Jeb, or pastes the README's prompt.
 ---
 
 # Set up Jeb
 
-Set up Jeb from the clevyr/jeb release (install, update, repair or remove), doing every step yourself. Most users are not developers: never ask them to run a command. A teammate's Mac needs no Xcode, Command Line Tools, git or Homebrew. Keep progress updates to one short line per step, and explain a failure in simple words.
+Set up Jeb from the clevyr/jeb release (install, update, repair or remove), doing every step yourself. Most users are not developers: never ask them to run a command. A new user's Mac needs no Xcode, Command Line Tools, git or Homebrew. Keep progress updates to one short line per step, and explain a failure in simple words.
 
 ## What to do
 
@@ -18,7 +18,7 @@ Decide from the Mac and the request, after steps 1 and 2 below:
 
 ## Steps
 
-jebctl is the only tool a teammate needs: it fetches the newest signed release, verifies its signature and hashes against the pinned signer, unpacks it and runs the bundle's own install.
+jebctl is the only tool a new user needs: it fetches the newest signed release, verifies its signature and hashes against the pinned signer, unpacks it and runs the bundle's own install.
 
 1. Architecture: `sysctl -n hw.optional.arm64` prints 1 for `arm64`, otherwise use `x86_64`.
 2. Get jebctl: `mkdir -p ~/.jeb/bin && curl -fsSL https://github.com/clevyr/jeb/releases/latest/download/jebctl-macos -o ~/.jeb/bin/jebctl.new && chmod +x ~/.jeb/bin/jebctl.new && mv -f ~/.jeb/bin/jebctl.new ~/.jeb/bin/jebctl` (the rename matters: overwriting a signed binary in place can get it killed). If it fails, the Mac has no network to github.com, or the repository is not public yet (tell the user and stop).
