@@ -2331,6 +2331,9 @@ def rollback_bundle():
         raise SystemExit("no earlier release is recorded to roll back to")
     if tag_key(prev) < ROLLBACK_FLOOR:
         raise SystemExit(f"{prev} is older than v{'.'.join(map(str, ROLLBACK_FLOOR))}, the oldest release this one can roll back to (older ones predate the key rotation and the Python-free update path); {cur} stays installed.")
+    if DRY:
+        say(f"would roll back {cur} -> {prev}: download {prev} again, gate it and point {LIVE} at it (dry run: nothing changed)")
+        return
     lock = open(os.path.join(HOME, "release.lock"), "w")
     try:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
