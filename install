@@ -10,8 +10,10 @@
                           verified tag; a 6-hourly agent fetches new ones, verifies, gates them and switches). No local
                           edits expected.
                           Updates only follow tags signed by a pinned signer: desktop/release-signers is copied to
-                          ~/Library/Application Support/Jeb/release-signers on the first install and never replaced by a later tag.
-  --repin                 replace the pinned signers with this clone's desktop/release-signers (key rotation).
+                          ~/Library/Application Support/Jeb/release-signers on the first install (never replaced by an install
+                          without --repin). An installed Jeb adopts the file of a newer release it has verified (signed by a key
+                          already pinned), which is how keys rotate.
+  --repin                 replace the pinned signers with this clone's or bundle's desktop/release-signers (the manual way to rotate keys).
   --add-path              add ~/.local/bin (where `jebctl` is linked) to the shell profile (zsh ~/.zprofile, bash
                           ~/.bash_profile, else ~/.profile; backup first). The PATH is optional: without it one line says
                           to run ~/.local/bin/jebctl.

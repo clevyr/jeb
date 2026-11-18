@@ -19,7 +19,10 @@
                           does not exist yet (trust on first install), from the cloned checkout before any
                           tag is looked at. Then tags are fetched and the clone moves to the newest verified
                           tag (signed by a pinned signer, commit on origin's default branch); with no signer or
-                          no verified tag it stays on the cloned commit. --repin replaces the pin (key rotation).
+                          no verified tag it stays on the cloned commit. --repin replaces the pin by hand. A bundle install
+                          follows later releases' files instead: once a release is verified against the pin (and at the
+                          start of each follow, from the installed release) its desktop/release-signers replaces the pin
+                          when that release is newer than the one the pin came from (release-state signers_from).
                           Release mode never compiles: the release's prebuilt app (and its detect and png2raw helpers)
                           is used when it checks out (see follow); every gate still runs. With no verified prebuilt (no
                           network, no asset, a hash mismatch) the install stops
@@ -72,7 +75,7 @@
                           ./release to attach; it holds JebDesktop plus the universal detect and png2raw helpers). The universal
                           native jebctl (desktop/cli, version baked in) is built into the same stage folder, beside that zip, and
                           ./release puts it in every bundle as desktop/bin/jebctl and attaches it as jebctl-macos; the signer
-                          pinned in its source must equal the jeb-release line of desktop/release-signers or the release stops.
+                          pinned in its source (signerLines) must equal the jeb-release lines of desktop/release-signers or the release stops.
                           The version comes from the tags, as release-please does: no tag yet is
                           1.0.0; else the last tag raised by --bump (default auto: the level from the
                           Conventional Commits since it; refuses when none is releasable). Only once every
@@ -86,6 +89,7 @@
                           hidden: wait for PID to exit, then bootout and bootstrap the release LaunchAgents (used after a
                           clone converts to a bundle)
   prune-versions [--wait-pid PID]  hidden: once PID exits, delete every ~/.jeb/versions folder except the one ~/.jeb/current points to
+  watchdog [args]         hidden: what a bundle's watchdog agent runs (through desktop/bin/jebctl); execs the Python on watchdog.py
   screenshot [--dry-run]  save what the running app draws (SIGUSR2; one PNG per screen into ~/Pictures/Jeb, or
                           JEB_SHOT_DIR) and print the paths (from JEB_HOME/screenshot-last). Needs exactly one
                           running JebDesktop whose build has it; waits up to 10 s
@@ -344,6 +348,7 @@ def write_quit_marker():
 def plists(m):
     py = PY
     code = os.path.join(LIVE, "desktop") if BUNDLE else CODE        # a bundle's agents only ever name `current`
+    native = os.path.join(LIVE, "desktop", "bin", "jebctl")         # a bundle's release and watchdog agents run the native launcher, no Python path
     env = {"PATH": PATH, "JEB_MOD": MOD, "JEB_SRC": SRC}
     if os.environ.get("DEVELOPER_DIR") and not BUNDLE:
         env["DEVELOPER_DIR"] = os.environ["DEVELOPER_DIR"]
@@ -362,7 +367,7 @@ def plists(m):
         },
         "com.jeb.desktop.watchdog": {
             "Label": "com.jeb.desktop.watchdog",
-            "ProgramArguments": py + [os.path.join(code, "watchdog.py")],
+            "ProgramArguments": [native, "watchdog"] if BUNDLE else py + [os.path.join(code, "watchdog.py")],
             "EnvironmentVariables": env,
             "StartInterval": 30,        # no RunAtLoad: at login the agent's own RunAtLoad start goes first
             "ProcessType": "Background",
@@ -384,7 +389,7 @@ def plists(m):
         },
         "com.jeb.desktop.release": {
             "Label": "com.jeb.desktop.release",
-            "ProgramArguments": py + [os.path.join(code, "jebctl"), "follow"],
+            "ProgramArguments": [native, "follow"] if BUNDLE else py + [os.path.join(code, "jebctl"), "follow"],
             "EnvironmentVariables": env,
             "RunAtLoad": True,
             "StartInterval": 21600,     # every 6 h
@@ -776,7 +781,7 @@ def cmd_doctor():
     check(last not in ("rolled-back", "rejected", "rollback-failed", "swap-failed"), f"last update result: {last or 'none'}", f"see {os.path.join(HOME, 'update.log')}; run: jebctl status")
     say(f"ok    state folder: {HOME}" + (" (older location; run: jebctl migrate)" if HOME == jebhome.old_path() and not os.environ.get("JEB_HOME") else ""))
     if m == "release":
-        check(os.path.isfile(SIGNERS), "release signers pinned", FIX("run: ./install --repin (needs desktop/release-signers in the clone)"))
+        check(os.path.isfile(SIGNERS), "release signers pinned", FIX("run: ./install --repin from a bundle or clone that ships desktop/release-signers (a newer release also replaces it on its own)"))
         if BUNDLE and os.path.isfile(SIGNERS):
             check(any((key_line(l) or (0, None))[1] and "jeb-release" in key_line(l)[1][1] for l in open(SIGNERS).read().splitlines()), "a pinned signer covers jeb-release", FIX(""))
         try:
@@ -1202,7 +1207,7 @@ def install_steps(args):
         else:
             why.append("no verified Jeb release was found to install (the clone is not on a release tag signed by a pinned signer); try again later")
     elif m == "release":
-        why.append("no signing keys are pinned, so no release can be trusted (the clone has no desktop/release-signers); ask Claude to repair Jeb")
+        why.append("no signing keys are pinned, so no release can be trusted (the clone has no desktop/release-signers with a jeb-release key); ask Claude to repair Jeb")
     if m == "release" and not build and not app and not DRY:
         if back:
             git("checkout", "--detach", back)
@@ -1511,15 +1516,19 @@ def fetch_app(tag, log=say, build=True):
 
 
 def live_valid():
-    """True when ~/.jeb/current resolves to a bundle with its Python and jebctl."""
-    return all(os.path.isfile(os.path.join(LIVE, *p)) for p in (("bundle.json",), ("python", "bin", "python3"), ("desktop", "jebctl")))
+    """True when ~/.jeb/current resolves to a bundle with its Python and jebctl (schema 2: the native jebctl and the app, no Python)."""
+    need = (("bundle.json",), ("desktop", "bin", "jebctl"), ("app", "JebDesktop")) if (jebhome.read_bundle(LIVE) or {}).get("schema") == 2 else (("bundle.json",), ("python", "bin", "python3"), ("desktop", "jebctl"))
+    return all(os.path.isfile(os.path.join(LIVE, *p)) for p in need)
 
 
 def cmd_follow(args):
     gates_only = "--gates-only" in args
     if not BUNDLE and load_rstate().get("layout") == "bundle" and live_valid() and not DRY:
         py = os.path.join(LIVE, "python", "bin", "python3")      # converted: the bundle follows from now on, this clone is only a leftover
-        os.execv(py, [py, "-I", os.path.join(LIVE, "desktop", "jebctl")] + sys.argv[1:])
+        if os.path.isfile(py):
+            os.execv(py, [py, "-I", os.path.join(LIVE, "desktop", "jebctl")] + sys.argv[1:])
+        native = os.path.join(LIVE, "desktop", "bin", "jebctl")  # a Python-free bundle
+        os.execv(native, [native] + sys.argv[1:])
     if not os.path.exists(os.path.join(HOME, "updates-paused")):
         migrate_home()      # before the lock below: migrate takes release.lock itself
     os.makedirs(HOME, mode=0o700, exist_ok=True)
@@ -1744,6 +1753,79 @@ def widen_signers(src):
     return changed
 
 
+def pin_hash():
+    """SHA-256 of the pinned signers file ('' when none)."""
+    try:
+        return hashlib.sha256(open(SIGNERS, "rb").read()).hexdigest()
+    except OSError:
+        return ""
+
+
+def parse_signers(text):
+    """The allowed_signers lines of text as (principal, keytype, key) when it is a usable release-signers file: at least one line, and every
+    line `principal [namespaces="..."] keytype base64` with jeb-release among its namespaces and no other option. Else None."""
+    out = []
+    for l in text.splitlines():
+        t = l.split()
+        if not t or t[0].startswith("#"):
+            continue
+        k = key_line(l)
+        i = next((n for n, x in enumerate(t) if n and x.startswith(("ssh-", "ecdsa-", "sk-"))), None)
+        if not k or not k[1] or "jeb-release" not in k[1][1] or i != 2 or len(t) != 4 or not re.fullmatch(r"[A-Za-z0-9+/=]+", t[3]):
+            return None
+        out.append((t[0], t[i], t[i + 1]))
+    return out or None
+
+
+def adopt_signers(rs, tag, src):
+    """The pin follows the signed releases: when tag is newer than the release the pin was last adopted from (rs.signers_from; none yet
+    counts as older), the signers file `src` of that release replaces JEB_HOME/release-signers (atomic, 0600). Only called for a release this
+    process has verified (the installed one, a verified update, a converted clone); never at a fresh install, never with --from-tree.
+    A src that does not parse into valid jeb-release lines is ignored. True when adopted."""
+    cur = rs.get("signers_from")
+    if not tag_key(tag) or (isinstance(cur, str) and tag_key(cur) and tag_key(tag) <= tag_key(cur)):
+        return False
+    try:
+        text = open(src).read()
+    except OSError:
+        return False
+    if not parse_signers(text):
+        rlog(f"signers: {tag}'s release-signers is not usable; the pin stays")
+        return False
+    rs["signers_from"] = tag
+    if pin_hash() == hashlib.sha256(text.encode()).hexdigest():
+        rlog(f"signers: the pin already matches {tag}'s")
+        return True
+    rlog(f"signers: adopting the release-signers of {tag}")
+    if not DRY:
+        os.makedirs(os.path.dirname(SIGNERS), mode=0o700, exist_ok=True)
+        tmp = SIGNERS + ".tmp"
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w") as f:
+            f.write(text)
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, SIGNERS)
+    return True
+
+
+def failed_skip(rs):
+    """rs.failed minus the tags rejected only for their signature while a different pin was in place: those get another look."""
+    pin, why = pin_hash(), rs.get("failed_why") or {}
+    return [t for t in rs.get("failed", []) if not (isinstance(why.get(t), dict) and why[t].get("why") == "signature" and why[t].get("pin") != pin)]
+
+
+def mark_failed(rs, tag, kind):
+    if tag not in rs.setdefault("failed", []):
+        rs["failed"].append(tag)
+    rs.setdefault("failed_why", {})[tag] = {"why": kind, "pin": pin_hash()}
+
+
+def clear_failed(rs, tag):
+    if tag in rs.get("failed", []):
+        rs["failed"].remove(tag)
+    (rs.get("failed_why") or {}).pop(tag, None)
+
+
 def flip_current(target):
     """Point ~/.jeb/current at target (a relative link when it sits in versions/); atomic. Returns the previous target as an
     absolute path, or None when there was none."""
@@ -1791,7 +1873,7 @@ def prune_now():
     prune_versions()
     me, live = os.path.realpath(CLONE) if BUNDLE else None, os.path.realpath(LIVE)
     if me and me != live and os.path.isdir(live) and live_valid():
-        subprocess.Popen([os.path.join(LIVE, "python", "bin", "python3"), "-I", os.path.join(LIVE, "desktop", "jebctl"), "prune-versions", "--wait-pid", str(os.getpid())], env=scrubbed_env(), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        subprocess.Popen([os.path.join(LIVE, "desktop", "bin", "jebctl"), "prune-versions", "--wait-pid", str(os.getpid())], env=scrubbed_env(), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
 
 
 def release_repo():
@@ -1810,33 +1892,35 @@ MANIFEST_MAX = 64 << 10                # the most a manifest or its signature ma
 
 
 def verify_manifest(manifest, sig, tag):
-    """None when the manifest is signed for `jeb-release` by a pinned signer and names this tag; else the reason."""
+    """None when the manifest is signed for `jeb-release` by a pinned signer and names this tag; else (reason, kind): signature or content."""
     if not os.path.isfile(SIGNERS):
-        return "no signers are pinned"
+        return "no signers are pinned", "signature"
     r = subprocess.run(["ssh-keygen", "-Y", "find-principals", "-s", sig, "-f", SIGNERS], capture_output=True, text=True)
     who = r.stdout.split()
     if r.returncode != 0 or not who:
-        return "the manifest is not signed by a pinned signer"
+        return "the manifest is not signed by a pinned signer", "signature"
     for p in who:
         with open(manifest, "rb") as f:
             v = subprocess.run(["ssh-keygen", "-Y", "verify", "-f", SIGNERS, "-I", p, "-n", "jeb-release", "-s", sig], stdin=f, capture_output=True, text=True)
         if v.returncode == 0:
             break
     else:
-        return "the manifest signature does not verify for jeb-release: " + (v.stderr.strip().splitlines() or ["?"])[-1][:150]
+        return "the manifest signature does not verify for jeb-release: " + (v.stderr.strip().splitlines() or ["?"])[-1][:150], "signature"
     try:
         doc = json.load(open(manifest))
     except (OSError, ValueError):
-        return "the manifest is not valid JSON"
+        return "the manifest is not valid JSON", "content"
     if not isinstance(doc, dict) or doc.get("tag") != tag:
-        return f"the signed manifest names {doc.get('tag') if isinstance(doc, dict) else '?'}, not {tag} (replayed)"
+        return f"the signed manifest names {doc.get('tag') if isinstance(doc, dict) else '?'}, not {tag} (replayed)", "content"
     return None
 
 
 def fetch_bundle(tag, log=say):
-    """Download, verify and unpack release `tag` into ~/.jeb/versions/<tag>. Returns (path, None), or (None, (why, permanent)):
-    permanent (a bad signature, tag, hash, size or content) means the tag is never retried; network or a missing asset
-    retries later. Nothing is left half-done: the unpack goes to versions/.<tag>.partial and is renamed last."""
+    """Download, verify and unpack release `tag` into ~/.jeb/versions/<tag>. Returns (path, None), or (None, (why, permanent, kind)):
+    permanent (a bad signature, tag, hash, size or content) means the tag is not retried (a signature rejection is, once the pin changes);
+    network or a missing asset retries later. kind (None when not permanent): signature, size, sha, content or arch.
+    Nothing is left half-done: the unpack goes to versions/.<tag>.partial and is renamed last.
+    A bundle.json "schema" 2 bundle is Python-free: see run_update for how it is applied."""
     arch, base = jebhome.host_arch(), release_base()
     vd = jebhome.versions_dir()
     dl, part, final = os.path.join(HOME, "staging", tag + "-dl"), os.path.join(vd, f".{tag}.partial"), os.path.join(vd, tag)
@@ -1845,8 +1929,8 @@ def fetch_bundle(tag, log=say):
         for d in (dl, part):
             shutil.rmtree(d, ignore_errors=True)
         return res
-    def bad(why):
-        return done((None, (why, True)))
+    def bad(why, kind="content"):
+        return done((None, (why, True, kind)))
     shutil.rmtree(dl, ignore_errors=True)
     os.makedirs(dl, mode=0o700)
     paths = [os.path.join(dl, n) for n in (man, man + ".sig", zname)]
@@ -1854,31 +1938,31 @@ def fetch_bundle(tag, log=say):
         for n, x in zip((man, man + ".sig"), paths):
             jebhome.fetch(f"{base}/download/{tag}/{n}", x, limit=MANIFEST_MAX)
     except jebhome.TooBig as e:
-        return bad(str(e))
+        return bad(str(e), "size")
     except jebhome.FetchError as e:
-        return done((None, (f"{tag}: {e}", False)))
-    why = verify_manifest(paths[0], paths[1], tag)
-    if why:
-        return bad(why)
+        return done((None, (f"{tag}: {e}", False, None)))
+    err = verify_manifest(paths[0], paths[1], tag)
+    if err:
+        return bad(*err)
     want = (json.load(open(paths[0])).get("bundles") or {}).get(arch)
     if not isinstance(want, dict) or want.get("name") != zname or not isinstance(want.get("size"), int) or isinstance(want.get("size"), bool):
-        return bad(f"{zname} does not match the signed manifest (hash or size)")
+        return bad(f"{zname} does not match the signed manifest (hash or size)", "sha")
     try:
         jebhome.fetch(f"{base}/download/{tag}/{zname}", paths[2], limit=want["size"])
     except jebhome.TooBig:
-        return bad(f"{zname} is larger than the signed manifest says")
+        return bad(f"{zname} is larger than the signed manifest says", "size")
     except jebhome.FetchError as e:
-        return done((None, (f"{tag}: {e}", False)))
+        return done((None, (f"{tag}: {e}", False, None)))
     h = hashlib.sha256()
     with open(paths[2], "rb") as f:
         for chunk in iter(lambda: f.read(1 << 20), b""):
             h.update(chunk)
     if want.get("sha256") != h.hexdigest() or want["size"] != os.path.getsize(paths[2]):
-        return bad(f"{zname} does not match the signed manifest (hash or size)")
+        return bad(f"{zname} does not match the signed manifest (hash or size)", "sha")
     shutil.rmtree(part, ignore_errors=True)
     os.makedirs(vd, mode=0o755, exist_ok=True)
     if subprocess.run(["ditto", "-x", "-k", paths[2], part], capture_output=True).returncode != 0:
-        return done((None, (f"could not unpack {zname}", False)))
+        return done((None, (f"could not unpack {zname}", False, None)))
     root = os.path.realpath(part)
     for dirpath, dirs, names in os.walk(part):
         for n in dirs + names:
@@ -1888,16 +1972,26 @@ def fetch_bundle(tag, log=say):
     b = jebhome.read_bundle(part)
     if not b or b.get("tag") != tag or b.get("arch") != arch:
         return bad(f"bundle.json does not say {tag} for {arch}")
-    for rel in ("install", "desktop/jebctl", "desktop/updater.py", "mod", "python/bin/python3", "app/JebDesktop"):
+    if b.get("schema", 1) not in (1, 2):
+        return bad(f"the bundle's schema ({b.get('schema')}) is not one this jebctl knows")
+    if b.get("schema", 1) == 2:     # Python-free: the native jebctl applies it (see run_update)
+        need = ("install", "desktop/bin/jebctl", "mod", ".claude-plugin/marketplace.json", "app/JebDesktop", "app/detect", "app/png2raw")
+    else:
+        need = ("install", "desktop/jebctl", "desktop/updater.py", "mod", "python/bin/python3", "app/JebDesktop")
+    for rel in need:
         if not os.path.exists(os.path.join(part, rel)):
             return bad(f"the bundle lacks {rel}")
+    if b.get("schema", 1) == 2:
+        got = jebhome.macho_archs(os.path.join(part, "desktop", "bin", "jebctl"))
+        if arch not in got:
+            return bad(f"desktop/bin/jebctl is not built for {arch} ({' '.join(sorted(got)) or 'not a Mach-O'})", "arch")
     subprocess.run(["xattr", "-dr", "com.apple.quarantine", part], capture_output=True)
     why = check_app(os.path.join(part, "app"))
     if why:
-        return bad(why)
+        return bad(why, "arch" if "is not built for" in why else "content")
     if os.path.lexists(final):
         if os.path.realpath(final) == os.path.realpath(LIVE):
-            return done((None, (f"{tag} is the installed version", False)))
+            return done((None, (f"{tag} is the installed version", False, None)))
         shutil.rmtree(final, ignore_errors=True)
     os.rename(part, final)
     log(f"bundle: {zname} matches the signed manifest; unpacked into {final}")
@@ -1907,6 +2001,8 @@ def fetch_bundle(tag, log=say):
 def run_update(u, ver, flip, extra=()):
     """The updater's gates on the unpacked bundle `ver` (never compiles; always the quick set, because parity and day run at release time) and, unless --gates-only, the swap; flip() runs just before
     the swap. Returns (updater exit code, previous current target or None, whether current was flipped)."""
+    if (jebhome.read_bundle(ver) or {}).get("schema") == 2:
+        return run_apply(ver, extra)
     src = os.path.join(ver, "desktop", "src")
     os.environ["JEB_MOD"], os.environ["JEB_SRC"], os.environ["JEB_BUNDLE_MOD"] = os.path.join(ver, "mod"), src, os.path.join(LIVE, "mod")
     args = ["--force", "--src", src, "--prebuilt", os.path.join(ver, "app", "JebDesktop"), "--no-compile", "--quick"] + (["--no-watch"] if NO_AGENTS else []) + [x for x in extra if x != "--quick"]
@@ -1923,6 +2019,40 @@ def run_update(u, ver, flip, extra=()):
     except Exception as e:
         rlog(f"updater error: {type(e).__name__}: {e}"); rc = 1
     return rc, (prev[0] if prev else None), bool(prev)
+
+
+def run_apply(ver, extra=()):
+    """run_update for a schema 2 (Python-free) bundle: its own native jebctl does the gates and the swap; its updater is never loaded.
+
+    CONTRACT between this Python follow (a release up to v1.5.x) and `desktop/bin/jebctl apply` of a schema 2 bundle:
+      argv    <ver>/desktop/bin/jebctl apply <ver> --not-final --lock-held [--no-watch] [--gates-only] [--quick]
+              <ver> is the unpacked, already verified bundle folder (versions/<tag>). --no-watch: no post-swap watch (sandbox / --no-agents).
+              --gates-only: run the gates and stop before touching `current` or the app. --quick is always implied.
+      env     inherited, plus JEB_HOME (the state folder); HOME, JEB_APP_DIR, JEB_LAUNCHAGENTS, JEB_RELEASE_BASE as set for the parent.
+      lock    the parent holds JEB_HOME/release.lock (--lock-held): apply must not take it, nor wait for it.
+      status  --not-final: apply writes the phase lines of JEB_HOME/update-status.json (source "release") but never the final one
+              (phase "done"); the parent writes it from the exit code. apply logs to JEB_HOME/update.log as the updater does.
+      swap    apply gates the bundle's app (smoke, headless start), points `current` at <ver> just before installing the app, installs it,
+              watches it unless --no-watch. On ANY failure it restores everything itself: `current` back at the previous target, the
+              previous app back; it never leaves `current` at <ver> when it exits non-zero. It does not delete <ver> (the parent does).
+              It never touches release-state.json (the parent owns it) and never reloads LaunchAgents (the parent does).
+      exit    0 installed and healthy; 2 rejected by a gate (never retried); 3 rolled back after the swap (never retried);
+              anything else: error, retried later. Output goes to stdout/stderr, which the parent passes through.
+    The parent returns (exit code, None, False): there is nothing for it to undo. As a safety net, when the child exits non-zero
+    with `current` still at <ver>, the parent points it back at where it was."""
+    before = os.path.realpath(LIVE) if os.path.lexists(LIVE) else None
+    cmd = [os.path.join(ver, "desktop", "bin", "jebctl"), "apply", ver, "--not-final", "--lock-held"] + (["--no-watch"] if NO_AGENTS else []) + [x for x in extra if x in ("--gates-only", "--quick")]
+    try:
+        rc = subprocess.run(cmd, env=dict(os.environ, JEB_HOME=HOME)).returncode
+    except OSError as e:
+        rlog(f"apply error: {e}"); rc = 1
+    if rc != 0 and before and os.path.lexists(LIVE) and os.path.realpath(LIVE) == os.path.realpath(ver) != before:
+        rlog(f"apply left {LIVE} at {os.path.basename(ver)} (exit {rc}); putting it back")
+        try:
+            flip_current(before)
+        except OSError as e:
+            rlog(f"COULD NOT point {LIVE} back at {before}: {e}")
+    return rc, None, False
 
 
 def undo_flip(prev, new):
@@ -1989,9 +2119,22 @@ def follow_bundle(gates_only, u, S, quick=False):
     cur, rs = installed_tag(), load_rstate()
     if not cur or not tag_key(cur):
         rlog("follow: cannot tell which release is installed; skipping"); stop("cannot tell the installed release"); return 0
+    if not rs.get("bridge_reset"):
+        # v1.4.0 marked a newer tag failed for good when it only passed through (it could not read the new signers); a tag with no
+        # recorded reason that is newer than the installed one gets another look, once
+        lost = [t for t in rs.get("failed", []) if t not in (rs.get("failed_why") or {}) and tag_key(t) and tag_key(t) > tag_key(cur)]
+        for t in lost:
+            rs["failed"].remove(t)
+        if lost:
+            rlog(f"follow: giving {', '.join(lost)} another look (rejected without a recorded reason)")
+        rs["bridge_reset"] = 1
+        save_rstate(rs)
+    if adopt_signers(rs, cur, os.path.join(LIVE, "desktop", "release-signers")):
+        save_rstate(rs)
+    heal_plists()
     S("checking GitHub")
     try:
-        new = new_tags(cur, rs.get("failed", []))
+        new = new_tags(cur, failed_skip(rs))
     except jebhome.FetchError as e:
         rlog(f"follow: {e}; will try again later"); stop("could not reach GitHub; will retry"); return 0
     rs["checked"] = int(time.time())
@@ -2008,12 +2151,12 @@ def follow_bundle(gates_only, u, S, quick=False):
         if not err:
             tag, ver = t, path
             break
-        why, permanent = err
+        why, permanent, kind = err
         if not permanent:
             rlog(f"follow: could not get {t}: {why}; will try again later")
             stop("app download failed; will retry"); return 0
-        rlog(f"follow: {t} rejected: {why}; it will not be retried")
-        rs.setdefault("failed", []).append(t)
+        rlog(f"follow: {t} rejected ({kind}): {why}; " + ("it is retried when the pinned signers change" if kind == "signature" else "it will not be retried"))
+        mark_failed(rs, t, kind)
         save_rstate(rs)
     if not tag:
         rlog(f"follow: no verified release newer than {cur}"); stop(f"no verified release newer than {cur}", "up-to-date"); return 0
@@ -2026,12 +2169,14 @@ def follow_bundle(gates_only, u, S, quick=False):
     if gates_only:
         result = "gates-" + result
     elif rc in (2, 3):
-        rs.setdefault("failed", []).append(tag)
+        mark_failed(rs, tag, "gates" if rc == 2 else "rolled-back")
         rlog(f"follow: {tag} {result}; it will not be retried")
     elif rc == 0:
         rlog(f"follow: now on {tag}")
+        clear_failed(rs, tag)
         record_installed(rs, tag, u)
         rs["layout"] = "bundle"
+        adopt_signers(rs, tag, os.path.join(ver, "desktop", "release-signers"))      # verified against the old pin and installed: its signers take over
         ensure_plugin()
     else:
         rlog(f"follow: {tag} not installed (updater exit {rc}); will try again later")
@@ -2052,15 +2197,38 @@ def follow_bundle(gates_only, u, S, quick=False):
     return 0 if rc in (0, 2, 3) else 1
 
 
+def heal_plists():
+    """Bundle release mode: LaunchAgent plists that differ from plists() (a v1.4.0 install names the bundle's Python) are rewritten
+    in place and the agents reloaded once this run has exited. Needs the native launcher in place; skipped in dry runs and under --no-agents."""
+    if not BUNDLE or DRY or NO_AGENTS or mode() != "release":
+        return
+    native = os.path.join(LIVE, "desktop", "bin", "jebctl")
+    if not jebhome.macho_archs(native):
+        return
+    stale = []
+    for label, want in plists("release").items():
+        p = os.path.join(AGENTS, label + ".plist")
+        try:
+            have = plistlib.load(open(p, "rb"))
+        except (OSError, ValueError, plistlib.InvalidFileException):
+            continue        # not installed (or unreadable): not for this to create
+        if have != want:
+            stale.append(label)
+    if not stale:
+        return
+    rlog(f"agents: {', '.join(stale)} name an older command; rewriting them to use {native}")
+    write_plists(AGENTS, "release")
+    spawn_reload()
+
+
 def spawn_reload():
     """Reload the release-mode agents once this process has exited (a detached jebctl in a new session, so launchd does not take it
     down with follow). Under --no-agents or JEB_NO_LAUNCHCTL it only logs."""
     if NO_AGENTS or NO_LAUNCHCTL:
         rlog("convert: would reload the LaunchAgents once this run has exited (sandbox: skipped)")
         return
-    py = os.path.join(LIVE, "python", "bin", "python3")
     err = open(os.path.join(HOME, "release.err"), "ab")
-    subprocess.Popen([py, "-I", os.path.join(LIVE, "desktop", "jebctl"), "reload-agents", "--wait-pid", str(os.getpid())], env=scrubbed_env(), stdin=subprocess.DEVNULL, stdout=err, stderr=err, start_new_session=True)
+    subprocess.Popen([os.path.join(LIVE, "desktop", "bin", "jebctl"), "reload-agents", "--wait-pid", str(os.getpid())], env=scrubbed_env(), stdin=subprocess.DEVNULL, stdout=err, stderr=err, start_new_session=True)
 
 
 def wait_pid(args):
@@ -2125,6 +2293,7 @@ def convert_clone(u, S, quick=False):
             rs.setdefault("bundle_failed", []).append(tag)
             save_rstate(rs)
         return no(f"{tag} did not pass the gates (updater exit {rc})")
+    adopt_signers(rs, tag, os.path.join(ver, "desktop", "release-signers"))
     py = os.path.join(LIVE, "python", "bin", "python3")
     live_ctl = os.path.join(LIVE, "desktop", "jebctl")
     subprocess.run([py, "-I", live_ctl, "plists"], env=scrubbed_env(), capture_output=True)       # the bundle's plists, written by the bundle's own code
@@ -2150,6 +2319,9 @@ def convert_clone(u, S, quick=False):
     return True
 
 
+ROLLBACK_FLOOR = (1, 5, 0)
+
+
 def rollback_bundle():
     """Put the previous good release back: it is downloaded again (only one version is kept on disk), gated, and flipped to; the bad
     one is deleted. When the download fails nothing changes."""
@@ -2157,6 +2329,8 @@ def rollback_bundle():
     prev = next((e["tag"] for e in reversed(rs.get("installed", [])) if e.get("tag") != cur and e.get("tag") not in rs.get("failed", [])), None)
     if not prev:
         raise SystemExit("no earlier release is recorded to roll back to")
+    if tag_key(prev) < ROLLBACK_FLOOR:
+        raise SystemExit(f"{prev} is older than v{'.'.join(map(str, ROLLBACK_FLOOR))}, the oldest release this one can roll back to (older ones predate the key rotation and the Python-free update path); {cur} stays installed.")
     lock = open(os.path.join(HOME, "release.lock"), "w")
     try:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -2175,7 +2349,7 @@ def rollback_bundle():
         undo_flip(back if flipped else None, ver)
         raise SystemExit(f"{prev} failed (updater exit {rc}); {cur} is still installed. See {u.LOG}")
     if cur:
-        rs.setdefault("failed", []).append(cur)
+        mark_failed(rs, cur, "rolled-back")
     record_installed(rs, prev, u)
     rs["last"] = {"at": int(time.time()), "tag": prev, "result": "rolled-back-manually", "app": "prebuilt"}
     save_rstate(rs)
@@ -2227,13 +2401,27 @@ def cmd_release(args):
 
 
 def check_signer_const():
-    """The signer the native jebctl pins (desktop/cli/main.swift) must be the jeb-release signer in desktop/release-signers."""
-    m = re.search(r'^let signerLine = "((?:[^"\\]|\\.)*)"$', open(os.path.join(CODE, "cli", "main.swift")).read(), re.M)
-    const = m.group(1).replace('\\"', '"').split() if m else []
-    ok = len(const) == 4 and const[1] == 'namespaces="jeb-release"'
-    lines = [l.split() for l in open(os.path.join(CODE, "release-signers")).read().splitlines() if l.strip() and not l.startswith("#")]
-    if not (ok and any(len(l) == 4 and "jeb-release" in l[1] and l[0] == const[0] and l[2:] == const[2:] for l in lines)):
-        raise SystemExit("the signer in desktop/cli/main.swift (signerLine) is not the jeb-release signer in desktop/release-signers; fix one of them, no tag")
+    """The signers the native jebctl pins (signerLines in desktop/cli/main.swift) must be exactly the (principal, key type, key) of the
+    desktop/release-signers lines that cover jeb-release, and each must carry namespaces="jeb-release" and nothing else."""
+    bad = SystemExit("the signers in desktop/cli/main.swift (signerLines) are not the jeb-release lines of desktop/release-signers; fix one of them, no tag")
+    m = re.search(r"^let signerLines = \[\n(.*?)^\]", open(os.path.join(CODE, "cli", "main.swift")).read(), re.M | re.S)
+    const = set()
+    for l in (m.group(1).splitlines() if m else []):
+        if not l.strip() or l.strip().startswith("//"):
+            continue
+        q = re.fullmatch(r'\s*"((?:[^"\\]|\\.)*)",?\s*', l)
+        t = re.sub(r"\\(.)", r"\1", q.group(1)).split() if q else []
+        if len(t) != 4 or t[1] != 'namespaces="jeb-release"':
+            raise bad
+        const.add((t[0], t[2], t[3]))
+    want = set()
+    for l in open(os.path.join(CODE, "release-signers")).read().splitlines():
+        k, t = key_line(l), l.split()
+        if k and k[1] and "jeb-release" in k[1][1]:
+            i = next(n for n, x in enumerate(t) if n and x.startswith(("ssh-", "ecdsa-", "sk-")))
+            want.add((t[0], t[i], t[i + 1]))
+    if not const or const != want:
+        raise bad
 
 
 def release_steps(args, done):
@@ -2478,6 +2666,8 @@ def main(argv):
     elif cmd == "follow": return cmd_follow(args[1:])
     elif cmd == "reload-agents": return cmd_reload_agents(args[1:])
     elif cmd == "prune-versions": cmd_prune_versions(args[1:])
+    elif cmd == "watchdog":     # what the watchdog agent runs through the native launcher; becomes the bundle's Python on watchdog.py
+        os.execv(RUN[0], RUN + [os.path.join(CODE, "watchdog.py")] + args[1:])
     elif cmd == "release": cmd_release(args[1:])
     elif cmd == "uninstall" and any(a in args for a in ("--remove-files", "--remove-clone", "--purge-farm")):
         return subprocess.run(RUN + [os.path.join(CLONE, "uninstall")] + argv[1:]).returncode      # the script does the whole removal
@@ -2496,7 +2686,7 @@ def main(argv):
     elif cmd == "retry-update" and BUNDLE:
         rs = load_rstate()
         if rs.get("failed"):
-            rs["failed"].remove(max(rs["failed"], key=lambda t: tag_key(t) or (0, 0, 0)))
+            clear_failed(rs, max(rs["failed"], key=lambda t: tag_key(t) or (0, 0, 0)))
             save_rstate(rs)
         sys.exit(subprocess.run(["launchctl", "kickstart", "-k", f"gui/{UID}/com.jeb.desktop.release"]).returncode)
     elif cmd == "retry-update":

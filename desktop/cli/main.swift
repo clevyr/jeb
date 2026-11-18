@@ -6,9 +6,13 @@ import Foundation
 import CryptoKit
 
 let repo = "clevyr/jeb"
-// Must equal the jeb-release line in desktop/release-signers (./release checks it) and the one in the jeb-install skill.
-let signerLine = "anthony@clevyr.com namespaces=\"jeb-release\" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGrfSJyAm3dy3vkC1jKbk2YIxJk9BvoThi605ul1gMZC"
-let signerWho = "anthony@clevyr.com"
+// Must equal the jeb-release lines in desktop/release-signers (./release checks it).
+// One line per key: a signature verifies when any of them (by principal) accepts it.
+let signerLines = [
+    "anthony@clevyr.com namespaces=\"jeb-release\" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGrfSJyAm3dy3vkC1jKbk2YIxJk9BvoThi605ul1gMZC",
+    "jeb-release namespaces=\"jeb-release\" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAZiJAyq6wAxoupWQTH3aPh366GNiH6jVR5SCWM4dLWt",
+    "jeb-release-backup namespaces=\"jeb-release\" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPRwzakT+4f3XdKWVkZZOQT9E2DVcdOvH4MbeIeiewY7",
+]
 
 let fm = FileManager.default
 let env = ProcessInfo.processInfo.environment
@@ -191,9 +195,13 @@ func latestTag() -> (String?, String?) {
 func verifyManifest(_ dir: String, tag: String, arch: String) -> (sha: String, size: Int) {
     let man = "\(dir)/Jeb-\(tag)-manifest.json", sig = man + ".sig"
     let signers = dir + "/signers"
-    try? (signerLine + "\n").write(toFile: signers, atomically: true, encoding: .utf8)
-    let v = run("/usr/bin/ssh-keygen", ["-Y", "verify", "-f", signers, "-I", signerWho, "-n", "jeb-release", "-s", sig], stdin: man)
-    guard v.status == 0, v.out.contains("Good") else { die("jebctl: the release's signature does not verify against the pinned signer; refusing it.") }
+    try? (signerLines.joined(separator: "\n") + "\n").write(toFile: signers, atomically: true, encoding: .utf8)
+    let principals = signerLines.compactMap { $0.split(separator: " ").first.map(String.init) }
+    let good = principals.contains { who in
+        let v = run("/usr/bin/ssh-keygen", ["-Y", "verify", "-f", signers, "-I", who, "-n", "jeb-release", "-s", sig], stdin: man)
+        return v.status == 0 && v.out.contains("Good")
+    }
+    guard good else { die("jebctl: the release's signature does not verify against the pinned signers; refusing it.") }
     step("signature: Good (pinned signer)")
     guard let data = fm.contents(atPath: man),
           let doc = try? JSONSerialization.jsonObject(with: data) as? [String: Any],

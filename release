@@ -5,11 +5,12 @@
                           ~/.ssh/jeb_signing (ed25519; ssh-keygen asks for a passphrase) unless it exists and
                           points this clone's git at it (gpg.format ssh, user.signingkey = the private key; a
                           release asks for its passphrase once, first, and holds it in a private ssh-agent
-                          that ends with the run). Then creates
-                          desktop/release-signers (ssh allowed_signers format) from git's user.email and that
-                          public key when it does not exist; else shows its fingerprints and whether the
-                          configured key is in it. Commit and push the file before the first release: installs
-                          pin it on first install.
+                          that ends with the run). Keys carry no email; the principal is `jeb-release`. Then
+                          creates desktop/release-signers (ssh allowed_signers format) from that public key
+                          when it does not exist; when it exists it is never overwritten: setup shows its
+                          fingerprints, whether the configured key is in it, and the line to add when not.
+                          Commit and push the file before the first release: installs pin it on first install
+                          and adopt it from newer signed releases.
   ./release               the usual way. Picks the bump from the Conventional Commits since the last tag, as
                           release-please does (`!` or a BREAKING CHANGE footer: major, feat: minor, fix/perf/revert:
                           patch; nothing releasable: refuses), writes release notes from them, then runs
@@ -74,13 +75,12 @@ def cfg(key):
 
 
 def public_key():
-    """(email, 'ssh-... base64') from git config; exits with the config commands to run when something is missing."""
-    email, key, fmt = cfg("user.email"), cfg("user.signingkey"), cfg("gpg.format")
-    if fmt != "ssh" or not key or not email:
-        fail("signing is not set up for SSH. Run (with your own key and email):\n"
+    """'ssh-... base64' from git config; exits with the config commands to run when something is missing."""
+    key, fmt = cfg("user.signingkey"), cfg("gpg.format")
+    if fmt != "ssh" or not key:
+        fail("signing is not set up for SSH. Run (with your own key):\n"
              "  git config gpg.format ssh\n"
-             "  git config user.signingkey ~/.ssh/id_ed25519.pub\n"
-             "  git config user.email you@example.com")
+             "  git config user.signingkey ~/.ssh/jeb_signing.pub")
     if key.startswith("key::"):
         text = key[5:]
     else:
@@ -94,7 +94,7 @@ def public_key():
     f = text.split()
     if len(f) < 2 or not f[0].startswith(("ssh-", "ecdsa-", "sk-")):
         fail("user.signingkey is not an SSH public key (a .pub file, a private key with a .pub beside it, or key::ssh-...)")
-    return email, f[0] + " " + f[1]
+    return f[0] + " " + f[1]
 
 
 def fingerprint(line):
@@ -109,13 +109,11 @@ def configure(dry):
     """Make ~/.ssh/jeb_signing when missing and point this clone's git at it, unless signing is already set up."""
     if cfg("gpg.format") == "ssh" and cfg("user.signingkey"):
         return
-    if not cfg("user.email"):
-        fail("git has no user.email; run: git config --global user.email you@example.com")
     if not os.path.exists(KEY):
         say(f"{'would create' if dry else 'creating'} the signing key {KEY} (pick a passphrase and keep it, and back the key up)")
         if not dry:
             os.makedirs(os.path.dirname(KEY), mode=0o700, exist_ok=True)
-            if subprocess.run(["ssh-keygen", "-t", "ed25519", "-C", cfg("user.email"), "-f", KEY]).returncode != 0:
+            if subprocess.run(["ssh-keygen", "-t", "ed25519", "-C", "jeb-release", "-f", KEY]).returncode != 0:
                 fail("ssh-keygen failed; nothing configured")
     for key, value in (("gpg.format", "ssh"), ("user.signingkey", KEY)):
         say(f"$ git config {key} {value}")
@@ -128,22 +126,26 @@ def setup(dry):
     if dry and not (cfg("gpg.format") == "ssh" and cfg("user.signingkey")):
         say("would then write desktop/release-signers from that key")
         return 0
-    email, key = public_key()
+    key = public_key()
     if os.path.exists(SIGNERS):
         lines = [l for l in open(SIGNERS).read().splitlines() if l.strip() and not l.startswith("#")]
         say(f"{SIGNERS} exists:")
         for l in lines:
             say("  " + fingerprint(" ".join(l.split()[-2:])))
-        say("configured key is " + ("in it" if any(key in l for l in lines) else "NOT in it (a release signed with it will not verify; see `jebctl install --repin`)"))
+        line = f'jeb-release namespaces="git,jeb-release" {key}'
+        if any(key in l for l in lines):
+            say("configured key is in it")
+        else:
+            say("configured key is NOT in it (a release signed with it will not verify). Add this line, keeping the others:\n  " + line)
         return 0
-    line = f'{email} namespaces="git,jeb-release" {key}'
+    line = f'jeb-release namespaces="git,jeb-release" {key}'
     say(f"{'would write' if dry else 'writing'} {SIGNERS}:\n  {line}\n  {fingerprint(key)}")
     if not dry:
         fd = os.open(SIGNERS, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
         with os.fdopen(fd, "w") as f:
             f.write(line + "\n")
         os.chmod(SIGNERS, 0o644)
-    say("Commit and push desktop/release-signers before the first release; installs pin it on first install.")
+    say("Commit and push desktop/release-signers before the first release; installs pin it on first install and adopt it from newer signed releases.")
     return 0
 
 
