@@ -1,6 +1,6 @@
 {
   "name": "jeb",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Jeb's link to the Jeb desktop app: watches your sessions without changing anything and keeps the farm and the anonymous live records the desktop shows",
   "types": "./types/index.d.ts",
   "userConfig": {
