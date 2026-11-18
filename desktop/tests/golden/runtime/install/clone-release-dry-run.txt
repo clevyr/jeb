@@ -1,0 +1,23 @@
+## rc
+0
+
+## stdout
+Installing Jeb (release mode, dry run)
+  checks ... ok
+  app ... skipped (dry run)
+  LaunchAgents ... skipped (dry run)
+  desktop ... skipped (dry run)
+  jebctl command ... would link
+Run Jeb's tool as ~/.local/bin/jebctl
+  Claude Code plugin ... ok
+Dry run only; nothing was changed.
+
+## stderr
+(empty)
+
+## fake.log (claude, gh, launchctl calls)
+$SB/home/.local/bin/claude plugin list --json
+$SB/home/.local/bin/claude plugin marketplace list --json
+$SB/home/.local/bin/claude plugin list --json
+$SB/home/.local/bin/claude plugin marketplace list --json
+

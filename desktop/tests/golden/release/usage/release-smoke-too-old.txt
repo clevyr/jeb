@@ -1,0 +1,9 @@
+## rc
+1
+
+## stdout
+(empty)
+
+## stderr
+release: v1.4.0 is older than v1.5.0: their jebctl-macos installs with gh
+

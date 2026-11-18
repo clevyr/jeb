@@ -1,0 +1,28 @@
+## rc
+1
+
+## stdout
+updates are paused; run: jebctl resume-updates
+
+## stderr
+(empty)
+
+## release-state.json
+{
+ "bridge_reset": 1,
+ "checked": null,
+ "failed": [],
+ "installed": [
+  {
+   "at": 1,
+   "stamp": null,
+   "tag": "v1.4.0"
+  }
+ ],
+ "last": null,
+ "layout": "bundle"
+}
+
+## ~/.jeb/current
+versions/v1.4.0
+

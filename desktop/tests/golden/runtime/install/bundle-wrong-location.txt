@@ -1,0 +1,10 @@
+## rc
+1
+
+## stdout
+Jeb install (release mode, dry run) from $SB/Downloads/v1.4.0
+$ $PYTHON3 -I $SB/Downloads/v1.4.0/desktop/jebctl install --mode release --dry-run --verbose
+
+## stderr
+run install from the unpacked bundle in $SB/home/.jeb/versions/<tag>, as the README says
+

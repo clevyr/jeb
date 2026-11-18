@@ -1,0 +1,54 @@
+## rc
+0
+
+## stdout
+{
+ "phase1": {
+  "phase": "checking GitHub",
+  "detail": "",
+  "step": null,
+  "steps": null,
+  "started": 1780000000,
+  "at": 1780000000,
+  "result": null,
+  "source": "release",
+  "pid": 4242,
+  "clicked": false
+ },
+ "phase2": {
+  "phase": "downloading v1.5.0",
+  "detail": "step 2",
+  "step": 2,
+  "steps": 5,
+  "started": 1780000000,
+  "at": 1780000000,
+  "result": null,
+  "source": "release",
+  "pid": 4242,
+  "clicked": false
+ },
+ "final": {
+  "phase": "done",
+  "detail": "updated to v1.5.0",
+  "step": null,
+  "steps": null,
+  "started": 1780000000,
+  "at": 1780000000,
+  "result": "updated",
+  "source": "release",
+  "pid": 4242,
+  "clicked": false
+ },
+ "mode": "0o600",
+ "load_state_empty": {
+  "built": null,
+  "stamp": null,
+  "rejected": [],
+  "last": null
+ },
+ "bundle_stamp_missing": null
+}
+
+## stderr
+(empty)
+

@@ -1,0 +1,39 @@
+## rc
+0
+
+## stdout
+(empty)
+
+## stderr
+(empty)
+
+## release-state.json
+{
+ "bridge_reset": 1,
+ "checked": null,
+ "failed": [
+  "v1.5.0"
+ ],
+ "failed_why": {
+  "v1.5.0": {
+   "pin": "x",
+   "why": "gates"
+  }
+ },
+ "installed": [
+  {
+   "at": 1,
+   "stamp": null,
+   "tag": "v1.4.0"
+  }
+ ],
+ "last": null,
+ "layout": "bundle"
+}
+
+## fake.log (claude, gh, launchctl calls)
+$T/bin/launchctl kickstart -k gui/$UID/com.jeb.desktop.release
+
+## ~/.jeb/current
+versions/v1.4.0
+

@@ -1,0 +1,31 @@
+## rc
+0
+
+## stdout
+usage: updater.py [-h] [--src SRC] [--app-dir APP_DIR]
+                  [--versions-dir VERSIONS_DIR] [--force] [--now] [--no-watch]
+                  [--watch-secs WATCH_SECS] [--gates-only] [--quick]
+                  [--prebuilt PREBUILT] [--no-compile]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --src SRC
+  --app-dir APP_DIR
+  --versions-dir VERSIONS_DIR
+  --force               skip the debounce, the pause marker and the seen-hash
+                        checks
+  --now                 skip the debounce and the pause marker (the seen-hash
+                        checks stay)
+  --no-watch            do not watch the new build after the swap (install)
+  --watch-secs WATCH_SECS
+  --gates-only          stop after the gates; nothing is bundled or swapped
+  --quick               first install: compile, smoke and start gates only
+                        (parity and day skipped)
+  --prebuilt PREBUILT   use this binary instead of compiling the snapshot (a
+                        verified release asset)
+  --no-compile          release mode: never compile; reject when the prebuilt
+                        app or its helpers are missing
+
+## stderr
+(empty)
+

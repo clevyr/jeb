@@ -1,0 +1,49 @@
+## rc
+0
+
+## stdout
+{
+ "no-failed": [],
+ "plain-list": [
+  "v1.5.0",
+  "v1.6.0"
+ ],
+ "gates-same-pin": [
+  "v1.5.0"
+ ],
+ "signature-same-pin": [
+  "v1.5.0"
+ ],
+ "signature-other-pin": [],
+ "mixed": [
+  "v1.6.0",
+  "v1.7.0"
+ ],
+ "mark_failed": {
+  "failed": [
+   "v1.6.0"
+  ],
+  "failed_why": {
+   "v1.6.0": {
+    "why": "signature",
+    "pin": "$SHA256"
+   }
+  }
+ },
+ "after_clear": {
+  "failed": [
+   "v1.6.0"
+  ],
+  "failed_why": {
+   "v1.6.0": {
+    "why": "signature",
+    "pin": "$SHA256"
+   }
+  }
+ },
+ "pin_hash_is_sha256_of_pin_text": true
+}
+
+## stderr
+(empty)
+

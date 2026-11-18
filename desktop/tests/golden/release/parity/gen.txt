@@ -1,0 +1,112 @@
+## invocation
+JEB_MOD=$REPO/mod TZ=America/New_York /usr/bin/python3 -I <copy of desktop/src/tools/parity.py at <scratch>/src/tools/parity.py> gen
+(writes <scratch>/src/fixtures/<name>.store.json; no modcopy, so no band test)
+
+## rc
+0
+
+## stdout
+97 fixtures; stores written, no $T/ptools/src/modcopy/tests (make a modcopy to write the band's test)
+
+## stderr
+(empty)
+
+## stores written (every one must equal the tracked fixture byte for byte)
+area-bad.store.json  sha256 baabe9208b6d9a050b650ceddf48b9b852d70016d60267014b35ee1787961d8f  5414 bytes  tracked desktop/src/fixtures/area-bad.store.json: same bytes
+area-camp.store.json  sha256 37dcb21ea2cb38254ceac3e8eafc38e39faecbd2e03f02d6d446572cd54e42f7  1879 bytes  tracked desktop/src/fixtures/area-camp.store.json: same bytes
+area-trip.store.json  sha256 4af43e42c66114789c8617d971be0f56a91bc8a986745b4dabe7532a895a55d5  1933 bytes  tracked desktop/src/fixtures/area-trip.store.json: same bytes
+blue-chase.store.json  sha256 fc53761ae7d427e05bfcb2f15953b439aa224f74dd24b76f22bc6e5c259d72bc  1376 bytes  tracked desktop/src/fixtures/blue-chase.store.json: same bytes
+blue-errand.store.json  sha256 30534b05e3a3aac7f7b3d5f93d027f39d8d2a7b6c2899429874812c2b186b404  1369 bytes  tracked desktop/src/fixtures/blue-errand.store.json: same bytes
+bubble-dim.store.json  sha256 431147a089c87428d7966ff4dd76df4a227d6cff91adfc92c56f121e7abdf450  1428 bytes  tracked desktop/src/fixtures/bubble-dim.store.json: same bytes
+bubble.store.json  sha256 5cec2ee27937786f82048c28e2d3d33de75324134e3de7ba61756091cc9e6472  1461 bytes  tracked desktop/src/fixtures/bubble.store.json: same bytes
+call-event.store.json  sha256 fb7b3c5b2ffececfd8b8137ff0f26b5a865902ccb565461343b66d3a5812d502  1409 bytes  tracked desktop/src/fixtures/call-event.store.json: same bytes
+call-spell-go.store.json  sha256 cdf9f5c0b3b7ae4db1a87f1763b5c701baf01fb518d2d38a2f79befc38992471  1398 bytes  tracked desktop/src/fixtures/call-spell-go.store.json: same bytes
+call-spell.store.json  sha256 cdf9f5c0b3b7ae4db1a87f1763b5c701baf01fb518d2d38a2f79befc38992471  1398 bytes  tracked desktop/src/fixtures/call-spell.store.json: same bytes
+christmas.store.json  sha256 7115872efa32982d99e17d660408e0cdece15c0427454ca7d6f1f20de292903d  1355 bytes  tracked desktop/src/fixtures/christmas.store.json: same bytes
+cows.store.json  sha256 c65f9f7cd01cc5524779d03998e13529a7c59f6d5d56e0ea7b585752d68b2832  1387 bytes  tracked desktop/src/fixtures/cows.store.json: same bytes
+drops.store.json  sha256 5adb7300464dbd69b7b6494c83b7448331a96a8f6affc62ce27c01081a3dd989  1997 bytes  tracked desktop/src/fixtures/drops.store.json: same bytes
+dry.store.json  sha256 2805a108250229ea913ad5db9a574d81797486d2040c6f068753299ae901cdb9  1402 bytes  tracked desktop/src/fixtures/dry.store.json: same bytes
+ev-applebutter.store.json  sha256 ddc4670de4fe4b82a88587f0b9d8e591a17fbef5b6e88894790faf90c4e3eb97  1415 bytes  tracked desktop/src/fixtures/ev-applebutter.store.json: same bytes
+ev-bear.store.json  sha256 4a3286d60719f17bba88016cce94927d49ec78e821f3177cf22e75402e15102a  1408 bytes  tracked desktop/src/fixtures/ev-bear.store.json: same bytes
+ev-bells.store.json  sha256 222347965f5c5001f657272c75126df996c96d1c186acf5ef6502e8310d20780  1409 bytes  tracked desktop/src/fixtures/ev-bells.store.json: same bytes
+ev-bugs.store.json  sha256 0e6c051ae91f57e1c80c2114d0be64f6b7d704bbbc8b51afc0f54b11944533ca  1408 bytes  tracked desktop/src/fixtures/ev-bugs.store.json: same bytes
+ev-hornworm.store.json  sha256 6ea8981baab11456fb5a647ccded6a00731f02249f2d736d9a078982c2b6dd80  1412 bytes  tracked desktop/src/fixtures/ev-hornworm.store.json: same bytes
+ev-mothman.store.json  sha256 48111d88d8fbb7e5d8bfdb6a8c12cab843792710f03a71183eac3b160099e109  1430 bytes  tracked desktop/src/fixtures/ev-mothman.store.json: same bytes
+ev-neighbor-walk.store.json  sha256 4107134196971fe176f4b4aae0e1b3ecf0e349e64ada164ac742127be52dddf8  1412 bytes  tracked desktop/src/fixtures/ev-neighbor-walk.store.json: same bytes
+ev-neighbor.store.json  sha256 e43e29e6cea2a1806cac637e5fd7f25e69f80b06d7e20868b2409e58f0d81a47  1412 bytes  tracked desktop/src/fixtures/ev-neighbor.store.json: same bytes
+ev-parachute.store.json  sha256 c8d87a9344f2248ebeae76af4df788053e63235bde628dddaa12cf3d1fc09058  1414 bytes  tracked desktop/src/fixtures/ev-parachute.store.json: same bytes
+ev-revenuer.store.json  sha256 1a43bc8bb42d66c7227c5ca40d93fe0210f84e67035c97a0687e2c07f39360a2  1431 bytes  tracked desktop/src/fixtures/ev-revenuer.store.json: same bytes
+ev-storm.store.json  sha256 78577bf577d7df8d4215210e220af3937ce593efb9695b89066d01f0dc4e4ec2  1409 bytes  tracked desktop/src/fixtures/ev-storm.store.json: same bytes
+ev-track.store.json  sha256 fcc96f281aef307e974886cad14c0c00e09e9c5ed7272023ce26c57d86861042  1409 bytes  tracked desktop/src/fixtures/ev-track.store.json: same bytes
+ev-turkeys.store.json  sha256 c00cbfc275b975de5095fbb9fbf88a1e4cb8004494736243750ac4a44309a62c  1411 bytes  tracked desktop/src/fixtures/ev-turkeys.store.json: same bytes
+ev-whistlepig.store.json  sha256 371f3aacf47ec632f9ee8dd8d039ada024d737511654d9dc5bc24e541f3012c6  1414 bytes  tracked desktop/src/fixtures/ev-whistlepig.store.json: same bytes
+farm-built.store.json  sha256 e637eeef682d9549e978aed171c6284e2b25b0600735a3617f0f4f248b49886d  1473 bytes  tracked desktop/src/fixtures/farm-built.store.json: same bytes
+farm-day.store.json  sha256 a0772d5cfbdae2c3fc6ca9ef19f02c77c844df584d1c6cbb16dde544da41d3c1  1355 bytes  tracked desktop/src/fixtures/farm-day.store.json: same bytes
+farm-night.store.json  sha256 12650e65a9c034bf01113f5a05ea47ced33b946b5643a7ad2753da7ae7ca1e89  1375 bytes  tracked desktop/src/fixtures/farm-night.store.json: same bytes
+festival.store.json  sha256 28b989db6f393db99fd54d6209d15715896cf37e8119ee6e19d0c73de6b940dc  1369 bytes  tracked desktop/src/fixtures/festival.store.json: same bytes
+fog.store.json  sha256 e9d996c620927eaf795e0d510f9adf9f729c31da53adf4bafa95c7afc97e591f  1407 bytes  tracked desktop/src/fixtures/fog.store.json: same bytes
+goodbye.store.json  sha256 2271bdd622c95bb55bdcea7f15cce3875760bca46d431dc54a41c70e92f96965  1355 bytes  tracked desktop/src/fixtures/goodbye.store.json: same bytes
+groundhog.store.json  sha256 cf17450db38bcd08c5fc55914f3edefd9d6a261ac4334531c335b3bad4dd3561  1355 bytes  tracked desktop/src/fixtures/groundhog.store.json: same bytes
+hands.store.json  sha256 0343d9bb984353034a8420745c9857da9476ce76bb9822cb19632df23fca68e4  1448 bytes  tracked desktop/src/fixtures/hands.store.json: same bytes
+home-default.store.json  sha256 cd578247d4896231c203e328eea3170f277dd8acd4d8edf3670ca89f58af21d8  1565 bytes  tracked desktop/src/fixtures/home-default.store.json: same bytes
+home-quiet.store.json  sha256 ead24c75362fe36d1ad533ef743e6a866ff841daf8e125bab80597da16dca3ac  1369 bytes  tracked desktop/src/fixtures/home-quiet.store.json: same bytes
+jeb-away.store.json  sha256 9d5acbd682edfe0dd09ea8c118627c94bda04887b646a987a54f15777db10033  1425 bytes  tracked desktop/src/fixtures/jeb-away.store.json: same bytes
+jeb-banjo.store.json  sha256 fba57a977fc93e3ffde7d6d79e93124b0df8fa9db81cbeaea62efb78d9700cb9  1371 bytes  tracked desktop/src/fixtures/jeb-banjo.store.json: same bytes
+jeb-gate.store.json  sha256 bbb9bacae13f7a86cd11bfb92d46726aff6b6222080e323750a4e90179cbeb93  1401 bytes  tracked desktop/src/fixtures/jeb-gate.store.json: same bytes
+jeb-hoe.store.json  sha256 bbeafdad399c8cb5a7bd8ba08d51c6be0ef37072fd680753049ade621f551cf3  1370 bytes  tracked desktop/src/fixtures/jeb-hoe.store.json: same bytes
+jeb-nap.store.json  sha256 22e6ca5ae68a3e3a6e71b5e65abe73aa02e6b980775bd001d806a5df904e9da6  1369 bytes  tracked desktop/src/fixtures/jeb-nap.store.json: same bytes
+jeb-pleased.store.json  sha256 4744cdfb40f81e9bd41d66e36a5f40ef0ab6ae8c9f06b20b8d25e054297c77f1  1390 bytes  tracked desktop/src/fixtures/jeb-pleased.store.json: same bytes
+jeb-pose-read.store.json  sha256 a5d4b5a4129044d1298f38f0d216549aaf47533d91a72ed4cf797826eebc77bd  1390 bytes  tracked desktop/src/fixtures/jeb-pose-read.store.json: same bytes
+jeb-pose-still.store.json  sha256 0b363e2dc1f26c086ff8e15bd98dfe30441248ae87f2837ba29693eea555809e  1405 bytes  tracked desktop/src/fixtures/jeb-pose-still.store.json: same bytes
+jeb-sip.store.json  sha256 f4d2b1e88670279eae4e7e7979e926f989636c71c1601e066bbda2c9f3b12a5f  1393 bytes  tracked desktop/src/fixtures/jeb-sip.store.json: same bytes
+jeb-spooked.store.json  sha256 c4911636dcf0e1ac6833d96220d30d192cfd205f4aa7e13e70681e09187dc511  1374 bytes  tracked desktop/src/fixtures/jeb-spooked.store.json: same bytes
+jeb-sweep.store.json  sha256 0ebe33b4fd4c1d4d7283cdc579075e8e1e2eafb31e3a9e4cb65a2912a42f11ce  1372 bytes  tracked desktop/src/fixtures/jeb-sweep.store.json: same bytes
+jeb-think.store.json  sha256 908145191ae418286d4e1425fb8816208b275d5e5e7bfc1a9908197b0a58c9b9  1372 bytes  tracked desktop/src/fixtures/jeb-think.store.json: same bytes
+jeb-wink.store.json  sha256 bc451a64eb4847e15fd9ae39c20d492ef9353484b27cedac9dd3b8239ef5f4a1  1378 bytes  tracked desktop/src/fixtures/jeb-wink.store.json: same bytes
+jeb-working.store.json  sha256 4bac370913636028559e62ce296b266e36fe5bf9536cc29efa78fa9ea97a971a  1388 bytes  tracked desktop/src/fixtures/jeb-working.store.json: same bytes
+lanterns.store.json  sha256 1b9c215294d9f5adba7d5e44f09ef83d6d489585f345a3d56a9d4838dcd3d9fb  1467 bytes  tracked desktop/src/fixtures/lanterns.store.json: same bytes
+lead-hold.store.json  sha256 070beb0cff3ba6bd6a9f75b17329241334638a5415eb4a597599575b3716e4f6  1485 bytes  tracked desktop/src/fixtures/lead-hold.store.json: same bytes
+lead-two.store.json  sha256 b744fdc7e4c9d881242a3e95656cdbd0b23fa9737714b40bcb7ba9915975612f  1460 bytes  tracked desktop/src/fixtures/lead-two.store.json: same bytes
+looks-1.store.json  sha256 06a25dd73c35e80056a44926428ca188d9b2d0d2fa15be02eda59d88a8d8c9af  1594 bytes  tracked desktop/src/fixtures/looks-1.store.json: same bytes
+looks-2.store.json  sha256 3098355eab100ba9d1eefffea67c6d02bf7ec845e390601225af01ad64cb4449  1594 bytes  tracked desktop/src/fixtures/looks-2.store.json: same bytes
+looks-3.store.json  sha256 3c60f57318ffe70b7112ac3b5f72b104d18317c6db25031bb7df59193dac5628  1594 bytes  tracked desktop/src/fixtures/looks-3.store.json: same bytes
+looks-4.store.json  sha256 6f7119752e48f6859e55549441de496dde139f60284b0936e8967b778d5f5638  1594 bytes  tracked desktop/src/fixtures/looks-4.store.json: same bytes
+looks-5.store.json  sha256 282e8c733574950ceaaee06b82aa0345b0001fde16b93140c861b15f1446167f  1594 bytes  tracked desktop/src/fixtures/looks-5.store.json: same bytes
+looks-6.store.json  sha256 c7eabe41132845d2926f1296b48c23309378ac03faf082b3d427e6d622669a2c  1635 bytes  tracked desktop/src/fixtures/looks-6.store.json: same bytes
+looks-7.store.json  sha256 3e7fde7ed40c9f9e3122771a99eabb5d3d46e2cf46191bb492df004cc5e5a746  1604 bytes  tracked desktop/src/fixtures/looks-7.store.json: same bytes
+looks-8.store.json  sha256 feabe0cbc70517f76af4336fab7a755d7fef29a3e374587c0e6b423d554a0e3e  1604 bytes  tracked desktop/src/fixtures/looks-8.store.json: same bytes
+looks-9.store.json  sha256 13ccf41e89d493ed75d921622e69bcfe6cc55534b2eff8f689634f408d8a3877  1594 bytes  tracked desktop/src/fixtures/looks-9.store.json: same bytes
+mates.store.json  sha256 2729808cc8e698a0dc31383d861e42594586c88e86011c28bb630c5414b91dee  1367 bytes  tracked desktop/src/fixtures/mates.store.json: same bytes
+one-jeb.store.json  sha256 751f261ff2b53043642829750f0fd4f97038f7531c92acc9ecc62214432eb2b0  1602 bytes  tracked desktop/src/fixtures/one-jeb.store.json: same bytes
+place-one.store.json  sha256 8c00f901acc8f1dc1dc55a55c4a13c67de0f5ddb2fcbf78f78e44f4405cabaa6  1898 bytes  tracked desktop/src/fixtures/place-one.store.json: same bytes
+puff.store.json  sha256 853a6a124dae6b585a9eea6c82a29324337bd628dc9af715958dfcd2ed03eeb1  1371 bytes  tracked desktop/src/fixtures/puff.store.json: same bytes
+pumpkin.store.json  sha256 80a9f3150c06e50cca5805c0ac8728e3497e4e8a329bfc22a103a88d7d9b3aaa  1355 bytes  tracked desktop/src/fixtures/pumpkin.store.json: same bytes
+queue-order.store.json  sha256 af39f35bd86bac992e4efb7a1ea3369108fc44bab22e506cb125aef5baa7dccf  1728 bytes  tracked desktop/src/fixtures/queue-order.store.json: same bytes
+quiet-home.store.json  sha256 420c5218a6732db53e5cfd49b9b8de6d35ce65b69ea10ce1580d6f2bc83efdc5  1355 bytes  tracked desktop/src/fixtures/quiet-home.store.json: same bytes
+quilt-stitch.store.json  sha256 20cb237580a1fbc40572ce25258719fe530f58f40c2e617125a9bcde5152dd9e  1384 bytes  tracked desktop/src/fixtures/quilt-stitch.store.json: same bytes
+rain-all.store.json  sha256 e0b3ff8318bf44e41d57f80408a08ae074626f12c972751ff1cf4c394be3860d  1399 bytes  tracked desktop/src/fixtures/rain-all.store.json: same bytes
+rain.store.json  sha256 5970cc295219801d834b1b8c6a7865a83c12bc82187dc3f27e2a23b229670a9f  1400 bytes  tracked desktop/src/fixtures/rain.store.json: same bytes
+ridges-camp0.store.json  sha256 5b69ba99a7f3f698608b7b1c75962a838ac401f25cdd18e22314542f89de6c8c  1523 bytes  tracked desktop/src/fixtures/ridges-camp0.store.json: same bytes
+ridges-camp1.store.json  sha256 5b69ba99a7f3f698608b7b1c75962a838ac401f25cdd18e22314542f89de6c8c  1523 bytes  tracked desktop/src/fixtures/ridges-camp1.store.json: same bytes
+ridges-camp2.store.json  sha256 d79502f339d550054f7bc1f60715af5f0a56f9cdbb571ffe07cab805006d2f11  1523 bytes  tracked desktop/src/fixtures/ridges-camp2.store.json: same bytes
+ridges-camp3.store.json  sha256 9d2bcc567fcf8f24586ca7dcd13d93deea3d394fc8faba66f75bbc8f27602d66  1523 bytes  tracked desktop/src/fixtures/ridges-camp3.store.json: same bytes
+ridges-home.store.json  sha256 5b69ba99a7f3f698608b7b1c75962a838ac401f25cdd18e22314542f89de6c8c  1523 bytes  tracked desktop/src/fixtures/ridges-home.store.json: same bytes
+ridges-jan.store.json  sha256 d79502f339d550054f7bc1f60715af5f0a56f9cdbb571ffe07cab805006d2f11  1523 bytes  tracked desktop/src/fixtures/ridges-jan.store.json: same bytes
+ridges-jul.store.json  sha256 b72f518a1bcdb69d419e2c174531d84851c3a4b0837113b168618c9c0ad0d9f9  1523 bytes  tracked desktop/src/fixtures/ridges-jul.store.json: same bytes
+ridges-night.store.json  sha256 9d2bcc567fcf8f24586ca7dcd13d93deea3d394fc8faba66f75bbc8f27602d66  1523 bytes  tracked desktop/src/fixtures/ridges-night.store.json: same bytes
+story-1.store.json  sha256 99979091d5f8c826fcc3a8260a9e8de9ade0267bbc52eb8e0bb9cc990bbebe98  1408 bytes  tracked desktop/src/fixtures/story-1.store.json: same bytes
+story-2.store.json  sha256 bcfa875d27b5c145afc1964738b95a39332fbc0067d81a46272209e4c8d658ca  1411 bytes  tracked desktop/src/fixtures/story-2.store.json: same bytes
+story-3.store.json  sha256 51cb4301a823063e7a520e77dd60aca800ec947b858f6588a4724a31ca7d4738  1409 bytes  tracked desktop/src/fixtures/story-3.store.json: same bytes
+story-4.store.json  sha256 99ab4ab53af603d7810ee97b79d40b26c9a685687bb74c52027d42f410b8b58e  1408 bytes  tracked desktop/src/fixtures/story-4.store.json: same bytes
+story-5.store.json  sha256 d97b58180dc2bec75f563a271349936a95db569a1ea3f7b7f8c9dd30d558eec2  1412 bytes  tracked desktop/src/fixtures/story-5.store.json: same bytes
+thanksgiving.store.json  sha256 313651fb9d0b84a00dbca6a7a876ea8c730de87e298225b74a641ba7f5b316ca  1355 bytes  tracked desktop/src/fixtures/thanksgiving.store.json: same bytes
+truck-butter.store.json  sha256 2f49852b8e675bb743a23c0cc662bcb0e115f41788273b19aa2497334a923e65  1420 bytes  tracked desktop/src/fixtures/truck-butter.store.json: same bytes
+truck-home.store.json  sha256 d053423206654de3f7b437dcecbb23fa13e5ad6bbef6d2829b9c027da06eeaa5  1417 bytes  tracked desktop/src/fixtures/truck-home.store.json: same bytes
+visit-arrive.store.json  sha256 f086452307fb59860c343f9251215a51a6b9d886f5fe6085481acddb6867bbc4  1427 bytes  tracked desktop/src/fixtures/visit-arrive.store.json: same bytes
+visit-deal.store.json  sha256 f0febcbb2a25ce25f9bc2cdbc601d6b46a02cfac24028a145cf450d82aa08874  1424 bytes  tracked desktop/src/fixtures/visit-deal.store.json: same bytes
+visit-hold.store.json  sha256 16601702b2bb7746e52eef840541ed867cf4f56ab5dde313aad32eb2baca0a3e  1465 bytes  tracked desktop/src/fixtures/visit-hold.store.json: same bytes
+visit-mail.store.json  sha256 2f868b8ec817455217361873e00099b0ee372aa5675d782a79cb2611d8c72480  1433 bytes  tracked desktop/src/fixtures/visit-mail.store.json: same bytes
+visit-opal.store.json  sha256 997bdffcd84101cf3c9af49dc8e323170df2564629e2f2fadba547da3fba5880  1426 bytes  tracked desktop/src/fixtures/visit-opal.store.json: same bytes
+visit-tractor.store.json  sha256 43dadd26d21466039b30f269b5e2b49c48619984a1c21acd10f33a2c6bb2a1ee  1429 bytes  tracked desktop/src/fixtures/visit-tractor.store.json: same bytes
+workflow.store.json  sha256 1999dfa4e4eab73bf342b013d0dcaeba68cd13b0a696b02d42a41ef3d90bcbf1  1482 bytes  tracked desktop/src/fixtures/workflow.store.json: same bytes
+

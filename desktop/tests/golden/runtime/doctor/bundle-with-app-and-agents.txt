@@ -1,0 +1,80 @@
+## rc
+1
+
+## stdout
+ok    macOS
+ok    $SB/home/.jeb/current resolves to a Jeb bundle
+ok    bundled Python runs ($SB/home/.jeb/current/python/bin/python3)
+ok    one version on disk (v1.4.0)
+ok    claude found ($SB/home/.local/bin/claude)
+FIX   jebctl command: ask Claude to repair Jeb (it re-runs the install)
+ok    install mode: release
+ok    app bundle $SB/home/Applications/JebDesktop.app
+FIX   app's mod folder (JebMod) has hooks/pixel-art.ts: ask Claude to repair Jeb (it re-runs the install)
+ok    LaunchAgent plist com.jeb.desktop
+ok    com.jeb.desktop ProgramArguments exist
+ok    com.jeb.desktop JEB_MOD is $SB/home/.jeb/current/mod
+skip  LaunchAgent loaded com.jeb.desktop: skipped (sandbox)
+ok    LaunchAgent plist com.jeb.desktop.watchdog
+ok    com.jeb.desktop.watchdog ProgramArguments exist
+ok    com.jeb.desktop.watchdog JEB_MOD is $SB/home/.jeb/current/mod
+skip  LaunchAgent loaded com.jeb.desktop.watchdog: skipped (sandbox)
+ok    LaunchAgent plist com.jeb.desktop.release
+ok    com.jeb.desktop.release ProgramArguments exist
+ok    com.jeb.desktop.release JEB_MOD is $SB/home/.jeb/current/mod
+skip  LaunchAgent loaded com.jeb.desktop.release: skipped (sandbox)
+FIX   exactly one JebDesktop running (0): run: jebctl start (more than one: jebctl quit, then jebctl start)
+ok    no quit marker
+ok    updates not paused
+FIX   plugin jeb@jeb installed and enabled in Claude Code: ask Claude to repair Jeb (it re-runs the install)
+FIX   mod store file: start a new Claude Code session so the plugin loads
+ok    last update result: ok
+ok    state folder: $SB/home/Library/Application Support/Jeb
+ok    release signers pinned
+ok    a pinned signer covers jeb-release
+ok    GitHub releases reachable (newest v1.4.0)
+5 problem(s)
+
+## stderr
+(empty)
+
+## release-state.json
+{
+ "bridge_reset": 1,
+ "checked": null,
+ "failed": [],
+ "installed": [
+  {
+   "at": 1,
+   "stamp": null,
+   "tag": "v1.4.0"
+  }
+ ],
+ "last": null,
+ "layout": "bundle"
+}
+
+## updater-state.json
+{
+ "last": {
+  "at": 1779992800,
+  "result": "ok",
+  "stamp": "20260527-190000",
+  "why": "smoke and start passed"
+ },
+ "rejected": [
+  "20260520-010101",
+  "20260521-020202"
+ ]
+}
+
+## stub.log (argv of every native binary the run executed; detached prune-versions/reload-agents calls filtered)
+$SB/home/.jeb/current/python/bin/python3 -I -c 0
+
+## fake.log (claude, gh, launchctl calls)
+$SB/home/.local/bin/claude plugin list --json
+$SB/home/.local/bin/claude plugin marketplace list --json
+
+## ~/.jeb/current
+versions/v1.4.0
+

@@ -1,0 +1,13 @@
+## rc
+0
+
+## stdout
+{
+ "status": "--no-agents is for `install`, `follow`, `reload-agents` and `rollback` only",
+ "install": null,
+ "app-dir-outside": "--no-agents: JEB_APP_DIR (/Applications) is outside the sandbox HOME $SB/home"
+}
+
+## stderr
+(empty)
+

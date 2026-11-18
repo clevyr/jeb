@@ -1,0 +1,22 @@
+## rc
+1
+
+## stdout
+(empty)
+
+## stderr
+no earlier release is recorded to roll back to
+
+## release-state.json
+{
+ "bridge_reset": 1,
+ "checked": null,
+ "failed": [],
+ "installed": [],
+ "last": null,
+ "layout": "bundle"
+}
+
+## ~/.jeb/current
+versions/v1.4.0
+

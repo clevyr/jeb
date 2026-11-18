@@ -1,0 +1,25 @@
+## rc
+1
+
+## stdout
+(empty)
+
+## stderr
+a release bundle only installs in release mode
+
+## release-state.json
+{}
+
+## fake.log (claude, gh, launchctl calls)
+$SB/home/.local/bin/claude plugin list --json
+$SB/home/.local/bin/claude plugin marketplace list --json
+$SB/home/.local/bin/claude plugin list --json
+$SB/home/.local/bin/claude plugin marketplace list --json
+$SB/home/.local/bin/claude plugin list --json
+$SB/home/.local/bin/claude plugin marketplace list --json
+$SB/home/.local/bin/claude plugin list --json
+$SB/home/.local/bin/claude plugin marketplace list --json
+
+## ~/.jeb/current
+versions/v1.4.0
+

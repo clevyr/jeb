@@ -1,0 +1,12 @@
+## rc
+0
+
+## stdout
+97 fixtures; test at $T/ptools/src/modcopy/tests/zz-parity.test.tsx
+
+## stderr
+(empty)
+
+## modcopy/tests/zz-parity.test.tsx
+sha256 498f15c6ee698fafdd722ce37f99988b35ffc8e0838570eb90e1ca175ea9f64f  146164 bytes  36 lines
+

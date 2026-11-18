@@ -1,0 +1,22 @@
+## rc
+0
+
+## stdout
+no release tag yet: starting at 1.0.0 (--bump minor applies from the next release)
+releasing v1.0.0 (first release)
+  validate plugin: skipped (dry run)
+  validate marketplace: skipped (dry run)
+  test plugin: skipped (dry run)
+  release build: skipped (dry run)
+  parity: skipped (dry run)
+  commit chore(release): v1.0.0: skipped (dry run)
+  app zip: skipped (dry run); would attach JebDesktop-v1.0.0-macos.zip
+  sign tag v1.0.0 (asks for the key's passphrase): skipped (dry run)
+release notes:
+First release.
+would tag v1.0.0 (local only; never pushed by jebctl). To publish it, run:
+  git push origin main v1.0.0
+
+## stderr
+(empty)
+

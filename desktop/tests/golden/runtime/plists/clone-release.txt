@@ -1,0 +1,127 @@
+## rc
+0
+
+## stdout
+plist com.jeb.desktop: JEB_MOD=$REPO/mod JEB_SRC=$REPO/desktop/src
+wrote $SB/home/Library/Application Support/Jeb/launchd/com.jeb.desktop.plist
+plist com.jeb.desktop.watchdog: JEB_MOD=$REPO/mod JEB_SRC=$REPO/desktop/src
+wrote $SB/home/Library/Application Support/Jeb/launchd/com.jeb.desktop.watchdog.plist
+plist com.jeb.desktop.release: JEB_MOD=$REPO/mod JEB_SRC=$REPO/desktop/src
+wrote $SB/home/Library/Application Support/Jeb/launchd/com.jeb.desktop.release.plist
+
+## stderr
+(empty)
+
+## JEB_HOME/launchd/com.jeb.desktop.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>JEB_MOD</key>
+		<string>$REPO/mod</string>
+		<key>JEB_SRC</key>
+		<string>$REPO/desktop/src</string>
+		<key>JEB_START</key>
+		<string>launchd</string>
+		<key>PATH</key>
+		<string>/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin</string>
+	</dict>
+	<key>KeepAlive</key>
+	<dict>
+		<key>SuccessfulExit</key>
+		<false/>
+	</dict>
+	<key>Label</key>
+	<string>com.jeb.desktop</string>
+	<key>LimitLoadToSessionType</key>
+	<string>Aqua</string>
+	<key>ProcessType</key>
+	<string>Interactive</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>$SB/home/Applications/JebDesktop.app/Contents/MacOS/JebDesktop</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardErrorPath</key>
+	<string>$SB/home/Library/Application Support/Jeb/run.log</string>
+	<key>StandardOutPath</key>
+	<string>$SB/home/Library/Application Support/Jeb/run.log</string>
+	<key>ThrottleInterval</key>
+	<integer>10</integer>
+</dict>
+</plist>
+
+## JEB_HOME/launchd/com.jeb.desktop.release.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>JEB_MOD</key>
+		<string>$REPO/mod</string>
+		<key>JEB_SRC</key>
+		<string>$REPO/desktop/src</string>
+		<key>PATH</key>
+		<string>/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin</string>
+	</dict>
+	<key>Label</key>
+	<string>com.jeb.desktop.release</string>
+	<key>LimitLoadToSessionType</key>
+	<string>Aqua</string>
+	<key>Nice</key>
+	<integer>10</integer>
+	<key>ProcessType</key>
+	<string>Background</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/bin/python3</string>
+		<string>-I</string>
+		<string>$REPO/desktop/jebctl</string>
+		<string>follow</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardErrorPath</key>
+	<string>$SB/home/Library/Application Support/Jeb/release.err</string>
+	<key>StartInterval</key>
+	<integer>21600</integer>
+</dict>
+</plist>
+
+## JEB_HOME/launchd/com.jeb.desktop.watchdog.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>JEB_MOD</key>
+		<string>$REPO/mod</string>
+		<key>JEB_SRC</key>
+		<string>$REPO/desktop/src</string>
+		<key>PATH</key>
+		<string>/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin</string>
+	</dict>
+	<key>Label</key>
+	<string>com.jeb.desktop.watchdog</string>
+	<key>LimitLoadToSessionType</key>
+	<string>Aqua</string>
+	<key>ProcessType</key>
+	<string>Background</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/bin/python3</string>
+		<string>-I</string>
+		<string>$REPO/desktop/watchdog.py</string>
+	</array>
+	<key>StandardErrorPath</key>
+	<string>$SB/home/Library/Application Support/Jeb/watchdog.err</string>
+	<key>StartInterval</key>
+	<integer>30</integer>
+</dict>
+</plist>
+

@@ -1,0 +1,54 @@
+## rc
+0
+
+## stdout
+stamp            class        n  cpu med %  cpu p95 %  max rss MB  max fp MB  flags
+20260526-120000  calm         4       9.00       9.00       100.0      200.0  OVER CPU/RSS/footprint
+20260526-120000  covered      1       0.05       0.05        30.0       50.0  ok
+20260527-190000  calm        10       0.40       0.50        49.0       89.0  ok
+20260527-190000  passing      5       7.00       9.00        74.0          -  OVER CPU/RSS
+
+## stderr
+(empty)
+
+## release-state.json
+{
+ "bridge_reset": 1,
+ "checked": 1779996400,
+ "failed": [
+  "v1.5.0",
+  "v1.5.1"
+ ],
+ "installed": [
+  {
+   "at": 1,
+   "stamp": null,
+   "tag": "v1.4.0"
+  }
+ ],
+ "last": {
+  "app": "prebuilt",
+  "at": 1779996400,
+  "result": "gates-rejected",
+  "tag": "v1.5.1"
+ },
+ "layout": "bundle"
+}
+
+## updater-state.json
+{
+ "last": {
+  "at": 1779992800,
+  "result": "ok",
+  "stamp": "20260527-190000",
+  "why": "smoke and start passed"
+ },
+ "rejected": [
+  "20260520-010101",
+  "20260521-020202"
+ ]
+}
+
+## ~/.jeb/current
+versions/v1.4.0
+

@@ -1,0 +1,9 @@
+## rc
+0
+
+## stdout
+a development install ships from the working tree; would run the updater now
+
+## stderr
+(empty)
+

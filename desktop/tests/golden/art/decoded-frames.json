@@ -1,0 +1,4834 @@
+{
+ "gifs/axe-stump.gif": {
+  "file_bytes": 577,
+  "file_sha256": "8cd5c42377681730eafe29638fc2ccaf55f542b637a33d16c88c901772d0a2cc",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 900,
+    "sha256": "460524e8fbae0efe5f36bf597f124942447b742520deef0095dc4505447aaa2e"
+   },
+   {
+    "ms": 150,
+    "sha256": "7663d2a9658b9337341bbba3ee6829ca173746f6e6892841ac3c643c9db5533e"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   32,
+   44
+  ]
+ },
+ "gifs/blue-bark.gif": {
+  "file_bytes": 1238,
+  "file_sha256": "568abc9371392bb254333c61ebaf7a0c8957f439bdac4e20714a365345f5cc8d",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 220,
+    "sha256": "2bdd2658a2995bbf36845ce512c9615b5003fc47d3ec95bb4c42e57f4cd09d27"
+   },
+   {
+    "ms": 220,
+    "sha256": "c498a03737e2d84ff58412e2d75cea9ce52f1c4a504d0438c0e389400f82c4a9"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   52
+  ]
+ },
+ "gifs/blue-run.gif": {
+  "file_bytes": 1215,
+  "file_sha256": "3886b9f92c6d99f710481da49dcec3a05033ec4f8a72eab6e7ff01b82ae1308d",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 120,
+    "sha256": "8928db6cbf319ef8e1bd1b6c753846a634ab7ef7b132c67d4909f08b4429c2b1"
+   },
+   {
+    "ms": 120,
+    "sha256": "ffcf29efb2eb71bfa14d5770227b256545ef157239ae42b436a8a600a99f7a81"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   52
+  ]
+ },
+ "gifs/blue-wag.gif": {
+  "file_bytes": 1220,
+  "file_sha256": "b61b6ab285acd458dc0059ac852f6be8a34f1cd58086dd67d668c2e865cfb07f",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 250,
+    "sha256": "f6f8e2307c5b2b69871871ebe44b1225bc58c0b164fa35ea396074f9ce43197a"
+   },
+   {
+    "ms": 250,
+    "sha256": "c498a03737e2d84ff58412e2d75cea9ce52f1c4a504d0438c0e389400f82c4a9"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   52
+  ]
+ },
+ "gifs/bluebird.gif": {
+  "file_bytes": 350,
+  "file_sha256": "6d86b9a19a633a119ad2ec5ce3393a8fdc454780c37df42d2c39f9bd050dfdcd",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 400,
+    "sha256": "23e43467257f89a84598e77c888d4b0120f79d69b9e71e328b68d87ae527bb93"
+   },
+   {
+    "ms": 400,
+    "sha256": "03453d010309f0d262c88df9dcb8a45e36d3232ac6c2d387e0d68f74775c1845"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   28,
+   20
+  ]
+ },
+ "gifs/butterfly.gif": {
+  "file_bytes": 276,
+  "file_sha256": "6240560b5b9ab4bba2062f3e4b627bf18e231f0e4b2e5d0c86aceb03a53d3225",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 180,
+    "sha256": "1dadc86fdbf924ccd9aab222131756c904b12b13f85f31dd266c8586ec4f5e07"
+   },
+   {
+    "ms": 180,
+    "sha256": "8b368ea437d0d6e9c51470e64c646f66737803f1ed37b5616f8f20a86a91a756"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   24,
+   20
+  ]
+ },
+ "gifs/cake.gif": {
+  "file_bytes": 489,
+  "file_sha256": "8d4d9af25349e1930c41c0e98faf94f23c22cf04672abaac6d9c2a12379b8c65",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 300,
+    "sha256": "d8689d4c59a21992086ac731e1b09aad81a379badb317205409dda073a6d0177"
+   },
+   {
+    "ms": 300,
+    "sha256": "d927135b7c652207ad25f4ea13cd6784fe017069150b7504b558025883482ac4"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   36,
+   40
+  ]
+ },
+ "gifs/cow.gif": {
+  "file_bytes": 1254,
+  "file_sha256": "33544857837aa52352265b4bcf3793eaee431c0ed2bceba150eb975ba56c5ce9",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 600,
+    "sha256": "065dd983d11cf74e0ab5bf007d96008b174f719698ff4053672c0a919efa20ac"
+   },
+   {
+    "ms": 600,
+    "sha256": "0bb830b24abc3380ba43460af03dba8e0299bc8d211bb0a377e349200d9c50fe"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   88,
+   60
+  ]
+ },
+ "gifs/creek.gif": {
+  "file_bytes": 273,
+  "file_sha256": "ae3869dded060e410f60497eab981b4d9b9d070b99bbf739d027f8aec4ac8052",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 500,
+    "sha256": "c7191465455570c15565e1154ef505c0471e3a424bab9a4494e34a349b73ea91"
+   },
+   {
+    "ms": 500,
+    "sha256": "46bbe67cabc3bf4a676bfdcd807d8c335ab4bf4441873bb9ea5fae67f8c54da0"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   48,
+   12
+  ]
+ },
+ "gifs/dust.gif": {
+  "file_bytes": 279,
+  "file_sha256": "a791001253b7f6052d7157483a30432f97adf1642e3f485a751d0a51ba51e67b",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 120,
+    "sha256": "c52053cc811b5b85bcc9f10d6c76ddd10942488d1c5b3d6da75ed31c67981e09"
+   },
+   {
+    "ms": 120,
+    "sha256": "caf9a249677ee79a1887f78bf3b630de4cb1fb928f0d6820d4e5dff06dc8317f"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   40,
+   24
+  ]
+ },
+ "gifs/fire.gif": {
+  "file_bytes": 459,
+  "file_sha256": "f7bb284ac856f54eb9b392164cb4a9c7a2c89b3c85daf50356b6304eec76ee1a",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 160,
+    "sha256": "90d79f24fffca6676b7887d31da58db6a8a8faa88a123d6b14c3683a56c0f32c"
+   },
+   {
+    "ms": 160,
+    "sha256": "77ca567fee18695f23e3828300c7d9a1cc1aa451814a33dc4d09408d845f905a"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   56,
+   24
+  ]
+ },
+ "gifs/firefly.gif": {
+  "file_bytes": 158,
+  "file_sha256": "c7f7536ccc77a54c34372f70cd0102d6ef70f9251eaefe5555b76bcde39115e2",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 300,
+    "sha256": "cb36429a9e9ff78ca253d4a2449522a83adce7809c5102077df66f8a9f27feed"
+   },
+   {
+    "ms": 300,
+    "sha256": "62e875242c2174d034cae509d870597ae5f48c7330e9febcdd423daf1062a63c"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   12,
+   12
+  ]
+ },
+ "gifs/fisher.gif": {
+  "file_bytes": 1011,
+  "file_sha256": "586f495cc4b052eea0d1ee87c17f152be2931d56c471074ce28d3e85e1235f83",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 600,
+    "sha256": "0e9fdb46b5e190035a446802b6338db9eab67ae8ece0c7296561884fd0de967d"
+   },
+   {
+    "ms": 600,
+    "sha256": "c747140f8b18d0f69a8658b60df159c28c0ebebbe7d001a5f6418f452c19eb01"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   44,
+   52
+  ]
+ },
+ "gifs/hand-work-0.gif": {
+  "file_bytes": 1961,
+  "file_sha256": "217ecea84b31aba0d288b54a8747773aae6565e828f040b3d52cabb0cd8c6802",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 300,
+    "sha256": "d9999609b12933a4dc138854e7783e4666c315a8c22f09dab241eb1d92f8eaf3"
+   },
+   {
+    "ms": 300,
+    "sha256": "b6cb2853c68b2c1d380fc67c8216c80056c9c2750fc3af23ca281c49a29f9c42"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   64,
+   112
+  ]
+ },
+ "gifs/hand-work-1.gif": {
+  "file_bytes": 1790,
+  "file_sha256": "f598a318ce54fa62f11c8697771ec96aebd7007d78314aa9ef42a8d4f153a7f9",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 300,
+    "sha256": "455c5c6faba4d90bddf3c71d6c53d66ab6280bc6924098de4f761d4f51c1b804"
+   },
+   {
+    "ms": 300,
+    "sha256": "0f93f974f9b4869fce222d59ee87a1407d07b1a2ac5d39842654d4ddd41ea50c"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   64,
+   112
+  ]
+ },
+ "gifs/hand-work-2.gif": {
+  "file_bytes": 1766,
+  "file_sha256": "77879f269303363f8126e49a29a64bc63af3060f30b4ac671671803ff44c98f8",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 300,
+    "sha256": "d197b6072805c3fe817690edc847a754a4064fbf8cd8a4b9dd521b41c7182683"
+   },
+   {
+    "ms": 300,
+    "sha256": "21eb24fb76db88d1ede187df8f8bd506d533b5def190d0133a6638ec3c6b1d60"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   64,
+   112
+  ]
+ },
+ "gifs/hand-work-3.gif": {
+  "file_bytes": 1911,
+  "file_sha256": "b2f948eb7eb8c1a7d6d82a2ee89b60bbcabdc41e2a62d0fe40aec2a7f25651ad",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 300,
+    "sha256": "dffca126582e8e9c190b766d5997e44e37a88914cdd67e40bf7d4e8ddeed948f"
+   },
+   {
+    "ms": 300,
+    "sha256": "dc03d0cfd25deaf7f5674a8a156b871dba19a7e88878e5224ca312e8c5ea0db5"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   64,
+   112
+  ]
+ },
+ "gifs/hand-work-4.gif": {
+  "file_bytes": 1766,
+  "file_sha256": "81d1f151cad8962e3ac6c468e1ca95e3dbb6e21a6e84c76f951f165fc687790e",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 300,
+    "sha256": "b7d376ed3ea71235f48127db836a6dbdf4bfee66855455a5d866602c6419a53a"
+   },
+   {
+    "ms": 300,
+    "sha256": "72a35bcb9d8a607be5539ba9687dcf3375b583a6bac4beb7f627b223209d9e8c"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   64,
+   112
+  ]
+ },
+ "gifs/hand-work-5.gif": {
+  "file_bytes": 1961,
+  "file_sha256": "88713a87490f7512bcca6b0323041e0153968357cdc16ed5a30ee30802f7bd08",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 300,
+    "sha256": "efe88ebfc2a1ea1b886c12eb88151ff547a2cb998be1fb3463dbc56ce7839647"
+   },
+   {
+    "ms": 300,
+    "sha256": "7738fb93374edd88103223cc0dd6a113b86d0c84b67c6a21afacd00d32d0592a"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   64,
+   112
+  ]
+ },
+ "gifs/hand-work.gif": {
+  "file_bytes": 1961,
+  "file_sha256": "217ecea84b31aba0d288b54a8747773aae6565e828f040b3d52cabb0cd8c6802",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 300,
+    "sha256": "d9999609b12933a4dc138854e7783e4666c315a8c22f09dab241eb1d92f8eaf3"
+   },
+   {
+    "ms": 300,
+    "sha256": "b6cb2853c68b2c1d380fc67c8216c80056c9c2750fc3af23ca281c49a29f9c42"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   64,
+   112
+  ]
+ },
+ "gifs/hen.gif": {
+  "file_bytes": 577,
+  "file_sha256": "4609d33546f37b0c7d7c1168bd38b4cc13a14e60f527d73074f2111e4bf25b9f",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 300,
+    "sha256": "3a4227330166688fbb388caa1c5e2909465448904636359a67fb2ed21bb2f141"
+   },
+   {
+    "ms": 300,
+    "sha256": "be5778be9813a8a1764300ba3f863f54082d30acab48ebebf557edbaf6709f31"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   40,
+   40
+  ]
+ },
+ "gifs/jeb-banjo--christmas.gif": {
+  "file_bytes": 4089,
+  "file_sha256": "bb4396d9686a9285de82378aba836fcfd06e1e5c1844a666b11cc21cb652b5eb",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 260,
+    "sha256": "5355c40a510c7bdae4917bcfa57d28dd523cd07eaf75b432ef9cd2e529b5cf19"
+   },
+   {
+    "ms": 260,
+    "sha256": "211054b2b47193b5cfbe08cc65f7d32996477ecaf445f3c992e586a7ca0b154a"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "gifs/jeb-banjo--halloween.gif": {
+  "file_bytes": 3905,
+  "file_sha256": "348b931b8f957118e6d8a1479fcbc8add662a2ce839fda3a367427d5685420d2",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 260,
+    "sha256": "e3465e23e96f7caba5dba8e25e8e6bc49028dedb5015e6e128611616144059e0"
+   },
+   {
+    "ms": 260,
+    "sha256": "20beb48fd1c294ac02f597640f6aa0e3b7055293d38db8c98d6e758760d0a44e"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "gifs/jeb-banjo--thanksgiving.gif": {
+  "file_bytes": 4170,
+  "file_sha256": "7add4550187921dbefa1c53456967eb65d5622e57dfbcbf82a6bdf8fd1c197e5",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 260,
+    "sha256": "5d84137178c369d1f0e48b69e4ca6df517462b3e46ca612d4bd79a6a5acf4af6"
+   },
+   {
+    "ms": 260,
+    "sha256": "903941fd5091ba7c7d39640d8a4f57843bfa039555079658e3a6b0210b8246b8"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "gifs/jeb-banjo.gif": {
+  "file_bytes": 3610,
+  "file_sha256": "7b3447d05a5b02ee37491ca3b6d3cd96dac871840ddfbece8bd696e069c4067d",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 260,
+    "sha256": "6ea5fbdc04c4e4a07bdca785467b43397d4116ed1ddae334573aac7e8036b27b"
+   },
+   {
+    "ms": 260,
+    "sha256": "589524cca0a002c42e31441f1e0a0482f4d7b6900d89c98d935d836215fe7084"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   160
+  ]
+ },
+ "gifs/jeb-broom--christmas.gif": {
+  "file_bytes": 4099,
+  "file_sha256": "0e000595e07572e6f42f4cb7b2e9ac9eff35158367d0e06e1cfa56d8eaff099c",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 280,
+    "sha256": "5227124c076a9ccb949bef62eff0f37460848973cd5d978a32cd58e4dbe91b90"
+   },
+   {
+    "ms": 280,
+    "sha256": "381b5a1ae86906cba36e528eecd49bf661a2a6c6892c8a396344fccd38a9c9fc"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "gifs/jeb-broom--halloween.gif": {
+  "file_bytes": 3886,
+  "file_sha256": "cb1820f28f52844fd54fc4381a423da9789007fc37a0258e206493fc305004c5",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 280,
+    "sha256": "b83b1e8d902b81eb8ea4cb888195673d9acd4530f53ed7645158d9ca9dc40cf2"
+   },
+   {
+    "ms": 280,
+    "sha256": "c4b044a66b5d09f17d4e341362b3f55814ce8a8f04bc1caac394707a11801091"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "gifs/jeb-broom--thanksgiving.gif": {
+  "file_bytes": 4164,
+  "file_sha256": "3703b1f5f06a65e10afeeb77064bb42c42c4ab4a14affe51ba8f15856717bc7b",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 280,
+    "sha256": "9b927028a12c217962c45216ba991fa6ad6b3c3c5177e23f478a87e2c3eaae81"
+   },
+   {
+    "ms": 280,
+    "sha256": "73cae4bbce4ea8d854c682842f60b8df5bca15eceb06d56b566fe056654d4539"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "gifs/jeb-broom.gif": {
+  "file_bytes": 3602,
+  "file_sha256": "3ce9ec6aab588963a8da86e9a3b2edb44cb34fd00f5334b948ab095db11c0a83",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 280,
+    "sha256": "5c182b3a8df207cbea3593b177f33a2f3699ca2aa9a78a7f679bd8a887d3e8b7"
+   },
+   {
+    "ms": 280,
+    "sha256": "9ddbf8fb859e205c76b12e8b4679dc0189e3d796df969a34d544eac77a828439"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   160
+  ]
+ },
+ "gifs/jeb-hoe--christmas.gif": {
+  "file_bytes": 4041,
+  "file_sha256": "5cb6f55e69aa8a396ea8f5fba11cbe4c7a95443ee0c504744e3ee3392947e119",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 300,
+    "sha256": "cfbd78895e6cb7745fe3518f11825abcab778cb93e9d4428880e34f37729cd1c"
+   },
+   {
+    "ms": 300,
+    "sha256": "03f2835bd6d8a5106f2f9425b3d9d3a7b1220a5989c348fa778c971eca3c22b1"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "gifs/jeb-hoe--halloween.gif": {
+  "file_bytes": 3830,
+  "file_sha256": "aa76d228b7dc57652f3496c1c796c825f3c566224bc96f36871af4ff64cc9721",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 300,
+    "sha256": "a63c46a52da4c337deebf79d2961643c3786c06811796c76677a49ad454a1c31"
+   },
+   {
+    "ms": 300,
+    "sha256": "01897f8c33ca9697d2a76aff35eebd3cf02934002f0aba4cacec9f25a59fb7ec"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "gifs/jeb-hoe--thanksgiving.gif": {
+  "file_bytes": 4187,
+  "file_sha256": "c304be28b84bacb80c397f527280a9cb55e9792a56a860daf75dd80c1671df00",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 300,
+    "sha256": "f652ef448836a5dbaa05c3e0d0bf101d15e29ec56aa5ed4605fdef9d79f5b5df"
+   },
+   {
+    "ms": 300,
+    "sha256": "116b4d056a2506e376a350a3dc2534b324672e3f98ac3a4587f58fa8fde91fbd"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "gifs/jeb-hoe.gif": {
+  "file_bytes": 3644,
+  "file_sha256": "20f3c46e13c7dc05e0486920fd5560c11024fbe951bdc52c20d6b376d8285779",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 300,
+    "sha256": "6275b1b16fcfef8e13dcaceae7b9b2456af8e3712446556bc8ff7a0fff51abad"
+   },
+   {
+    "ms": 300,
+    "sha256": "b73466f5bbf59d9c977dffe24bf921c0506b154e5fe2d05a22c2519edd8562b2"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   160
+  ]
+ },
+ "gifs/jeb-idle--christmas.gif": {
+  "file_bytes": 3829,
+  "file_sha256": "31c95f2b8ce1552c403bf69dc27f42806ef4283550c81ea55591237aacb9dfa1",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 2700,
+    "sha256": "49009cc76cb412efe441e5884020793b4546212e345edef0fe4419e7751d7166"
+   },
+   {
+    "ms": 160,
+    "sha256": "53dfd6fdc3a93890acdb573e494ca8a4cdf78f46202361b7faed9f000f6de2ad"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "gifs/jeb-idle--halloween.gif": {
+  "file_bytes": 3580,
+  "file_sha256": "5f7cc5aaa4427341d0b5ebe254ea15739bd90e215ef576175b9e3369119be5c0",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 2700,
+    "sha256": "0cdca65928066538f1f69cb4a40f39b5cf7ac6a45da4bc3dd4696a7e27842020"
+   },
+   {
+    "ms": 160,
+    "sha256": "a996ee002e3b2ea718df5de39468686d00d256c0197a0ddb19dded546a2d6f67"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "gifs/jeb-idle--thanksgiving.gif": {
+  "file_bytes": 3956,
+  "file_sha256": "89994edcca813e44339bbc4f2f3fc3c23da4b66333569f99fbd7a7f034ef84dd",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 2700,
+    "sha256": "aef866d77a55a5a8b395f727ffc8c7e9b6eead9538a310f36b5f1e67b7aad672"
+   },
+   {
+    "ms": 160,
+    "sha256": "a8591d2f1fd46601252f6fde1cdb2aa100fae662c44e265dd4ffecde1785b267"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "gifs/jeb-idle.gif": {
+  "file_bytes": 3386,
+  "file_sha256": "adf185c482415224ceb8f338d6436bce60d10e328cf852d2a187d800b7b4aa51",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 2700,
+    "sha256": "34b23e444f8ccd3134f9215624b4d89dbb38bc519b5a5aff7125e5ed3d97cc81"
+   },
+   {
+    "ms": 160,
+    "sha256": "278064b8666ce71579b23d8fa478bc0737243231bc8b949137a65d668ea4a3ee"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   160
+  ]
+ },
+ "gifs/jeb-salute--christmas.gif": {
+  "file_bytes": 3880,
+  "file_sha256": "e2da26f85c37d631fa6372d6e40db8d4eba15ba30b19f99d8950ee99500f7bee",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 500,
+    "sha256": "2a39bc57afcd313e7718dd94673ec57d202e361e7f7920c34478366b45669b8d"
+   },
+   {
+    "ms": 1500,
+    "sha256": "0c4d06257f59ff2bf6962c0c8180d7e08a64833ad433f0d122d52f6925e87d7c"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "gifs/jeb-salute--halloween.gif": {
+  "file_bytes": 3611,
+  "file_sha256": "08984f63eae2897572755472a0fdb12cd006ab6731b56b6281ee2d54074c815f",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 500,
+    "sha256": "49d0c1cf28931213caae0e58339c32eca850a1669eaaadfd8f25034495c4b175"
+   },
+   {
+    "ms": 1500,
+    "sha256": "5bcea2eb7890e985b2cf5549e92f7beabf49526895586e8814811d5564c96246"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "gifs/jeb-salute--thanksgiving.gif": {
+  "file_bytes": 4021,
+  "file_sha256": "296321bf0b28929ddb42da922db7e8e3c1b7062e6ed496ad368191ccd13b6c5c",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 500,
+    "sha256": "fd3cae8963d1570c12fcd53a86e97f24a8ace42c681397137365bc59c30b3ade"
+   },
+   {
+    "ms": 1500,
+    "sha256": "0e4b488c60cfe9626e6bc3d9d1e4f649f3f168539f67c262274a5a02c0abd26f"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "gifs/jeb-salute.gif": {
+  "file_bytes": 3445,
+  "file_sha256": "b8491d9c61450aa237445b35489f8f3c7d3759ca4d1be546d6993a5909d8900f",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 500,
+    "sha256": "604aee8c33eed51a8382905d1deb7a6f9391a8005333c821e723c8dca708cdb6"
+   },
+   {
+    "ms": 1500,
+    "sha256": "570bcd2be06bfaf9bd384e6c3bc2ae084828d204e2ca1fdc76b03c0d8f9efafc"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   160
+  ]
+ },
+ "gifs/jeb-sip--christmas.gif": {
+  "file_bytes": 3884,
+  "file_sha256": "1e6f9963c3f8ce6c3c96cadfc6eb904ffa877f94971ad4926b17cf4a8a5d2872",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 700,
+    "sha256": "7185041f2f1789fadec9f6bc7a4a3a047ebe8e12d19e74e69d89b9cb96f54696"
+   },
+   {
+    "ms": 700,
+    "sha256": "1eb722ff5257e17a40b7d912f5555a8c82e1cf836218cb991f6cc473adbebf57"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "gifs/jeb-sip--halloween.gif": {
+  "file_bytes": 3727,
+  "file_sha256": "459fe0354af8cd4c7651731d09322e513df48c3a2fafad4d9b3230511aa6bc18",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 700,
+    "sha256": "d31ac866f3bb14092e03e5d07c4a77896c77d867482a8dcfc0dba56d2dbd75d9"
+   },
+   {
+    "ms": 700,
+    "sha256": "dbc49ba29fa79c50c22357bcc350aa5b040762e34d92583438428a944e0df460"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "gifs/jeb-sip--thanksgiving.gif": {
+  "file_bytes": 4019,
+  "file_sha256": "07fad3a735c35f3e12f89563d78ff18628de620e7e4defbc2ab8fb75c7876c98",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 700,
+    "sha256": "3ef8e2b6718f93fa1a3eaf17e199c13e7257fbb2777bf47378514164d4680fbf"
+   },
+   {
+    "ms": 700,
+    "sha256": "21970c85553908aa458c311fe2421ecc1b44a7c6e4a562334efdd8527e6ef394"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "gifs/jeb-sip.gif": {
+  "file_bytes": 3463,
+  "file_sha256": "c65ea693be69413ccc0cbb35eded039ea1634e15e181bf21ec12e5c96b9705be",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 700,
+    "sha256": "ed839f048c6991410a4be2d02f150ddbaed2326992f03577469f84e98bcc142f"
+   },
+   {
+    "ms": 700,
+    "sha256": "05545eae141f0271576792fd62840fe2e77aa1c9ef4f59e6566dc838470d4c6f"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   160
+  ]
+ },
+ "gifs/jeb-stir--christmas.gif": {
+  "file_bytes": 4024,
+  "file_sha256": "5ccd7be72f164893944d1dce12f8a22675f37a1aabafa2d73b241f062fa88101",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 320,
+    "sha256": "0039a666beaa19996a0725148df4e997db3437aa16393f18f4ce2f69d99b817f"
+   },
+   {
+    "ms": 320,
+    "sha256": "ef58933616e4c9eb5429c9e170a9b1d6290d8b29026e1e468f8b3c6908efe389"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "gifs/jeb-stir--halloween.gif": {
+  "file_bytes": 3823,
+  "file_sha256": "fd344235716b436e0afc23769346ccb29f09404344be9e0abb75d7a17d831b59",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 320,
+    "sha256": "d470543a0605a0c25338315da4745dcf15a2d20d9928ce8d235406a425df0a31"
+   },
+   {
+    "ms": 320,
+    "sha256": "4c23465f6a37706425532b9b89a0d7962b4a01569b3f1658960e498719b33507"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "gifs/jeb-stir--thanksgiving.gif": {
+  "file_bytes": 4174,
+  "file_sha256": "811b35b26797de065d629c044e49698433d1076e386f18b98bb3be96d8855cce",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 320,
+    "sha256": "d3defc7e7ef8f76fa6dccd73e1793dc0bcac665830ffd59cf06b77a3e6f8b937"
+   },
+   {
+    "ms": 320,
+    "sha256": "3e52b1a5f4f19b0a0abec7a7b16d383e7b37b11ae2f0bb03e89320d7000549a5"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "gifs/jeb-stir.gif": {
+  "file_bytes": 3611,
+  "file_sha256": "388bd7fb18cba214dd2d9b096a6de587cf54e8ae740c0bfe4027871a4b73e3b4",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 320,
+    "sha256": "6701e024effd02112360bc458397a82d2c866307ef1152d7f959f8114ec337c4"
+   },
+   {
+    "ms": 320,
+    "sha256": "ba9efcd4a62fe1d98d6917636369b1711f33d2baae81197749e2eff45f1ee332"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   160
+  ]
+ },
+ "gifs/jeb-wave--christmas.gif": {
+  "file_bytes": 3934,
+  "file_sha256": "ca46d8c2b03c5e52ccee656e991506c1aa4bb9704b4fd1331194eaeb2dc0caea",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 250,
+    "sha256": "31d138a56aee802ce7effa30367ce05a9573bbb5e93e73227e0609cf4d11b939"
+   },
+   {
+    "ms": 250,
+    "sha256": "75dcb94b461c47f994c6336051f54e175538fa82c40eed272dfe4156982f5aa2"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "gifs/jeb-wave--halloween.gif": {
+  "file_bytes": 3771,
+  "file_sha256": "d82cb0a3e32364a241287107127cad3f92feef812c31baff24552470ab92e7e4",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 250,
+    "sha256": "e10f091e3624d62150b37651525666443c480c84856da68dcf60c8e51ac1dd8b"
+   },
+   {
+    "ms": 250,
+    "sha256": "f41b09ff02f132cb9acd71c14f659b4c55710721755de645dabafff723462813"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "gifs/jeb-wave--thanksgiving.gif": {
+  "file_bytes": 4079,
+  "file_sha256": "bcc64cd14447ed9cc1924661d07f9dcd4f1ed20ccc3da010a4e0b1928c7c4e30",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 250,
+    "sha256": "d7d00aa31ad7cc720ea7f155c8ce3f16ad1635dbcf94306079aa5ccc3d320bd4"
+   },
+   {
+    "ms": 250,
+    "sha256": "0cdcab1611f888b54fabefec919151e38a673ff8859b2268f23c3108bfd08852"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "gifs/jeb-wave.gif": {
+  "file_bytes": 3469,
+  "file_sha256": "2a3f9dbaa4d5e9c9a1f794d68d273fa146463114e447fcd0f5cea64f14b3e37c",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 250,
+    "sha256": "c11788b6b8477d60f5b9393225a732eab7b6d865875ca6e2ca8db641fd71e7e4"
+   },
+   {
+    "ms": 250,
+    "sha256": "8bf4bc9bc7c2d857cab7851ebce86ad40688f05eba1d600de831129b4c52aca6"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   80,
+   160
+  ]
+ },
+ "gifs/lantern.gif": {
+  "file_bytes": 309,
+  "file_sha256": "1700cb0d86081fdabce57cbc1b8f35b26a788c075fbe2b55a4e30646132e8291",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 500,
+    "sha256": "d4927c1011deb14e73254ae88d6fe92509861cf2ca50ac38407af4b3fec36715"
+   },
+   {
+    "ms": 500,
+    "sha256": "8581e04d769c2bcfb01d2f503a830329fb2ed814bed9393a882858aeafb8187b"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   20,
+   32
+  ]
+ },
+ "gifs/moon.gif": {
+  "file_bytes": 1234,
+  "file_sha256": "1967e91922b4f0e60312c09f7e03f463e074cd70eb5873bafe44198a41799b99",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 300,
+    "sha256": "2d4c0cad397ff1040244e006bb7289eb8f34a6d07287ac0d5854b7fdd4dafe1d"
+   },
+   {
+    "ms": 300,
+    "sha256": "95468bed636a00c7f476a9122015474b499a68bec39c0accca42f14fe4d01b0d"
+   },
+   {
+    "ms": 300,
+    "sha256": "94212f3b3c0fa9f658f591fbfc15b097a80a5b183898c16553d669497124c667"
+   },
+   {
+    "ms": 300,
+    "sha256": "f0c9c1da8fc45384ff1b788ad653d9419fb9d325d55f1ac5fa80fe01e70572bb"
+   },
+   {
+    "ms": 300,
+    "sha256": "b72999622f071ec3f66b2c0e5a252f245b2e8f5b55cf299aada35b1df8959a0e"
+   },
+   {
+    "ms": 300,
+    "sha256": "a6e28c19dc434e4a478ab78e87a4757223c9ee4d05dd030a8147d26492a2e232"
+   },
+   {
+    "ms": 300,
+    "sha256": "f41f61cd378b37048692bb73e666e1de5499f70eb46b009f234a46f91dcbfab0"
+   },
+   {
+    "ms": 300,
+    "sha256": "3f3768ab005e2ef06a8bc2f168b9c629b6f4c153a8a32a77bb2321095df3ddf9"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   36,
+   36
+  ]
+ },
+ "gifs/mug.gif": {
+  "file_bytes": 348,
+  "file_sha256": "d21764581fd9b4533c961e851a3d198472d494d36d5e1b763ce1a834969f9713",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 400,
+    "sha256": "5b8b7d1deb680040caa7e9c39559d4d54c447249d6737dd7bcfbc9bc99f10872"
+   },
+   {
+    "ms": 400,
+    "sha256": "f659d71c06efaa146cb15e5fea4ca9dc18a98724344d1972ba7d14364e140179"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   24,
+   28
+  ]
+ },
+ "gifs/owl.gif": {
+  "file_bytes": 632,
+  "file_sha256": "c77f3ae3aaca7fa78048495633159e3fe8b98b1ffc634d9adde2269fb57ae903",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 900,
+    "sha256": "f9361d26c3097a51ddc4b01fb35b77418e5b01e3f9504f3c52f5c6da4978b33f"
+   },
+   {
+    "ms": 150,
+    "sha256": "44b3a88e9ccc708322157d898e3ab0a4da38fbfc4b5330719a67bf582424a452"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   36,
+   44
+  ]
+ },
+ "gifs/revenuer.gif": {
+  "file_bytes": 1341,
+  "file_sha256": "94f2651899c124e9f8183ecd5a4197bab1cab6d216008b8626c448bf8445081a",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 120,
+    "sha256": "a55efe07221b04b375c229021f4f89bb830d91436e01df85771db94d98ebc2d7"
+   },
+   {
+    "ms": 120,
+    "sha256": "fb9bbf11599c2bce357e9c2ab055cc7885fe619470c2df29956e2c861de36635"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   128,
+   60
+  ]
+ },
+ "gifs/rig-mail.gif": {
+  "file_bytes": 1927,
+  "file_sha256": "f33ab0848faad0fdc6164c50967c5141fb0ac11825b32b032345c8e3b89f52e4",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 120,
+    "sha256": "0b50316687481408d33fb377d055986b237758e0d845f4ecf0eec937adde5fff"
+   },
+   {
+    "ms": 120,
+    "sha256": "6ae8582801abf7a7e31590a849ee7911fa3d8f82afbf8a66c8865c5df97a736f"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   160,
+   80
+  ]
+ },
+ "gifs/rig-mill.gif": {
+  "file_bytes": 2511,
+  "file_sha256": "d6c3cc965877ed80d14109dd2d20f9919ef19b1b3be756db99fd6137741fa28a",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 120,
+    "sha256": "2d9b62a8210d17101ef03cf2b75328ad73ba511db33c08bd741b24055876bfec"
+   },
+   {
+    "ms": 120,
+    "sha256": "7ea7623844a17c2c3e7116cab0071e3140fc0440fc255640c1c9b30fbbe88c63"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   160,
+   80
+  ]
+ },
+ "gifs/rig-store.gif": {
+  "file_bytes": 2235,
+  "file_sha256": "86e83fd026ec9ed66aec6c9c90165181b9c19147c984bf69b9b4a8ab9758d6de",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 120,
+    "sha256": "bc02e7e6d28c8dda0954c40fc978af7401797d8a79e4ad3a7cc8e9facddafe7c"
+   },
+   {
+    "ms": 120,
+    "sha256": "a2edf84ce9bf824a760a7d712cea63f29bec0fc302c149edf7258d062b0b149f"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   160,
+   80
+  ]
+ },
+ "gifs/rig-tractor.gif": {
+  "file_bytes": 2050,
+  "file_sha256": "99e3489e75ef10f96584a6d6a53b9b260762767cfaade25056986cfc8a227a4c",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 260,
+    "sha256": "53500ead57626d9a39fd2c11ea9bfbb26a846566204a08a683a62fd6f8f1cbcd"
+   },
+   {
+    "ms": 260,
+    "sha256": "c13be64ff86f47aa9b258cccd52287052ec32df5173f97ad8ce143d93974518d"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   160,
+   80
+  ]
+ },
+ "gifs/rig-tripper.gif": {
+  "file_bytes": 2044,
+  "file_sha256": "2efc40f82dde7dc7401f4e321e026b73bf003879ba9741b87ed478f83c56cbe0",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 120,
+    "sha256": "693aac5bbbec6be23d1c2341578697d1007019fb0591735c7a19855386c7a8ba"
+   },
+   {
+    "ms": 120,
+    "sha256": "17094dd218af48818ad81fcba43d0a3ffa6c2c719dca36c306e1d5a7afd0b089"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   160,
+   80
+  ]
+ },
+ "gifs/smoke.gif": {
+  "file_bytes": 549,
+  "file_sha256": "0dfa9bd1651fb3317d9e2170bee66fcafb6da31dcfe25a17fb0a10dcd1eb5888",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 400,
+    "sha256": "28f0a1a3aa998fca75bb284444d089ff5df01130a76c038c1344ff5896cb54c1"
+   },
+   {
+    "ms": 400,
+    "sha256": "901d3baf78074e37ac6f30d48b89543e2ebb9b3d398c80ef81eae944bd8e4b5e"
+   },
+   {
+    "ms": 400,
+    "sha256": "9f6579a23a5203a21d15ab57d3be6d3cb1ca82258c6c03b614b4d0ef9b1cbbbf"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   40,
+   48
+  ]
+ },
+ "gifs/steam.gif": {
+  "file_bytes": 352,
+  "file_sha256": "b0bc96c049cd58168f95eb25d6f99e417bdb5ab75afa674a562263f930c349bb",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 300,
+    "sha256": "040c3538386ba5494dc4adc0924b6dafee0e0ba70958e263091bccde566a7b4a"
+   },
+   {
+    "ms": 300,
+    "sha256": "588c106b459c465c2b052f064b203cb67fd6052bb90932a98dd5dea3758586f4"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   32,
+   32
+  ]
+ },
+ "gifs/truck-apples.gif": {
+  "file_bytes": 2821,
+  "file_sha256": "0749cae6b9874695ab07e8d1c85b0ab1ac97e319369aa890cb7796a488842be5",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 110,
+    "sha256": "d9c3696be00d6b0df1c92d5e99e323dbc71a0b043803d7a6b4fd99bffd20339c"
+   },
+   {
+    "ms": 110,
+    "sha256": "2c1724ad6d3786f2c6238ce8b70fcc99743727f84d012d40a4dabe063e1f49f5"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   168,
+   88
+  ]
+ },
+ "gifs/truck-bales.gif": {
+  "file_bytes": 2893,
+  "file_sha256": "27187c81c864cba297e8c08132357bd014e9f51fda9075b36eb6559bb63250f2",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 110,
+    "sha256": "63515b958e7254d42e32245e476d4e7ee1e700f97f3fa379d4982d549bdf393a"
+   },
+   {
+    "ms": 110,
+    "sha256": "67b029878cbfabbdd626d163e2725726bb66e600bedade65f6593169e81e0791"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   168,
+   88
+  ]
+ },
+ "gifs/truck-corn.gif": {
+  "file_bytes": 2902,
+  "file_sha256": "9f1dcb1af33a7c490ceda2b63f549215a06d45b97d1ded1955f4cb04bc09aefe",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 110,
+    "sha256": "31b8be320fede00c6d938d3e042fffd5ed23af65aa3bc2ea89e3a89de55510ae"
+   },
+   {
+    "ms": 110,
+    "sha256": "75499b79bbb6f58ddc2691394194118d097b5c5d41a15aa7585bae3e7a659206"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   168,
+   88
+  ]
+ },
+ "gifs/truck-crate.gif": {
+  "file_bytes": 2680,
+  "file_sha256": "d9998247d029569c1c3ef1476017062208a20b6bcba6c1a7499431724c399a04",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 110,
+    "sha256": "e79c8eae2f957cc0e1521a19f0cf46832bf9567e7415197b520641e7af1c0e92"
+   },
+   {
+    "ms": 110,
+    "sha256": "acbfd433a4fe49d04bcada53b07dc0d03961f24efc52a50d6ff472294ecd7552"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   168,
+   88
+  ]
+ },
+ "gifs/truck-empty.gif": {
+  "file_bytes": 2214,
+  "file_sha256": "4251bcd0b0927260f06e7712d993f1a882ebc96899aa6616b1856dc906b166a4",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 110,
+    "sha256": "cb47e79a88b8fcc05be776e5f47f94530f190a31a2e1e67f7913246535bd41a5"
+   },
+   {
+    "ms": 110,
+    "sha256": "9af46a50c8b8d23e6001aae6ed7bc08579adc6ce06a68278ad8df4961eb98dd3"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   168,
+   88
+  ]
+ },
+ "gifs/truck-jars.gif": {
+  "file_bytes": 2728,
+  "file_sha256": "80820c024f1f183c5769c6d8e3d5fc99bf098dcd01d549133a6dd13662c6237b",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 110,
+    "sha256": "797870edb886de839ab5c5d1d2f58e14277841477742e5fe18d0529d0d5fc3e5"
+   },
+   {
+    "ms": 110,
+    "sha256": "133b37c3435231795bc90b4bcceefc6033940de010f8748d72c3d4d8f5690062"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   168,
+   88
+  ]
+ },
+ "gifs/turkey.gif": {
+  "file_bytes": 1003,
+  "file_sha256": "d2e28123ec9d8e2df8af7503f8acf56806935eea5bb2f96839b54c6be6eb0b4e",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 260,
+    "sha256": "2e21efdaa5fd769afb7522e211ce0a58dabad4884a37fdadd1882cdca4d6e3b2"
+   },
+   {
+    "ms": 260,
+    "sha256": "478f6d55c131ccbcec6d8eba78311a0e8cd7194fca023875ee8c96d405192528"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   56,
+   52
+  ]
+ },
+ "gifs/zz.gif": {
+  "file_bytes": 326,
+  "file_sha256": "639a81fd1def27505e9bfa10d0fcc79321475e39411effe50cb09f803f4d072f",
+  "format": "GIF",
+  "frames": [
+   {
+    "ms": 500,
+    "sha256": "dbdb009abab20f9f97295ec819f7107ed632b525d78c804ee09c9bd2d8d73fa6"
+   },
+   {
+    "ms": 500,
+    "sha256": "2cd3edc181a2c6c54571cc1a1ed03f3f390a9ccd2701e9ec821fc9f376921728"
+   }
+  ],
+  "loop": 0,
+  "size": [
+   32,
+   32
+  ]
+ },
+ "scene-day-busy.png": {
+  "file_bytes": 7442,
+  "file_sha256": "427ac7b90d1a5ff78a210e1d5e3b20c1ba3ce5a12b9b4ee34d5cbe46662ef1ac",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "cc0b2a4470e0dc1e8af5b4e9fa70c34a594644c78d98921f7f099eebeb8987fe"
+   }
+  ],
+  "loop": null,
+  "size": [
+   1800,
+   144
+  ]
+ },
+ "scene-evening-banjo.png": {
+  "file_bytes": 6577,
+  "file_sha256": "5e75a40540e58048f0ddceaf0003f87241d5edec5fbccc0abc48f9f6f074ff9f",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "353e3360e9f7d704a5912998f5d2cb3509dfd9a1ae3780e31669f63b553f6c9f"
+   }
+  ],
+  "loop": null,
+  "size": [
+   1800,
+   144
+  ]
+ },
+ "scene-night.png": {
+  "file_bytes": 6310,
+  "file_sha256": "0f05a3b7055904ae2870f2ebebeaf870e8294f483c057fba92c0dbc0c3012cd2",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "205b13139cf019042ac30dfaf3454e823c76ff8fa87f247ca129890ce630a8c5"
+   }
+  ],
+  "loop": null,
+  "size": [
+   1800,
+   144
+  ]
+ },
+ "sheets/apple-0.png": {
+  "file_bytes": 188,
+  "file_sha256": "4db4915602e2d8e0dda7d12a1276dd483cf38f92b12aaa890d933e2170f39979",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "e1b753b522f1cdc30cc152892e3b1515d31845e96e0006f1cb59f05b565b05a2"
+   }
+  ],
+  "loop": null,
+  "size": [
+   40,
+   80
+  ]
+ },
+ "sheets/apple-1.png": {
+  "file_bytes": 242,
+  "file_sha256": "f889aade4d69aecc3396be11c54df351c2cd102ab250a1325b46d85131e47c12",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "76a99c77ed86fabce8b662430c9b111384abb5accdf1be7aa323b95172f8903b"
+   }
+  ],
+  "loop": null,
+  "size": [
+   40,
+   80
+  ]
+ },
+ "sheets/apple-2.png": {
+  "file_bytes": 262,
+  "file_sha256": "9cfb93049b0b97545ef7af573665766d92cadf4c96ab6681f054f528fa0bed77",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "60d3b5d407f0bf114ee96d4f9b7bd1d522fb71d89e0ff79a7e8faffff8e87404"
+   }
+  ],
+  "loop": null,
+  "size": [
+   40,
+   80
+  ]
+ },
+ "sheets/apple-3.png": {
+  "file_bytes": 287,
+  "file_sha256": "024d5dde9cf2755a3a3dd21e05d52e48d88c0124361608e4aff5845ede6fe74d",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "0495bdfabcc1d4eb68543d7608712f3e35c86d4349c993f4467680108f813e6b"
+   }
+  ],
+  "loop": null,
+  "size": [
+   40,
+   80
+  ]
+ },
+ "sheets/apple-pumpkin.png": {
+  "file_bytes": 323,
+  "file_sha256": "a6ad90c8053262748112124ed3d5bd76dd291fe0f9c774c21ae770b29bc3057d",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "d724c244eb94d96de92326789052867cb1f3bc00149476717b1a3fe3498c6c24"
+   }
+  ],
+  "loop": null,
+  "size": [
+   40,
+   80
+  ]
+ },
+ "sheets/ask.png": {
+  "file_bytes": 119,
+  "file_sha256": "eb219eab829c60561400e8aabadf06274e1186b6e930ad47fd09acf640e028b2",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "321b6e0fdbb82a791bf598b55e8095b98eaf79399789652dde211366ac97d938"
+   }
+  ],
+  "loop": null,
+  "size": [
+   16,
+   28
+  ]
+ },
+ "sheets/axe-stump.png": {
+  "file_bytes": 296,
+  "file_sha256": "6fdca19667224c77685cd857047cd605eefe94762ee84c66ec46578b97a890c8",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "b48e42aca18111514ff12e9f581743ed4533d8720c8ce66006f664fc8e471318"
+   }
+  ],
+  "loop": null,
+  "size": [
+   64,
+   44
+  ]
+ },
+ "sheets/badge-christmas.png": {
+  "file_bytes": 210,
+  "file_sha256": "17d12319a0f764f531e46ac49664c4b5f4503366cd5ac75e831add4a710d586e",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "e88da4cc3f4972abdcb526944aab03b988e53371fd595facdb8f4707a842d5f9"
+   }
+  ],
+  "loop": null,
+  "size": [
+   36,
+   32
+  ]
+ },
+ "sheets/badge-easter.png": {
+  "file_bytes": 191,
+  "file_sha256": "1bf29590eb0e4f0d830043a7828ff417cbf5a5ae268a0f5b76f50d187256ac2e",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "921e4eb5f7ed4f1e2cb05dfe075ad452a04dd7c7ba4354068f518bf8884a50bb"
+   }
+  ],
+  "loop": null,
+  "size": [
+   36,
+   36
+  ]
+ },
+ "sheets/badge-halloween.png": {
+  "file_bytes": 196,
+  "file_sha256": "dd45cdbb64415e065fd0252949a1dc32f790c596ab5d3d442136e1a2196fd7fb",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "c2ec42a3318e4abf4984b9c6d5c81b749b44f812267c2a9387c7c46727d46a33"
+   }
+  ],
+  "loop": null,
+  "size": [
+   36,
+   36
+  ]
+ },
+ "sheets/badge-july4.png": {
+  "file_bytes": 213,
+  "file_sha256": "1a0a326487c1abf152675b74ccb0d63b18385174b4124706259b2003e38c3673",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "e6aa840dad434e52074d76720059abb7c868d7ac70a85e4daa1a3bec744f8aad"
+   }
+  ],
+  "loop": null,
+  "size": [
+   36,
+   36
+  ]
+ },
+ "sheets/badge-newyear.png": {
+  "file_bytes": 227,
+  "file_sha256": "6ebb5575524ec172c68eb00dfe295c85c5fb7a953a45f0e31fc746174f1394f1",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "dd2eb09ed32278b0bbee8e35210f9d15faaf222c9d50ee2b8fc530d7b3b11604"
+   }
+  ],
+  "loop": null,
+  "size": [
+   36,
+   36
+  ]
+ },
+ "sheets/badge-stpatricks.png": {
+  "file_bytes": 198,
+  "file_sha256": "04d6f525065d6a305fe93a4597d5403d0ba56752d7961e61aa11833caacbf43a",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "1eb047c54baafd0adffb76c5d02eb64101f5716a721d6c2eed1295cb4c25f5a4"
+   }
+  ],
+  "loop": null,
+  "size": [
+   36,
+   32
+  ]
+ },
+ "sheets/badge-thanksgiving.png": {
+  "file_bytes": 249,
+  "file_sha256": "477ea471dc7ce1cf570c99cf98ccb7d1a078bdbf2d193f29d3393016d73edca2",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "c4c657308b61032a7337279895cafbf598ba97b47973187981ab8e207494e426"
+   }
+  ],
+  "loop": null,
+  "size": [
+   36,
+   36
+  ]
+ },
+ "sheets/badge-valentines.png": {
+  "file_bytes": 204,
+  "file_sha256": "5126506f5deb321475bbeefa61e5e500780149d822958209c327b99ccdd66187",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "94f489d4673369f9e1112a63b6324014890461adb375ff3c052bf3c18f54d9ac"
+   }
+  ],
+  "loop": null,
+  "size": [
+   36,
+   32
+  ]
+ },
+ "sheets/bang.png": {
+  "file_bytes": 100,
+  "file_sha256": "5d8e3ae83596f4e4b799248e6186319f673504ae7529b25765a683a11c370770",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "907f874743bf1538ada6d723eeaf66e9a516eec05a884ddb96a04d6ffc2ac584"
+   }
+  ],
+  "loop": null,
+  "size": [
+   12,
+   28
+  ]
+ },
+ "sheets/bear.png": {
+  "file_bytes": 391,
+  "file_sha256": "9d224978ed9614f1517ce9342a17a9f91e7acbd99d30675ec03e28897b028d4d",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "427a70f1aea13bf0e14d165efb5ae51a7457f2538259c8c7dad4a95c917fa263"
+   }
+  ],
+  "loop": null,
+  "size": [
+   72,
+   80
+  ]
+ },
+ "sheets/birdhouse.png": {
+  "file_bytes": 182,
+  "file_sha256": "6952a4bf32fb40c45bccd06b919d133552af253d75bb82b2db7f813b70240392",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "207d9564fa5f217437a2f0c5a515b3f55ff0c34f50e0d179664415cdde089bbf"
+   }
+  ],
+  "loop": null,
+  "size": [
+   28,
+   36
+  ]
+ },
+ "sheets/blue-bark.png": {
+  "file_bytes": 534,
+  "file_sha256": "bdcdef85ecf0bcb565fa48725c9ec06ab6e462cb9f601252a59cd75452e0e3ac",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "ad1884f54361d70d615314a8f4f235c5688ce1f666c9fdadd62e1872a1dbd669"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   52
+  ]
+ },
+ "sheets/blue-nap.png": {
+  "file_bytes": 340,
+  "file_sha256": "4e254a6998ebe5b0cd73bc54ac8df064da33ec1de8b663d5561ed887b25bf700",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "8be8225984a703312cd990545b02ff2ac414d5d2f93ff3c5a1769705fadb09df"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   52
+  ]
+ },
+ "sheets/blue-run.png": {
+  "file_bytes": 547,
+  "file_sha256": "0595d55bbb237b1af242a8d1a5c98b162e396876a73576c5814703db06adcbf2",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "e99b9ca1bd0ccf8fab6f0b60a99970bee5efa605e5e5ada240071037b4e2245c"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   52
+  ]
+ },
+ "sheets/blue-wag.png": {
+  "file_bytes": 509,
+  "file_sha256": "f354ddeba73e9fb0dec0239b3af3d613e657719cea86134a34f0c10eec1fd38c",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "f311ca61b15877ec032614bd42280b39cf9d00d79e9c8180526c093c54ae219b"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   52
+  ]
+ },
+ "sheets/bluebird.png": {
+  "file_bytes": 206,
+  "file_sha256": "9b4217c9fcd99dfbca6c2e3ef3b59f176d19fa8dfcd178d62bcb399549fd22a1",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "dcb82927e124c3ac0c16887dd33a00feef6dc6019220a6584456a2766e1a8a3a"
+   }
+  ],
+  "loop": null,
+  "size": [
+   56,
+   20
+  ]
+ },
+ "sheets/butterfly.png": {
+  "file_bytes": 189,
+  "file_sha256": "9b1fcd5433e816caff2126f637eead2f506bc94eae4d73efaee2ef1f70433cbf",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "40ea797bb93f2d27166ab34682527513364eef504347bee4bf3977d99244cb03"
+   }
+  ],
+  "loop": null,
+  "size": [
+   48,
+   20
+  ]
+ },
+ "sheets/cake.png": {
+  "file_bytes": 273,
+  "file_sha256": "224b5586100e04d10da53085e20d585d33a476ed9205064def98b4f49624f948",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "ddba4813ed6688393399ef1f2d884105a27e213b5ca03f2136a9e14866ab051d"
+   }
+  ],
+  "loop": null,
+  "size": [
+   72,
+   40
+  ]
+ },
+ "sheets/cardinal.png": {
+  "file_bytes": 171,
+  "file_sha256": "593d87d096ec125ed98a1075412bf943dac5eaae71555e89d98e0a955f2f577e",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "53b0a03275ec16c0e6c9512f923c4c273f68904cd051b999a5b4243b3d562af4"
+   }
+  ],
+  "loop": null,
+  "size": [
+   32,
+   28
+  ]
+ },
+ "sheets/cloud-dark.png": {
+  "file_bytes": 199,
+  "file_sha256": "44bb85617e532987da55957be3621064c20d3a8c36c4a8b7e1f29222a8871dbb",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "068c37f5ea8802a645b376d250887829a272d542e3baad13c39ea9fc9c23274c"
+   }
+  ],
+  "loop": null,
+  "size": [
+   88,
+   36
+  ]
+ },
+ "sheets/cloud.png": {
+  "file_bytes": 203,
+  "file_sha256": "2bc24e6f4120513ec5e2896df56841ccae48e064d8be2aa8034fb9af88840c2d",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "efbb4ed93aeda3a92c8bb0bb79388a02024200014d35480c18b26da5c20c27d0"
+   }
+  ],
+  "loop": null,
+  "size": [
+   88,
+   36
+  ]
+ },
+ "sheets/corn-0.png": {
+  "file_bytes": 107,
+  "file_sha256": "56d2eef1714b2aedf1095a4e307cf2b571769f5ea955a58bb3930923f59713e0",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "5dfc48543c79dd4a14c48ad46093e503d6bfadccd7dc026406f4314bea6e9c1d"
+   }
+  ],
+  "loop": null,
+  "size": [
+   24,
+   80
+  ]
+ },
+ "sheets/corn-1.png": {
+  "file_bytes": 140,
+  "file_sha256": "56b9deb7597df4d692d607801611d7813972cd20ec2e9b363549b30519642a4d",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "3d2dce48f94150bd7c77c770e054d4642196a067015d5d49aee89aee407cb6ab"
+   }
+  ],
+  "loop": null,
+  "size": [
+   24,
+   80
+  ]
+ },
+ "sheets/corn-2.png": {
+  "file_bytes": 210,
+  "file_sha256": "b8ffd1e4d542e24cb480ec4bb3c84d9858707388b49986a3d26206de6b27124a",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "cb40eec5a03ecab07e1ed41803f6fd1b005d707487073da5b5d4d387383ee45f"
+   }
+  ],
+  "loop": null,
+  "size": [
+   24,
+   80
+  ]
+ },
+ "sheets/corn-3.png": {
+  "file_bytes": 281,
+  "file_sha256": "c6589a502e28d58a632f972b8fafcaa23f61c0017ff48ac14d66cf72174d4213",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "15a39d62fa6b0c79d91fb1e0f5a05323dc1cdd836d3516c96cd8c783d3315243"
+   }
+  ],
+  "loop": null,
+  "size": [
+   24,
+   80
+  ]
+ },
+ "sheets/cow.png": {
+  "file_bytes": 502,
+  "file_sha256": "86c97b9093eec8b8ede41f6fb89ab35b992c46d9548d4b7c690c019723bccad5",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "d3036a8064bae5bd0243e7d6fbbcbe6917ad85016e6c709c465b3da54909d35e"
+   }
+  ],
+  "loop": null,
+  "size": [
+   176,
+   60
+  ]
+ },
+ "sheets/creek.png": {
+  "file_bytes": 154,
+  "file_sha256": "90297ac7ff81690528b495935aad4bbc5094f48f478cdb30ae1b8bb3fb8e9c55",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "59bdb5cc32e9fb378c723a986a788f5001bfd08398ecb707d22bd3594d75f3b7"
+   }
+  ],
+  "loop": null,
+  "size": [
+   96,
+   12
+  ]
+ },
+ "sheets/deer.png": {
+  "file_bytes": 289,
+  "file_sha256": "e3dd6a2e3a7171e1487a8e98bb9eab96157dcea05768e7dfdba0568aaeed214a",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "57fd08026380af080ca2cc84e013cad69049f6b83c1f2d2ebac154c14cb5f4d4"
+   }
+  ],
+  "loop": null,
+  "size": [
+   60,
+   56
+  ]
+ },
+ "sheets/drift-flake.png": {
+  "file_bytes": 99,
+  "file_sha256": "badfe2aee150f2ecef0595a735f8c2f9a062a54008b1d3f6c78db119e638327c",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "d9ae3b26ae5e8acd2df38acc28df43e8699c3d53e3ca919f7d776e3cb1d1b78e"
+   }
+  ],
+  "loop": null,
+  "size": [
+   12,
+   12
+  ]
+ },
+ "sheets/drift-leaf-0.png": {
+  "file_bytes": 99,
+  "file_sha256": "77cd15a28d7b0845275ffbb5f3cce1cd86d5ca813fbe5a470e62ae394bd70394",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "3605bf5f55b9c32f312184cd870361e9b6474275e269f0e4e271b6d9c2d12731"
+   }
+  ],
+  "loop": null,
+  "size": [
+   12,
+   12
+  ]
+ },
+ "sheets/drift-leaf-1.png": {
+  "file_bytes": 99,
+  "file_sha256": "0ccf6b0f016e5f9ed6b8d18e938a5dd522db9f53a671453b2ac6d89c7ad8a0d1",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "8b6c7c63eabb805595c403a7ff0661d31aaa2f685da067464974a8df5d101e9f"
+   }
+  ],
+  "loop": null,
+  "size": [
+   12,
+   12
+  ]
+ },
+ "sheets/drift-leaf-2.png": {
+  "file_bytes": 99,
+  "file_sha256": "4cb83f757895add6cc65d03e9e30df3cb701fab8e926c2ba4dffb8875b867339",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "63ac64b05bce232c540c25ad852e60d6c5946fafea9a89bec1bae7ac06b5cff1"
+   }
+  ],
+  "loop": null,
+  "size": [
+   12,
+   12
+  ]
+ },
+ "sheets/dust.png": {
+  "file_bytes": 202,
+  "file_sha256": "251070f858e1c6396285a05185dc6577107e45b9407a233ac948d39b46c26291",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "85010fca3ac1d75b7cfe356350e928080da449f849607314e43ce8d7dc5a8cce"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   24
+  ]
+ },
+ "sheets/embers.png": {
+  "file_bytes": 116,
+  "file_sha256": "1a545fc43adfdbb6360c2b146e1e61c19019c67e77a51a3c87f1ec0b7a81b156",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "6f2da1338fbf53fd97d29c10b0b21bb0a8858b854d2e2f92d15863edb6976843"
+   }
+  ],
+  "loop": null,
+  "size": [
+   56,
+   24
+  ]
+ },
+ "sheets/fire.png": {
+  "file_bytes": 239,
+  "file_sha256": "b35266f443b28172747fad78a654358605a05e314a46e6f043204675b68cf999",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "8c05244194b412dfab917a44199010a6190bb5f7fe2d3ecf2e7e57885f9a7d96"
+   }
+  ],
+  "loop": null,
+  "size": [
+   112,
+   24
+  ]
+ },
+ "sheets/firefly.png": {
+  "file_bytes": 117,
+  "file_sha256": "b7775e01e0cfa80d13878d171b11f312cb85f663b0398f763aa28cede3cb7426",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "8bac96e284e4b039ed2ca53ccfc99275521204d8893dac351860c8cce08d2eeb"
+   }
+  ],
+  "loop": null,
+  "size": [
+   24,
+   12
+  ]
+ },
+ "sheets/fisher.png": {
+  "file_bytes": 407,
+  "file_sha256": "cedb877ac66a4c846521aec4b448c3566586451dd1a44ead398e0f868cf76aad",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "13801922c77238d76e002950e336180647391732ad5c445ebe302390b9724239"
+   }
+  ],
+  "loop": null,
+  "size": [
+   88,
+   52
+  ]
+ },
+ "sheets/garden-0.png": {
+  "file_bytes": 187,
+  "file_sha256": "24418aadc97d5253751ea0d6feb74242c60e855197b9d541f19747082a44a84c",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "ac512b590633b95341870016aced09cd85cc6b5acf3237aa466ce6fc243e6b3a"
+   }
+  ],
+  "loop": null,
+  "size": [
+   40,
+   60
+  ]
+ },
+ "sheets/garden-1.png": {
+  "file_bytes": 208,
+  "file_sha256": "7d387c3b75250d78233eccb8906bc1f3aa6842e5081f460f55d72743c6342757",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "f81e96cc00fe701003b8165b2bd10e15929598cf8212a068af41527a848692e9"
+   }
+  ],
+  "loop": null,
+  "size": [
+   40,
+   60
+  ]
+ },
+ "sheets/garden-2.png": {
+  "file_bytes": 260,
+  "file_sha256": "87107eb4c5de845c86aa26fca755dbe0a5bbb655742ce6292987030e1a64d9ec",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "515a8ea6bd7dd53545cf180480556d456a976f14f48ec6bf16314ad850126b86"
+   }
+  ],
+  "loop": null,
+  "size": [
+   40,
+   60
+  ]
+ },
+ "sheets/garden-3.png": {
+  "file_bytes": 311,
+  "file_sha256": "193304d4e0322f1228e1bb772e6b09fa4e78da69654767787790b8865e337479",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "f84929a856301fe142454d296ec580786600b81c94bee11c04b5410be28663f7"
+   }
+  ],
+  "loop": null,
+  "size": [
+   40,
+   60
+  ]
+ },
+ "sheets/groundhog.png": {
+  "file_bytes": 203,
+  "file_sha256": "f6d33a2575c100c0884108bba06c11ec6accba7487bd890dbb5fc9bb388753f2",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "a8a1a3959b6759f987837000aa89330806e7473ab8e230e837567dd1880adc1b"
+   }
+  ],
+  "loop": null,
+  "size": [
+   40,
+   44
+  ]
+ },
+ "sheets/hand-work-0.png": {
+  "file_bytes": 827,
+  "file_sha256": "276bb0d427f81532986aa31aabc8ba63a1432e5ffe4f4542cd876670da7904cf",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "7cb563d8520dcd11e62c38bcc9f3b285f968c792abb3b0653e4b788d77552fbd"
+   }
+  ],
+  "loop": null,
+  "size": [
+   128,
+   112
+  ]
+ },
+ "sheets/hand-work-1.png": {
+  "file_bytes": 777,
+  "file_sha256": "654b2a8a73690bec720aae24ac306b834476c992f894675e229eeb66b6506963",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "d7278f1d7fba2eb54eb695c81baef3f264f5c111a2176aad4932d744fd73179a"
+   }
+  ],
+  "loop": null,
+  "size": [
+   128,
+   112
+  ]
+ },
+ "sheets/hand-work-2.png": {
+  "file_bytes": 757,
+  "file_sha256": "db1ae5df60345dc9af856ac6811f4c7552b66a814439c99e3c5a9d619aee9c7f",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "948fd65585b4e746e3f5690573a77e63e824990eb8f354171dfc4b5e370cb6b1"
+   }
+  ],
+  "loop": null,
+  "size": [
+   128,
+   112
+  ]
+ },
+ "sheets/hand-work-3.png": {
+  "file_bytes": 844,
+  "file_sha256": "73edc3f155816d095c4bf343917aa6efb37684fdc205486cc1256e63ab456449",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "82f6a5b084cb5ffe5af040e8525ce7913ffe8646eb350e9faf91258edde7399a"
+   }
+  ],
+  "loop": null,
+  "size": [
+   128,
+   112
+  ]
+ },
+ "sheets/hand-work-4.png": {
+  "file_bytes": 772,
+  "file_sha256": "8fb047930bad70180f309dc66a651e3ea8ec8806cd62f2468d0b37353b96264a",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "d17c564811edbb04ee75b1ca4f97b5091a9590b782cb6977738ccfcb6e8f149d"
+   }
+  ],
+  "loop": null,
+  "size": [
+   128,
+   112
+  ]
+ },
+ "sheets/hand-work-5.png": {
+  "file_bytes": 834,
+  "file_sha256": "104b61f03e5cce66e16d122dd26205679866649ed30dd3c2f5c479f6f6036769",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "4df65b558a2d58951012a2c8b2822c5e1c21f41fdf3b73f1154e5acf69ddd400"
+   }
+  ],
+  "loop": null,
+  "size": [
+   128,
+   112
+  ]
+ },
+ "sheets/hand-work.png": {
+  "file_bytes": 827,
+  "file_sha256": "276bb0d427f81532986aa31aabc8ba63a1432e5ffe4f4542cd876670da7904cf",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "7cb563d8520dcd11e62c38bcc9f3b285f968c792abb3b0653e4b788d77552fbd"
+   }
+  ],
+  "loop": null,
+  "size": [
+   128,
+   112
+  ]
+ },
+ "sheets/hat-feather.png": {
+  "file_bytes": 154,
+  "file_sha256": "2aaafdf9e13cf44b3736ca8ba871d669651a82b335f644f90312abdf2aaf3c50",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "a22fb9323f7bb41307e8bb0b3ee3afc83ae1e4ce887e8cdb1a4033a56190fcfa"
+   }
+  ],
+  "loop": null,
+  "size": [
+   20,
+   24
+  ]
+ },
+ "sheets/heart.png": {
+  "file_bytes": 116,
+  "file_sha256": "4de8ae6f8a73d4f2d9ad5a1fa33ebe76c71fd05251814d46f14bba60b2f39426",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "5eb70e1e1a0e5eca32e387a493ff962dd122809db19117b6697c236d5bcda734"
+   }
+  ],
+  "loop": null,
+  "size": [
+   20,
+   20
+  ]
+ },
+ "sheets/hen.png": {
+  "file_bytes": 329,
+  "file_sha256": "f7b659fcb33dc0402d225130f7da00fa23443c3be7e559986f6976c0975746d5",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "5c5ae32adb8f7408d64f6418bed0253df898efb6b8f44c0e99f28cf108614f02"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   40
+  ]
+ },
+ "sheets/house-coat-night.png": {
+  "file_bytes": 952,
+  "file_sha256": "ee884c886ad280a2721d1b19719c0c825a72db00c613d6bc977c7ca79e0bc4a1",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "15a076161fabc0e363a1525c0b0c8d0cc2971f2e2805553162dd55e755fac900"
+   }
+  ],
+  "loop": null,
+  "size": [
+   200,
+   160
+  ]
+ },
+ "sheets/house-coat.png": {
+  "file_bytes": 979,
+  "file_sha256": "361fa3d4f5bf2b304087e284bf9dcdb023a7929ef2007e1a52ac1be1ee557bf7",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "0b1181531588b11bfe22b816b6ee3799bf2e4504a39463b63633b62592498b38"
+   }
+  ],
+  "loop": null,
+  "size": [
+   200,
+   160
+  ]
+ },
+ "sheets/house-night.png": {
+  "file_bytes": 905,
+  "file_sha256": "4e2b75293405bee45915bd9918941103ff5ac492c2fb26caad5d8431f52838f6",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "5cd4a29c0c6d2dc6396bc727a7ab1a1a7b444f8e103330895f679ea40cf12401"
+   }
+  ],
+  "loop": null,
+  "size": [
+   200,
+   160
+  ]
+ },
+ "sheets/house.png": {
+  "file_bytes": 931,
+  "file_sha256": "d4738b9820c77521d809fb80da403c7c6caa77b7ed9de4d8077e91fbf4aa56f1",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "bbb13233157ace012a61333f7df96abb9c7717f4b835b8dc5fb2bfea22b34e12"
+   }
+  ],
+  "loop": null,
+  "size": [
+   200,
+   160
+  ]
+ },
+ "sheets/icon-apple_butter.png": {
+  "file_bytes": 142,
+  "file_sha256": "4ac3f98683395f66496506a2c031867ddc10e1eb28e5c099e9d370ae7ec12bed",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "1e4facb8b38ee13155bab2ff56153886ee98297dc6db53811ea7d1a47e5b6bea"
+   }
+  ],
+  "loop": null,
+  "size": [
+   32,
+   32
+  ]
+ },
+ "sheets/icon-apples.png": {
+  "file_bytes": 160,
+  "file_sha256": "808200b6627defcc74e12d0ec9881e8059cf75af2240bfac90944fd0bbe3ed28",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "6901255cdb7d31eea70ecd881e0bc0c088ff4151c41b1b6ddf9b4f319e022043"
+   }
+  ],
+  "loop": null,
+  "size": [
+   32,
+   32
+  ]
+ },
+ "sheets/icon-bale.png": {
+  "file_bytes": 133,
+  "file_sha256": "be7995984f94c8026eeb6338e0b229a76638882bb59ba3202610633b60347a29",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "f061f9a38e5c1c2efa7a939172dbd1c942bbe3dadffbf8f170dbd274c9262660"
+   }
+  ],
+  "loop": null,
+  "size": [
+   32,
+   32
+  ]
+ },
+ "sheets/icon-cash.png": {
+  "file_bytes": 127,
+  "file_sha256": "8e9445285602b3f1c2c2bf60b3550d19b6f38ff9540a59e29a07fbf3451c6e7c",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "be4501e67b003fc983ef19af7371f7d28de0dbd14a3c2edf04ab6ccd0fcc9383"
+   }
+  ],
+  "loop": null,
+  "size": [
+   32,
+   32
+  ]
+ },
+ "sheets/icon-copper.png": {
+  "file_bytes": 156,
+  "file_sha256": "bb51e16cfb798256b5063676943cdcf7141df9162ea8a15776a6a1177aefd8b8",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "046e14a1acd58e9df6690ee8a1a522b3c7d2c2bc3bf3567a284961628f6e980a"
+   }
+  ],
+  "loop": null,
+  "size": [
+   32,
+   32
+  ]
+ },
+ "sheets/icon-corn.png": {
+  "file_bytes": 148,
+  "file_sha256": "c135466a41fe31ab83368cb9f8ec88c74c095c78c948c98cb0a1cff8ed53c8ea",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "7eefcb8d430a760b5241c6ebe84fa5687215bf048e4931508c918625f82fa809"
+   }
+  ],
+  "loop": null,
+  "size": [
+   32,
+   32
+  ]
+ },
+ "sheets/icon-iron.png": {
+  "file_bytes": 154,
+  "file_sha256": "d58f1473d7bdc93d4db0e2c4f70927040fa5f9ca69b65092bac4ce4b283b77dc",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "0ebb8ca2253e6bf6d940594fa5406e8af0794f90c73a8e857914703bd1858ad7"
+   }
+  ],
+  "loop": null,
+  "size": [
+   32,
+   32
+  ]
+ },
+ "sheets/icon-jar.png": {
+  "file_bytes": 151,
+  "file_sha256": "20df18a0ed895d49f78a8488cd5c5b0007fd9fd5f105470b412600ac8d1e09c6",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "ffe6f4e2c32525bc108edf0e64714b7b75f27ce683b5f1bf885ba438de8f8309"
+   }
+  ],
+  "loop": null,
+  "size": [
+   32,
+   32
+  ]
+ },
+ "sheets/icon-lumber.png": {
+  "file_bytes": 160,
+  "file_sha256": "f1e77d5c5bbdd955061c36d32f7f9786136692bc037c7fcbc70b1691637c5697",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "f3549f059aaf9a8e25f7772c2eb045b9d4eac1166b1c7ee82f8a823511081b9b"
+   }
+  ],
+  "loop": null,
+  "size": [
+   32,
+   32
+  ]
+ },
+ "sheets/icon-stone.png": {
+  "file_bytes": 171,
+  "file_sha256": "0324228a9616c431375150d9101d6880b0bcb4305a2966b045eed2c17370fa71",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "ed2096495afeb7ee3870f4c6ee692b9fc7531851bd3ceef429d147df72930c7d"
+   }
+  ],
+  "loop": null,
+  "size": [
+   32,
+   32
+  ]
+ },
+ "sheets/icon-straw.png": {
+  "file_bytes": 163,
+  "file_sha256": "910db7b7cb35c8b6bcdb4056f39295d4b1b14b2ff354d13cba6b3012ed28e36b",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "7d89e1773eba93c9deb8a9bdf4b57682b8d5a8e255ff87e95ac4a161338a137e"
+   }
+  ],
+  "loop": null,
+  "size": [
+   32,
+   32
+  ]
+ },
+ "sheets/icon-sugar.png": {
+  "file_bytes": 157,
+  "file_sha256": "bb44baf6a6bc7ebe0d0600d8e2e002a5b5fa3b21867deeb751ab3fde0fa6a12e",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "db9d29c9119e59e67e2d1ba497997eacc0b913e76749293048a5560351beaf5f"
+   }
+  ],
+  "loop": null,
+  "size": [
+   32,
+   32
+  ]
+ },
+ "sheets/icon-twist.png": {
+  "file_bytes": 183,
+  "file_sha256": "09fa0ad571840198756146a4948eed1f41833bb5986cd475372f84fa6a2540fb",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "a194ddf3bae6bab826d560a9b5858e9f15a563888fae391361cab5b8afa82b1f"
+   }
+  ],
+  "loop": null,
+  "size": [
+   32,
+   32
+  ]
+ },
+ "sheets/icon-whiskey.png": {
+  "file_bytes": 142,
+  "file_sha256": "00c3abed4ad4fad4f5afe8ee656db74573fe84f7d4def07ed7b2d5b8bca89df5",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "7fe3e259f0e3b237b3e0641ac98c9ab6644bf64d6b36f47a4ca013f6c1f4df2b"
+   }
+  ],
+  "loop": null,
+  "size": [
+   32,
+   32
+  ]
+ },
+ "sheets/jeb-banjo--christmas.png": {
+  "file_bytes": 1468,
+  "file_sha256": "4b80cb5b6cedeb698ba47a3cadea31c5c82450624fba4f13cc7ea465ab2a3ad1",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "578a2b508e93b5f3849acc2dd21368c8897da7fdfb493163311b3b04d74d4d99"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   192
+  ]
+ },
+ "sheets/jeb-banjo--halloween.png": {
+  "file_bytes": 1471,
+  "file_sha256": "58fc375b735b8c4d78c46086e3d05483b20145db18e56cce695e81040c6b4609",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "f9641b697cabe0826996563cf2f8e1401a9165c10f99fbb1769d85dd1dc1ff69"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   192
+  ]
+ },
+ "sheets/jeb-banjo--thanksgiving.png": {
+  "file_bytes": 1607,
+  "file_sha256": "23b16273e54413de4ed7942645ed701eeaf395b99deacb7e807297acf54c6763",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "aacede92f6983cfab987230f524aa0148bf3332eb249f866820f7293723da504"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   192
+  ]
+ },
+ "sheets/jeb-banjo.png": {
+  "file_bytes": 1293,
+  "file_sha256": "e818f0f57a538e5b96a9d0653a81a583cc9b08e8756aaab3e1408ec07274c74d",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "64dde25a64b1a189c1a247bbb9d059ea3315e876a59eaee7008739e73295049b"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   160
+  ]
+ },
+ "sheets/jeb-book--christmas.png": {
+  "file_bytes": 1034,
+  "file_sha256": "4ea125d071c5b60956c75ab430ed3b79ae8b5153b1ecb758d66d90110c22204e",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "362a198186a65aad92e67584676887889e14b3bac0c05b760f8afec57603f460"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "sheets/jeb-book--halloween.png": {
+  "file_bytes": 1041,
+  "file_sha256": "8812ff316e16a26b0d31495998e28692dcf391f7f982527ca6e5c7aae844cf62",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "71ac4392feac6435c1530f6257b20a6753fc363ad4dab5ee75b0224999df7361"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "sheets/jeb-book--thanksgiving.png": {
+  "file_bytes": 1172,
+  "file_sha256": "a04843e15cac91c69112cffb27093f4a27058b2d18030955a348ce9345585815",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "119b62145895eafd0497d4289e130a3f2855e0de4b0d14f4ef9ca395a2422af9"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "sheets/jeb-book.png": {
+  "file_bytes": 928,
+  "file_sha256": "d23b39b1a4d7a032af0b8ee66a8602e53a8ba3ffd3a25699a0aafeed9a676012",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "7d90cc6413a42e956fc560d14a53c0085b38799d53e1772de8bb8bf4c96ee5bb"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   160
+  ]
+ },
+ "sheets/jeb-broom--christmas.png": {
+  "file_bytes": 1456,
+  "file_sha256": "5c51bd2dd57f366a05590092b5d1f1e713315886629ccb9d2fb4d4e45fa685b7",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "60d5a96a5101aa199db0c4dddadf495c94253c4a3643dd7255d42fbc9ae9e2c5"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   192
+  ]
+ },
+ "sheets/jeb-broom--halloween.png": {
+  "file_bytes": 1409,
+  "file_sha256": "a9afae88d1db63b27d96140515e498ad1c7f2d86e365553f2b0fbcbe956d9c2c",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "f9e5db43aded8156849070f3bfc29e2dc3e9581bc2347e31f7eb9c1b7351903a"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   192
+  ]
+ },
+ "sheets/jeb-broom--thanksgiving.png": {
+  "file_bytes": 1588,
+  "file_sha256": "f6a86dcfb96fe80b40e163f7a1ee39273ad7114c9c7164e0407bf472cb03697d",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "29fab352c2e18d84f5cc5d99aa096375952eff6f08a420efca90dce0adee6008"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   192
+  ]
+ },
+ "sheets/jeb-broom.png": {
+  "file_bytes": 1253,
+  "file_sha256": "eb0da50c3d0b85a85797a299cce4f7fda14fbbc2341ceaa7fafb8c51a9341a74",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "b4de5f28619548a02def6642968a53089ac8a54a2bfdb6138ee91e33c66ec38a"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   160
+  ]
+ },
+ "sheets/jeb-happy--christmas.png": {
+  "file_bytes": 996,
+  "file_sha256": "959052678e1ec60a6636296a965fc00aec75e03b416077a659b4e982ddc9bf9f",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "22c2eb3119c160c47480dda4a64404ca1ebd41a67182f0bfb290f03612cc62d9"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "sheets/jeb-happy--halloween.png": {
+  "file_bytes": 976,
+  "file_sha256": "855762f4488bce638d5020a205b71dc062aef31bbeb72841b1505e4c3cee8861",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "05ecf677cc1804adc101da95762c5c18ca303817b97274b35f3ff10ae36a4796"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "sheets/jeb-happy--thanksgiving.png": {
+  "file_bytes": 1138,
+  "file_sha256": "f2f56f6207f22178187c16811e360565d6e0f0645f9c7f5ba0240a47e152b384",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "d9242a9d8abab1139f826b4462d1d53486665577c94a5b2facbcf1081dfe17af"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "sheets/jeb-happy.png": {
+  "file_bytes": 880,
+  "file_sha256": "905b1ad13cc6c90fc1bcd71303c382edb73d9600bba5739556b60ab3b978e328",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "06fcc7c616ab2294add4b0ab60b351e6c428a85f6af884f6851bbba4d694eabe"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   160
+  ]
+ },
+ "sheets/jeb-hoe--christmas.png": {
+  "file_bytes": 1587,
+  "file_sha256": "ce14cf53ede8ef724755d59a708eb9a4fde58bc2784bbb325e6d702117d317b6",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "f3bde295a67ee9116fef67d284686f33f00801b14322d7077c28936c1f4dc43a"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   192
+  ]
+ },
+ "sheets/jeb-hoe--halloween.png": {
+  "file_bytes": 1481,
+  "file_sha256": "bf68d540e24ed2ddb5d34d5d713060007ac79a9b115a8d91512861cc249ecf37",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "220f52c72021167692ed53fbc37445d922546b8667dc0332dfe410b5c1f64444"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   192
+  ]
+ },
+ "sheets/jeb-hoe--thanksgiving.png": {
+  "file_bytes": 1717,
+  "file_sha256": "3443aa5dc85aff44e915ed35f70ee9ea5e7ee84512a18a5c71cf64437eb50f61",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "2bdac0518388187192da3c49699436808d3d75c3ac99f4663d631349755b49d6"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   192
+  ]
+ },
+ "sheets/jeb-hoe.png": {
+  "file_bytes": 1378,
+  "file_sha256": "25fc3245586689fd7432e163dba4cc916b50329667b2616bb2fe7d446032dbab",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "2448ce2486f331d8b9b647e34772e4f5903038ef1279d0f963cf16c0f7c159ef"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   160
+  ]
+ },
+ "sheets/jeb-hold--christmas.png": {
+  "file_bytes": 993,
+  "file_sha256": "76c66f74599bd8a083da548a5c13d38d74e183db131933f43b86c52968658da1",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "1b9c86769e4d343ca5b865009ed1d7b8c1c7b1ef1f36039caff597da5d571742"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "sheets/jeb-hold--halloween.png": {
+  "file_bytes": 973,
+  "file_sha256": "ed659364f4f4490a5746dc0eaa8c5a124ced20f914780b5963fe9d2731142710",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "c2f57736e4deae076e42ac92a2c68ae2a164f55fda09f25b8a0e365820080626"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "sheets/jeb-hold--thanksgiving.png": {
+  "file_bytes": 1132,
+  "file_sha256": "5b328d1c2694194b677a990b07fe4e5ba3ca2556e3de64edb8285fbaa7850a0b",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "5157f4c7caabb6cf2daeea9454de5812de528d7bd85fa0152be9a3920fbc3328"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "sheets/jeb-hold.png": {
+  "file_bytes": 875,
+  "file_sha256": "b25150b70f2a06f4ec1a09e5194a804ef3de7a11c4e0215cde64141de551c5d3",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "82bb440a2f1e1fb4064b326f65cc4ffb32a58b00cba77694217f76595959fa95"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   160
+  ]
+ },
+ "sheets/jeb-idle--christmas.png": {
+  "file_bytes": 1590,
+  "file_sha256": "59a64febed9902be74787eed0432411e38b22601c8430cf039f7f4ea2b9556e6",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "5828113e4bb21127ad32a8099884cd56e84b54d618360551cf86d60aea22fa70"
+   }
+  ],
+  "loop": null,
+  "size": [
+   320,
+   192
+  ]
+ },
+ "sheets/jeb-idle--halloween.png": {
+  "file_bytes": 1521,
+  "file_sha256": "f907110bc53d070c586c0a3eab6beb9175a0d5a80b55cdf53ab60730ebbafbd8",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "b098dffe5f9bdf49135afbbff0b3cd3c931633b72d5f4a960d260130e6b04427"
+   }
+  ],
+  "loop": null,
+  "size": [
+   320,
+   192
+  ]
+ },
+ "sheets/jeb-idle--thanksgiving.png": {
+  "file_bytes": 1707,
+  "file_sha256": "8d79fde0b4cf5bf9dc0b91b0e770d933c44f3a9d3738fdea131456e333623242",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "28165d234ea32c579dd776bbc2433e2759c6e3ed6985ffefdbbf2c2caa0b125e"
+   }
+  ],
+  "loop": null,
+  "size": [
+   320,
+   192
+  ]
+ },
+ "sheets/jeb-idle.png": {
+  "file_bytes": 1318,
+  "file_sha256": "805029fd313e4e02e8e3427649fccdf16835fc9a58e95e5b8d24bb62d36e825e",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "90ad665a243a662950598f1593e26278160debcc6d63d4749bf48a0ee55e246c"
+   }
+  ],
+  "loop": null,
+  "size": [
+   320,
+   160
+  ]
+ },
+ "sheets/jeb-jar--christmas.png": {
+  "file_bytes": 1045,
+  "file_sha256": "7940780336283e21dc5a2bc7affd73b8e7aeb28b3f10da31c5864e18613615cc",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "ce9c745e8fecf24beaae198c02de1a37a4dc4560b17859910daa88d6a0dac38e"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "sheets/jeb-jar--halloween.png": {
+  "file_bytes": 1038,
+  "file_sha256": "e6532d74f943c5df476647d61d6519a69490b01fc0e88f45091cafe5d662afe2",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "4750fbec8bf16e744007ffb80b349ea5807c61c8e3a65d6038b5786bc570f6ea"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "sheets/jeb-jar--thanksgiving.png": {
+  "file_bytes": 1185,
+  "file_sha256": "41213280b7244b5443b129814a39a77916a4988a706a5195e9c2c64406cd1e4b",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "ced5eec7ab98433fe13414d3c673b3c70610c6cce0880302904083f778f911e5"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "sheets/jeb-jar.png": {
+  "file_bytes": 926,
+  "file_sha256": "ca3ff9b761549ef3f265284f3fe4c831aeb08f3f2b4a43f7a33ca544e9ce7c9b",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "3d080c64c287d787776d9083ed1cdcca4502a9e4d899cc4129072ddf34dcd62b"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   160
+  ]
+ },
+ "sheets/jeb-salute--christmas.png": {
+  "file_bytes": 1337,
+  "file_sha256": "9692be24bf0ec6c1eff2a91ec6d4011c93e9294e2b1aa56a5cb560d29f4ec7cc",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "28f0eaf81ef9d3070dc39ef809c7b997341a879f47ea7383a89d2ac35174d24d"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   192
+  ]
+ },
+ "sheets/jeb-salute--halloween.png": {
+  "file_bytes": 1333,
+  "file_sha256": "ca4156e6f4786679818819f5f7cc7768ef9bad8a66ea05869ad65c3e30eee284",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "0220d2d556377da2186b09f04564a57a144fef133340d0ebb483a4371729eef9"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   192
+  ]
+ },
+ "sheets/jeb-salute--thanksgiving.png": {
+  "file_bytes": 1491,
+  "file_sha256": "d85bf704de8ec55649773c205ea811b846a9e6fbe95bf209416ac54439b35802",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "65813511b12f849c1eda47ca5b7b417cd8b04ef5accfd46509a9f979b85cd0ab"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   192
+  ]
+ },
+ "sheets/jeb-salute.png": {
+  "file_bytes": 1157,
+  "file_sha256": "0cb6e80671bca081d1b05ec14c949cf4bdd68ace0a3f04e27b03d1f2d02fe36b",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "feac79e2d09c1b50ce6670a715bbf10641bb241b3dc34d93f34d2cc924d7e589"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   160
+  ]
+ },
+ "sheets/jeb-sip--christmas.png": {
+  "file_bytes": 1470,
+  "file_sha256": "37b4beb3111fb51c7f939bd35b76a8dbb13f9d7b7fe95d496c7544bdb823f195",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "22d9f09e42bbfac221f78acb0fbd12b8f8f6a64c35ed09de16b6285e21b3ddfd"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   192
+  ]
+ },
+ "sheets/jeb-sip--halloween.png": {
+  "file_bytes": 1450,
+  "file_sha256": "f45e3735ce8b41d4589a7bde85ecf80efcfee32ad5332631a3c1806ac05c03ae",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "7ff22b31eb43df50960bbc78386bec119f801f1d6f9dc7736d2940d7b63d8eec"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   192
+  ]
+ },
+ "sheets/jeb-sip--thanksgiving.png": {
+  "file_bytes": 1608,
+  "file_sha256": "ed7a98d3100bec1a859f17f8a4f6cdea9b3274e7e00aaf25609325103370d389",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "4270e9deb6a45b9bd906de2e9ad9b584ec1d0da784bd69d8710a83e5359d2a77"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   192
+  ]
+ },
+ "sheets/jeb-sip.png": {
+  "file_bytes": 1268,
+  "file_sha256": "78f67878ed12ed0b57ab986eee3675769985290b18c0d930baa7c89bf295ae9e",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "49af1ed31812685128b1763ec69cb0f538454a386492ef6a7b3fa3b4fdccc2c7"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   160
+  ]
+ },
+ "sheets/jeb-sleep--christmas.png": {
+  "file_bytes": 977,
+  "file_sha256": "6733032735925192289fa7a6c0a9a79d2b3aaf6c64552a98bd1d917eb771bcba",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "74de7c29e8b452aa8c1136ddcc61571c46d99a83f310c19dd47cf61a78b13a4a"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "sheets/jeb-sleep--halloween.png": {
+  "file_bytes": 955,
+  "file_sha256": "a33a616f63eae78acdd30687e788e4fabaac35f45f2ecc4fb37a7b101be1457f",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "69801d339cd02a63517c79d3be0203efaa4aaa65315179af237ddd97b74278fd"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "sheets/jeb-sleep--thanksgiving.png": {
+  "file_bytes": 1115,
+  "file_sha256": "d74feebe96d32005fb2a886d6fba1c9da103b990bfc6f69ead6c6eb66cbbfe41",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "8076225d26e867a47ba7892082d9aa0f58c0255f7f791c7a7b4281401686ad0c"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "sheets/jeb-sleep.png": {
+  "file_bytes": 859,
+  "file_sha256": "c4f2e39a5c77877cafc86d9f8fcc274f65afc4ba1bed20632c159f6135e6bced",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "b435bf590021db708e1537a4f1bb219ff84c0ef1f1e58e43407b17129fc66d5d"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   160
+  ]
+ },
+ "sheets/jeb-spooked--christmas.png": {
+  "file_bytes": 994,
+  "file_sha256": "31c18212484e6142ab22b65a3b81158fcf8c1525ebe40cf571336d897e8470a6",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "f359eca2faab4f20c5a23245cc925448ad3fac8ccdebb4e2a2cf8f249a9efd59"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "sheets/jeb-spooked--halloween.png": {
+  "file_bytes": 971,
+  "file_sha256": "22452814ece5e594906697d00dfb427964decf2bd73a6652c4141304a6c446f3",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "5fed9f62011e6ce8753f94c8cd1fea2fe08ee453505ff8a78daaac6fc884d3bf"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "sheets/jeb-spooked--thanksgiving.png": {
+  "file_bytes": 1138,
+  "file_sha256": "851932832b6158b24a452fc5e1fc17f758c957ce7c95234944d8537b22263479",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "f7b9d8467f91fb629dcd2a7be4e0c670588ad1b220611e82c8c496ca258f3b45"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "sheets/jeb-spooked.png": {
+  "file_bytes": 877,
+  "file_sha256": "63f06df50ac9111f9d8f189a8b199eb739fa7041d849482c2e971c16d7e179fb",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "b19619c43080debb3c7471341bca3de7705a87401b214a424b10a429e70cc3dd"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   160
+  ]
+ },
+ "sheets/jeb-stir--christmas.png": {
+  "file_bytes": 1320,
+  "file_sha256": "1fb482f61e976b602050cfaaa2cc89a713a5d56734c505121798894b6c25d721",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "170d652e2b4acdd2fe8bd0a0fda6f856af8d3feb5dbd34cfca58786a89caab1b"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   192
+  ]
+ },
+ "sheets/jeb-stir--halloween.png": {
+  "file_bytes": 1292,
+  "file_sha256": "e33795f8220262cf70b40f1edcf47564626b69f411c0d935cfdfe9cb1ea48b05",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "5329bb2e691239c83bd5741f2590642c2a03b8284140f888142f599fd12380ab"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   192
+  ]
+ },
+ "sheets/jeb-stir--thanksgiving.png": {
+  "file_bytes": 1467,
+  "file_sha256": "c8c56509a7911036433bbdb0bdf6b182a8ca399062c5904860ce1cb0532d1aa0",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "6d73f288c466701b0102ebc5231a168cc8c10e9643e5dcbc3fb45e81100cf18e"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   192
+  ]
+ },
+ "sheets/jeb-stir.png": {
+  "file_bytes": 1136,
+  "file_sha256": "795a10e175fcf17e9a45a48aac455e4255610c95c9573c47d8ae0258d6a92f9a",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "3b72ccebe41d76f91183b64df409761992a227a2c26bb57c9e39b88c1f41462e"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   160
+  ]
+ },
+ "sheets/jeb-think--christmas.png": {
+  "file_bytes": 976,
+  "file_sha256": "27e543a11e8eab1e770ee4ca43c28e137723afe62445493dd4bb4228e475a8eb",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "7e0c9a8027fa28ab80a9b5ff4abc71967ea1c6198dfb4ce9b68bf4d5b900f663"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "sheets/jeb-think--halloween.png": {
+  "file_bytes": 962,
+  "file_sha256": "77c72c93f3375b9fe51d35f0884cbb1c2363e0f019fe530353cac795680c301e",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "6df9f76509874a8b0f410adbaa2013d838d4528f2c53075238d377ee6f7936a1"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "sheets/jeb-think--thanksgiving.png": {
+  "file_bytes": 1118,
+  "file_sha256": "0b112262455a1398bb93d327727b1bcf65632c32f6582fa9cd20f3d5f88cb2e2",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "ce78dd9fe42fe4c984a8cd4d7607d29041db3558355c6ef1590e4953ff29e292"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "sheets/jeb-think.png": {
+  "file_bytes": 866,
+  "file_sha256": "19fda2a868fea77d5dfd11a9a478e11575829b47796e5de20897702eba23cda2",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "90ece3917ab3747b49070e553b324a3e676e7e8dc7fe273477652a1ead4027e3"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   160
+  ]
+ },
+ "sheets/jeb-wave--christmas.png": {
+  "file_bytes": 1331,
+  "file_sha256": "8ebd68b89ffa37686e70e1b68b86240fc78267aa45f4539ad893080f443f1c83",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "4f69e2dc5152b055bce93089101ead54f5225c9a230a7ab9ae387687dc7cadc0"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   192
+  ]
+ },
+ "sheets/jeb-wave--halloween.png": {
+  "file_bytes": 1314,
+  "file_sha256": "8a6f7d0490af9772df23ece6989dee3d76f26843ea09a9b66a2db730d9de2398",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "fb669047493ca725955a9f4bda754ae53197a476b19feb97382213c2d6a542b5"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   192
+  ]
+ },
+ "sheets/jeb-wave--thanksgiving.png": {
+  "file_bytes": 1463,
+  "file_sha256": "bbb833269ae54f9c3b5c698c96b95940a0ec0071d9183bccb76f16c6a816eb07",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "f3b796aa9906e6ef0b79a50da4d099ef5fdc72c6800fa6711988ca5ae322f6cf"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   192
+  ]
+ },
+ "sheets/jeb-wave.png": {
+  "file_bytes": 1136,
+  "file_sha256": "dd2761a544951c211082a04408f49e4e0c754ccd347bf37396ffbb9cb3e10d0d",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "f08681d435671f0935ef78e458f8b4c42f5dd453e72073c2cd05b312ffcbd5e4"
+   }
+  ],
+  "loop": null,
+  "size": [
+   160,
+   160
+  ]
+ },
+ "sheets/jeb-wink--christmas.png": {
+  "file_bytes": 993,
+  "file_sha256": "d31a8487444532ceb136f52f503a12c40aa90b19d664dde62b19abd6969abde0",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "09e8133849da24b92a76eef428cdcefa47b2cc319471148738d3a381bbb6bd77"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "sheets/jeb-wink--halloween.png": {
+  "file_bytes": 971,
+  "file_sha256": "6aa64cdcd14fc7134ab98cb2d4d98979e8c6beb0f660065aab82020c0abf55a3",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "15d7cd15d66931676842ac621d0e91c68136b3cc7ad574332fa7c3385ee129d2"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "sheets/jeb-wink--thanksgiving.png": {
+  "file_bytes": 1138,
+  "file_sha256": "1fd4353069b63215968930a05d29938fffd17a9febe18fec61d996d4ea5ae582",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "a18f152e7a48167b1395c50a71adf2de6f2f7b502f65ea34b44ccf01d14c9248"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   192
+  ]
+ },
+ "sheets/jeb-wink.png": {
+  "file_bytes": 877,
+  "file_sha256": "96612f1ffc10f54d76eae7f374e6eb363cb6ef70b0ec740ed58f25e6672c7d51",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "96ab2dab5e5c72977c67f6fa3f6c4c2be5256db66a8e6091a10fc846b776674e"
+   }
+  ],
+  "loop": null,
+  "size": [
+   80,
+   160
+  ]
+ },
+ "sheets/lantern.png": {
+  "file_bytes": 164,
+  "file_sha256": "44366dac72a93d7edc0d8d0bcb3adeae2be50e71a4e349e115001796565c0e67",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "32436460fd6f289e99fa379ee573c99be9b00c33407474ab25221f010faaa1ba"
+   }
+  ],
+  "loop": null,
+  "size": [
+   40,
+   32
+  ]
+ },
+ "sheets/laundry-overalls.png": {
+  "file_bytes": 135,
+  "file_sha256": "d729d0ce397b14a5ae032e8cda956ea773095d4efb670e8d4f34d0b25287a951",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "a92f6d1828c208da79cb68aa761852a1e1bec8664d08590ae068d149bda1bf99"
+   }
+  ],
+  "loop": null,
+  "size": [
+   24,
+   32
+  ]
+ },
+ "sheets/laundry-shirt.png": {
+  "file_bytes": 140,
+  "file_sha256": "0b4f9018c4ef81e5fba3098c31c95c5d2c3baae22ffe3877fda6fa54d9168a2c",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "313e13bc945b86881bdde769908009280d8dad565f9ffa7096a58fc6438b931f"
+   }
+  ],
+  "loop": null,
+  "size": [
+   24,
+   28
+  ]
+ },
+ "sheets/lunch.png": {
+  "file_bytes": 180,
+  "file_sha256": "525bae194ad146ed5e91634cc9b9ce22af4a2bd052c0a9faaf0858017375f9af",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "27fa89f1a60e11e149e1fc03b816875ece776b0f987e32399f89899ae9b13b03"
+   }
+  ],
+  "loop": null,
+  "size": [
+   36,
+   24
+  ]
+ },
+ "sheets/moon.png": {
+  "file_bytes": 331,
+  "file_sha256": "9c44568f865a097c38521c7b636df5b766fdbb32241c8ef7a71625974d343cb7",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "ef6eff77a468fb170e5080f2b06a2fe574d4e307f6bf6b9447e15e13f32d22df"
+   }
+  ],
+  "loop": null,
+  "size": [
+   288,
+   36
+  ]
+ },
+ "sheets/mothman.png": {
+  "file_bytes": 98,
+  "file_sha256": "8bdad32f541a068958f4ae75819ce9d40eba8fe87b0b9ccda3040e940b50d3ab",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "2cc57b35e757edea9a3a7fdb256a5d423139702ab49b09193aeaa09fafc7a623"
+   }
+  ],
+  "loop": null,
+  "size": [
+   28,
+   12
+  ]
+ },
+ "sheets/mug.png": {
+  "file_bytes": 198,
+  "file_sha256": "acecc315e86d6508a36e3c34cfa04186ca31c9d69a453bc76a5b742184ca65bd",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "9def6c2df80233453db784a403cbc58481de35bcc0af88787a6445a0146d2e4a"
+   }
+  ],
+  "loop": null,
+  "size": [
+   48,
+   28
+  ]
+ },
+ "sheets/note.png": {
+  "file_bytes": 116,
+  "file_sha256": "907cfcaea7baf3561dc24c78b04bb91a53335f9bd7a2ed1d28b1330dd8818e98",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "641bd8305da571bc3dcc50203a26bfb83e25d907957d877d41c352de18decd2d"
+   }
+  ],
+  "loop": null,
+  "size": [
+   16,
+   24
+  ]
+ },
+ "sheets/opal.png": {
+  "file_bytes": 410,
+  "file_sha256": "196d74060c98d68a9f614b2d26383ea9de8472201b1cca43f28619c817823455",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "3e4606b0406a44d45cf6d8c942daf9f4e85f7ee26f3db5b2426c68e4bde0de60"
+   }
+  ],
+  "loop": null,
+  "size": [
+   56,
+   112
+  ]
+ },
+ "sheets/owl.png": {
+  "file_bytes": 330,
+  "file_sha256": "60641005e9289d5769f38e4a9af5cc5a4778dd73978c56ea8d8f8184481868be",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "f0e14451a3cfc7f8184321383aa9c0ef35eb6b20b4a89b54bfc47373c5682125"
+   }
+  ],
+  "loop": null,
+  "size": [
+   72,
+   44
+  ]
+ },
+ "sheets/porch-light.png": {
+  "file_bytes": 152,
+  "file_sha256": "3a81db2f69c91c720921721240c5b042024a7267514235960bd69a04e055e9d1",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "9937ddf872692893dbdb060233c67c87dc93cc987999671faddf94450334f816"
+   }
+  ],
+  "loop": null,
+  "size": [
+   20,
+   32
+  ]
+ },
+ "sheets/postcard.png": {
+  "file_bytes": 159,
+  "file_sha256": "850006c63d352c43d9eb1c5fff6c79432dd4a52dcf18d32f4c346f93bb9dd462",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "0b9437add31b01226a5473471b8773c6a92a6dd231add59a1791f4189fb5d83c"
+   }
+  ],
+  "loop": null,
+  "size": [
+   28,
+   24
+  ]
+ },
+ "sheets/prop-bell.png": {
+  "file_bytes": 152,
+  "file_sha256": "bcb713c947fa010a75436ca9402896a145a75ba03e1a334a3fff0323d5bb666b",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "b8692c0b012bcb439849e75858eefc3c565934157557217331877f022c1e9ec3"
+   }
+  ],
+  "loop": null,
+  "size": [
+   28,
+   32
+  ]
+ },
+ "sheets/prop-chair.png": {
+  "file_bytes": 248,
+  "file_sha256": "a7e78539e2f9390f034b5e727613b174c7012cca80d9e782272af41d39e201d6",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "4aa9be13cd4da06c603db91b13e942bc866d948216cbbde17fc96476f1700df3"
+   }
+  ],
+  "loop": null,
+  "size": [
+   40,
+   56
+  ]
+ },
+ "sheets/prop-fence.png": {
+  "file_bytes": 155,
+  "file_sha256": "3c7f540fd9d2c80febb5e134ab6a0bf649df35732f00f20ccd9eb75a3da31fea",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "41540e75422fb621d5e6384d2848d0be2250e935493fb0df1c394060b58b144c"
+   }
+  ],
+  "loop": null,
+  "size": [
+   32,
+   28
+  ]
+ },
+ "sheets/prop-gate.png": {
+  "file_bytes": 216,
+  "file_sha256": "c3fa43bd319a0be2747fd7a963f0660cfe56c6d600abc4ef6cf9fc42d90a10c1",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "ce10f446841c47d253a6f0f92da3fbbe4ed58381f0b2eda4ab0287233a108a9b"
+   }
+  ],
+  "loop": null,
+  "size": [
+   56,
+   36
+  ]
+ },
+ "sheets/prop-keg.png": {
+  "file_bytes": 160,
+  "file_sha256": "13b2cfbe0a73c94196cccd6d3e487e87d2281a0d27f21973836f5172cfa5bd85",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "4b3ad85753444afc599beb1b01e3746f50f00ac611d03f849ccf216294300e63"
+   }
+  ],
+  "loop": null,
+  "size": [
+   32,
+   40
+  ]
+ },
+ "sheets/prop-mailbox.png": {
+  "file_bytes": 189,
+  "file_sha256": "b6f5d89dba555723eb8c9656047b5a2bdfe14d0799e36b03ece476a76216710a",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "605c0e89eeb5906b80f0d90a1a131e91f5f921802a417ab6e8a29739a9d82fe7"
+   }
+  ],
+  "loop": null,
+  "size": [
+   32,
+   48
+  ]
+ },
+ "sheets/prop-parachute.png": {
+  "file_bytes": 244,
+  "file_sha256": "a4f77d05a316d73c56211dbb71d28c67d23bcca3e9a34396ab12354ec11e574f",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "53bfca4e4c94f91d6651f03dee2bbe31543c8d9d418205024f54202d2858df28"
+   }
+  ],
+  "loop": null,
+  "size": [
+   44,
+   56
+  ]
+ },
+ "sheets/prop-pumpkin.png": {
+  "file_bytes": 184,
+  "file_sha256": "38020c13992b991da03cc11addbe7efab3147d4cfa2eca92ddcbebd835d1db71",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "e946ef6746ab101d5e8821d9f5b121dc4bb2f6bc4097c657b8e97eb5fe4100ed"
+   }
+  ],
+  "loop": null,
+  "size": [
+   32,
+   28
+  ]
+ },
+ "sheets/prop-smokehouse.png": {
+  "file_bytes": 339,
+  "file_sha256": "52defa013aa8ddcfad939e2725a3bcc361981a121c3c0a71f5d2b8885c4a0f7a",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "b034b97e9369eeb6c97463ed055e79f8188f15e5003b155dbadf30882497d31a"
+   }
+  ],
+  "loop": null,
+  "size": [
+   72,
+   80
+  ]
+ },
+ "sheets/prop-xmas.png": {
+  "file_bytes": 335,
+  "file_sha256": "c5e8ab40f762b79acb90d22de2855f9b3bea8a1aad55f3f662162690e086138d",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "262ba32d030aad267f50084c0efd34e340d6c77ca5d60b650f63b4aa74d32047"
+   }
+  ],
+  "loop": null,
+  "size": [
+   48,
+   72
+  ]
+ },
+ "sheets/puddle.png": {
+  "file_bytes": 113,
+  "file_sha256": "751fa5c08a536b09fafb2246d4c86dc4ede5c79a38144fc52ae56593cef6cc68",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "ffde5038b45cf0fa2f207253d09620b88c6b09a2aafc38aa90377a2fbc5bb693"
+   }
+  ],
+  "loop": null,
+  "size": [
+   36,
+   8
+  ]
+ },
+ "sheets/pup.png": {
+  "file_bytes": 260,
+  "file_sha256": "fc647270221c6005036f04ba7f14fb17d6636bb0740dfaba20c28657a524eb66",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "9ea0cae1e018aa9890e4d54a474600c19e7d2edcb11b89b7f29fab4c2a0b2635"
+   }
+  ],
+  "loop": null,
+  "size": [
+   52,
+   36
+  ]
+ },
+ "sheets/quilt-B.png": {
+  "file_bytes": 111,
+  "file_sha256": "05e15f0ada74b7b081d9151345dc633029dbcbc5333cea1e4d2b0476ec0b086a",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "a79d92ec071c246854a00f5004432ee8429d086934351e900f0c7240d74161ff"
+   }
+  ],
+  "loop": null,
+  "size": [
+   20,
+   20
+  ]
+ },
+ "sheets/quilt-G.png": {
+  "file_bytes": 111,
+  "file_sha256": "c92e891038a0f5d21d3afee2621c789f48356c3f6d1897937e3b2a995b0de72e",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "edcd74e018b8fbe366b6cfc4798b9e0497fd32191fe9481e5d2f93a1087d53c4"
+   }
+  ],
+  "loop": null,
+  "size": [
+   20,
+   20
+  ]
+ },
+ "sheets/quilt-N.png": {
+  "file_bytes": 111,
+  "file_sha256": "519b6b9e40c3040ebcb6d0f4c722deaf481a7f52a11bfa14cfe1bbf2f0e3ef5d",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "2590256fca8b4c3698a11b01dc620507cafefddf544c4f0587a4c249777f025d"
+   }
+  ],
+  "loop": null,
+  "size": [
+   20,
+   20
+  ]
+ },
+ "sheets/quilt-P.png": {
+  "file_bytes": 109,
+  "file_sha256": "47416e93c71d43788a8b62622f33dc662c7b970555b3595347c6712de6a66bfe",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "1fcb697b5374523a8c767d84bf17bd960fb3a48c6d41743701005a83824deed2"
+   }
+  ],
+  "loop": null,
+  "size": [
+   20,
+   20
+  ]
+ },
+ "sheets/quilt-R.png": {
+  "file_bytes": 111,
+  "file_sha256": "2a12dbbeccc6010af6edee024ddfc73424f0c11df7979be59c456619d90aacdb",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "3893f6237697de7b5e8df20ac0e53f44409ab54462ed08a36553388ae342a71e"
+   }
+  ],
+  "loop": null,
+  "size": [
+   20,
+   20
+  ]
+ },
+ "sheets/quilt-Y.png": {
+  "file_bytes": 109,
+  "file_sha256": "5fed2d9e791174ad42175a4543ecbd233b131383460d51c2fabd70398730ef88",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "1c8f94541d7b00dd0b8cd93ed95625b7eac67d8761b0077e360672437fa51a13"
+   }
+  ],
+  "loop": null,
+  "size": [
+   20,
+   20
+  ]
+ },
+ "sheets/rainbow.png": {
+  "file_bytes": 592,
+  "file_sha256": "e6b560b06a67ddfafd89e0457b30431a809ca6402219a93943969b4ac9ac99ed",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "6816f5019a56dcd0a6540e6e53161d601486ad13526eb230ad04def4eee5305e"
+   }
+  ],
+  "loop": null,
+  "size": [
+   128,
+   56
+  ]
+ },
+ "sheets/revenuer.png": {
+  "file_bytes": 513,
+  "file_sha256": "94257cbaed33518e3b09881e2bd817c949a1e1651f64b75e4d6045e0ce05e4c0",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "6124fbea39603739b124a64e9774e53938666800398df470d1d6728f87c46167"
+   }
+  ],
+  "loop": null,
+  "size": [
+   256,
+   60
+  ]
+ },
+ "sheets/rig-mail.png": {
+  "file_bytes": 650,
+  "file_sha256": "e274732abaa9f6bbef27a92b1ead85ae83f950a0c4602a908f4685ef603ce16e",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "305e8af5dc5bca968af38aceca47a577a3ec6a383b82bcbe83301fc9c28ddeb5"
+   }
+  ],
+  "loop": null,
+  "size": [
+   320,
+   80
+  ]
+ },
+ "sheets/rig-mill.png": {
+  "file_bytes": 727,
+  "file_sha256": "b19254c3f0e20bcbdc822a1feda4fdf1fc1e2806283077d709ceebcd862c929a",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "6d4978361a599a3470872c0743c6d92d19736cc5c9f69482537e9ccbb3b8baf6"
+   }
+  ],
+  "loop": null,
+  "size": [
+   320,
+   80
+  ]
+ },
+ "sheets/rig-store.png": {
+  "file_bytes": 766,
+  "file_sha256": "dd52284e35e9885cf4eaadf28533112d8a7b2b24b990090968d667c9296be5c3",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "9c087c360d56d05ef3b6c713ff82f5ab367bf03c1485520ba2a4a4d4ed6d975c"
+   }
+  ],
+  "loop": null,
+  "size": [
+   320,
+   80
+  ]
+ },
+ "sheets/rig-tractor.png": {
+  "file_bytes": 725,
+  "file_sha256": "cd785bec76dc27d12b9ad31fefe69abf5005479c15d4094e993b84ce7c3a3323",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "69a70e3a2a9e4e999d60edbc318f71b16bd3d5f3c882ab11b7ac405ae7f5a280"
+   }
+  ],
+  "loop": null,
+  "size": [
+   320,
+   80
+  ]
+ },
+ "sheets/rig-tripper.png": {
+  "file_bytes": 657,
+  "file_sha256": "c212e6feb1eef6d5b930374823f02c86b94d665be608f2d5b169709cc589796a",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "0b77d290489ced9717129c7ef4c6d53413fcea16db112ec810271518da6402c6"
+   }
+  ],
+  "loop": null,
+  "size": [
+   320,
+   80
+  ]
+ },
+ "sheets/sign-coat.png": {
+  "file_bytes": 538,
+  "file_sha256": "940dfbd25d87302113fe1fe5c4ac8042caf611129fdfe05e26e26fe01b7a3ee4",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "10bf1f11ac37f9003f2a3f40a25a52234692f942c01b1e263fe04fbf5c1bef2b"
+   }
+  ],
+  "loop": null,
+  "size": [
+   184,
+   96
+  ]
+ },
+ "sheets/sign-night.png": {
+  "file_bytes": 539,
+  "file_sha256": "d05f371b3c25e173f4d0eb4233a2c59ff08eb29406158393396694a0ddf30832",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "6b0705fdd0acf3db298d34b25a17a89eab66f69301fd2feaead0177bf0ad170d"
+   }
+  ],
+  "loop": null,
+  "size": [
+   184,
+   96
+  ]
+ },
+ "sheets/sign.png": {
+  "file_bytes": 540,
+  "file_sha256": "c348b727dc05c594faec35036c835945bc1ac0b7c63195c47418eda526e5731e",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "8094affcdac36176e2676239ba812db49da6f7eb15807b6a77f623e64d4b3515"
+   }
+  ],
+  "loop": null,
+  "size": [
+   184,
+   96
+  ]
+ },
+ "sheets/smoke.png": {
+  "file_bytes": 246,
+  "file_sha256": "6957507a07a7d218a10677f71661d8351751790540d48c3ff503df091b2df07d",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "ab118ee327472ad11da6bb599d741db0c910a29ed141b36a45e69edc6879f550"
+   }
+  ],
+  "loop": null,
+  "size": [
+   120,
+   48
+  ]
+ },
+ "sheets/star-streak.png": {
+  "file_bytes": 127,
+  "file_sha256": "3b74c1a8b63cdbca8b0982c01624753f4434b76bf3c13340cbc7a5f4224064b3",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "422a8b05a97b75a5df708306db51f50fdfc11c7609b12c7a13ccaed59be1b529"
+   }
+  ],
+  "loop": null,
+  "size": [
+   32,
+   16
+  ]
+ },
+ "sheets/steam.png": {
+  "file_bytes": 216,
+  "file_sha256": "81f308a7b326c07a75a491fd0337be47dba3ebc35eead2c9957d2d6d1f5d8c9c",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "97578d729a4def48fe09a3457dc1fa7850e33c07d2642c09fcdc49ff528d07e4"
+   }
+  ],
+  "loop": null,
+  "size": [
+   64,
+   32
+  ]
+ },
+ "sheets/still-keg.png": {
+  "file_bytes": 778,
+  "file_sha256": "05158de5dba2cc425e196b00cdc12a7bcf58cda3f1d89e07aeae0be844a3c5c8",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "f41eb1ca726897f20466cec9556883c2d30dedd7478d8b9a98cf45a73e05f73a"
+   }
+  ],
+  "loop": null,
+  "size": [
+   152,
+   136
+  ]
+ },
+ "sheets/still-tarp.png": {
+  "file_bytes": 444,
+  "file_sha256": "361cd84b56c811a46d7bd9fc439fc1a7351e21df744244572992b61ba1c468cd",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "c51bcd091676d5f0e77763e215d77aa01ef71780c1535e43eaa0752fb5e616e0"
+   }
+  ],
+  "loop": null,
+  "size": [
+   152,
+   136
+  ]
+ },
+ "sheets/still-worm.png": {
+  "file_bytes": 770,
+  "file_sha256": "2a47a588f2f37e0a4f33daccd612a0da190bea03cd5aa307d58146e9140618dd",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "34fdf9626ea0c25d233450d3a904367721f9244759ae3e89ebe3bcd3dd08028e"
+   }
+  ],
+  "loop": null,
+  "size": [
+   152,
+   136
+  ]
+ },
+ "sheets/still.png": {
+  "file_bytes": 751,
+  "file_sha256": "c92ebe5d1fc99f8ff0da524d1a194fa53ceabc7629f1a87144d1d4b64ca82454",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "aef3cefaaf1b6694f54f9aeaf23f9068b1eaee48da92f6a89b6823a3067573b0"
+   }
+  ],
+  "loop": null,
+  "size": [
+   152,
+   136
+  ]
+ },
+ "sheets/sun.png": {
+  "file_bytes": 162,
+  "file_sha256": "0da58366798dc74a223a52e2a85416ff9f365b2694d53dbf23834face8b84ea1",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "f114ccc7d09d0f6db4c27cd622dd6f905df405b59d8fccb8038ddd4df568eede"
+   }
+  ],
+  "loop": null,
+  "size": [
+   36,
+   36
+  ]
+ },
+ "sheets/sweat.png": {
+  "file_bytes": 98,
+  "file_sha256": "4fea557393042b131f9d2ea4783934bc21e30f6ffa7ddba16d641b521b455a9d",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "cbacf49bf33dad73ca3ea11ac9e2eb3c3f7f2e936cf47b79d4d07efa198d8dd6"
+   }
+  ],
+  "loop": null,
+  "size": [
+   12,
+   16
+  ]
+ },
+ "sheets/tobacco-0.png": {
+  "file_bytes": 106,
+  "file_sha256": "e55a5af3db0a2fcdea1df307b39730e82dfddf7c13b32ec910cd7f43dc94bb15",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "fdd6547e17670e4f613f4fa4c9acb6f26867193ead7b2030e0bfc7f2d5bcd159"
+   }
+  ],
+  "loop": null,
+  "size": [
+   24,
+   72
+  ]
+ },
+ "sheets/tobacco-1.png": {
+  "file_bytes": 144,
+  "file_sha256": "f4373d281c28fa10c99447b190e57330c63be958443b7194fbf056cfb1198774",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "eb30829bf2e22b4dcfb864b73d86ccd1a6de8e6e8128786131f1a768d5595aa8"
+   }
+  ],
+  "loop": null,
+  "size": [
+   24,
+   72
+  ]
+ },
+ "sheets/tobacco-2.png": {
+  "file_bytes": 214,
+  "file_sha256": "60b21e1c63da71aa571a673aa365214987a94934a30cc03aad667bf7d846fe38",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "40130d413fe123729f99ea25c2891653ecbcfd8c1260335e5395db72ae2982a4"
+   }
+  ],
+  "loop": null,
+  "size": [
+   24,
+   72
+  ]
+ },
+ "sheets/tobacco-3.png": {
+  "file_bytes": 266,
+  "file_sha256": "fec01a8ab718a917501d6a4a216bdc77c8f8b43fcefdb844d872742f2ce5b111",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "ecd89cc0b2e651612b91f5e31200d9f1a1cfcc373755d076f36e90137d1ce532"
+   }
+  ],
+  "loop": null,
+  "size": [
+   24,
+   72
+  ]
+ },
+ "sheets/truck-apples.png": {
+  "file_bytes": 861,
+  "file_sha256": "b2b6dd47e6681de638b3e827c2c9dfc3210c33f6c124132db4cd448fb7ba2d2d",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "aaf04d2dbcd65be4c19b0fd8f19171a5d4ee42f55d57e2e5c5ecb6fe8e87a9f8"
+   }
+  ],
+  "loop": null,
+  "size": [
+   336,
+   88
+  ]
+ },
+ "sheets/truck-bales.png": {
+  "file_bytes": 793,
+  "file_sha256": "02595c2077a32b227f7039aad887550a3ae888b3de631852a88a0d3777cf21b0",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "d759eebe16258f26563e7b4776dea93a5abcf8d24634c3b582b04e4ecbac00d7"
+   }
+  ],
+  "loop": null,
+  "size": [
+   336,
+   88
+  ]
+ },
+ "sheets/truck-corn.png": {
+  "file_bytes": 799,
+  "file_sha256": "5253a4f967a11e85da6a9afc4586c495135ca5766686861bdf4ad0b5c04e45be",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "4ecdfc8165a9bc3baca2623eafc9f5b227ac9ff244093f56547ce39d10746701"
+   }
+  ],
+  "loop": null,
+  "size": [
+   336,
+   88
+  ]
+ },
+ "sheets/truck-crate.png": {
+  "file_bytes": 842,
+  "file_sha256": "6f41c9c5602a09adfdb6f22f5af524fe28e93c1fcdf40df9054af8a5d9aab308",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "06b1d8de362813f1815aeda6b7fa080c52e7cbe056319717739e5ff64dcf4468"
+   }
+  ],
+  "loop": null,
+  "size": [
+   336,
+   88
+  ]
+ },
+ "sheets/truck-empty.png": {
+  "file_bytes": 748,
+  "file_sha256": "c1be1ee14f6aadfa3cbccd0d1f872c12ae8f26ec1d565eb45192de5e677016a9",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "f9519bc4ff7a35db3c2c7525aa7150030653fb7d89006a485fe920a01af8cfbb"
+   }
+  ],
+  "loop": null,
+  "size": [
+   336,
+   88
+  ]
+ },
+ "sheets/truck-jars.png": {
+  "file_bytes": 827,
+  "file_sha256": "8016ff2eaeb559c856cf35e5f45b682a8ef425609ebfaa9674632804fd621d48",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "3a6f2020b2e7a87f0177889d93fbe884e30d55fa1631ad174c8055f21f391cef"
+   }
+  ],
+  "loop": null,
+  "size": [
+   336,
+   88
+  ]
+ },
+ "sheets/turkey.png": {
+  "file_bytes": 486,
+  "file_sha256": "35fa2c27bb12b23654e75dc433a8fb029dc1b855f678d10e36a544c4245a7c12",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "e67f9b819b0de74e91e27cf035367c7a39050cf82bc3905cd836e6fe2118d0b8"
+   }
+  ],
+  "loop": null,
+  "size": [
+   112,
+   52
+  ]
+ },
+ "sheets/woodpile-1.png": {
+  "file_bytes": 175,
+  "file_sha256": "ae89e809ac1309863485b129b8f9954e0c9674c700869af2fd0992efdcf1fa24",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "a964deaff066f79816fe53276edd3216ab37b5d1cacb288c49f07d59140e7855"
+   }
+  ],
+  "loop": null,
+  "size": [
+   56,
+   44
+  ]
+ },
+ "sheets/woodpile-2.png": {
+  "file_bytes": 210,
+  "file_sha256": "250e676acd1aa6610cd1e6a59ac2b930ae0f73edb476368751dce573a233a390",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "1a71c5dd885615b68218070466bd4b602bdcc686e3308bbb2bc880558fe4c8cc"
+   }
+  ],
+  "loop": null,
+  "size": [
+   56,
+   44
+  ]
+ },
+ "sheets/woodpile-3.png": {
+  "file_bytes": 211,
+  "file_sha256": "7ffdc70b5d2132974dea82504951e3243eab0ba7d1149c0cf4541bb02ae7eaf1",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "a47de86ce0abc352cbce31f9f7d33b5e09d7020eb97266dbad15cc0848fa1ef5"
+   }
+  ],
+  "loop": null,
+  "size": [
+   56,
+   44
+  ]
+ },
+ "sheets/woodpile-4.png": {
+  "file_bytes": 231,
+  "file_sha256": "c55f6bdc687f2e7e5a3b8e6794a616bc4f2be2197f9bcba5879e0d6cca9eb095",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "01dd1b7c8e79a6734b03100386711894814c4e96f2c690ec52fa0026e729b60b"
+   }
+  ],
+  "loop": null,
+  "size": [
+   56,
+   44
+  ]
+ },
+ "sheets/zz.png": {
+  "file_bytes": 170,
+  "file_sha256": "e1eaa509e7979c56d32e0828ff887dee8d759a0806f6709620f8435b0f75c84b",
+  "format": "PNG",
+  "frames": [
+   {
+    "ms": null,
+    "sha256": "c8c3c554d12ba19ab1d6ac6ce5857f5d851112c03dc8372237241bbce433c5f2"
+   }
+  ],
+  "loop": null,
+  "size": [
+   64,
+   32
+  ]
+ }
+}

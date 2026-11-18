@@ -1,0 +1,9 @@
+## rc
+1
+
+## stdout
+(empty)
+
+## stderr
+--bump takes auto, patch, minor or major
+

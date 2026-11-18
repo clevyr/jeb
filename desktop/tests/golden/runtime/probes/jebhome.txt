@@ -1,0 +1,58 @@
+## rc
+0
+
+## stdout
+{
+ "release_base": {
+  "clevyr/jeb": "file://$SB/rel",
+  "x/y": "file://$SB/rel"
+ },
+ "release_base_default": "https://github.com/clevyr/jeb/releases",
+ "paths": {
+  "resolve": "$SB/home/Library/Application Support/Jeb",
+  "old_path": "$SB/home/.claude/jeb-desktop",
+  "new_path": "$SB/home/Library/Application Support/Jeb",
+  "jeb_dir": "$SB/home/.jeb",
+  "versions_dir": "$SB/home/.jeb/versions",
+  "current_dir": "$SB/home/.jeb/current",
+  "tools_dir": "$SB/home/.jeb/bin"
+ },
+ "find_claude": "$SB/home/.local/bin/claude",
+ "read_bundle": {
+  "current": {
+   "schema": 1,
+   "repo": "clevyr/jeb",
+   "tag": "v1.4.0",
+   "version": "1.4.0",
+   "commit": "0000000000000000000000000000000000000000",
+   "arch": "$ARCH"
+  },
+  "missing": null
+ },
+ "macho_archs": {
+  "stub": "{'$ARCH'}",
+  "script": "set()",
+  "missing": "set()"
+ },
+ "fetch": {
+  "latest_tag": "v1.6.0",
+  "feed_tags": [
+   "v1.6.0",
+   "v1.5.0",
+   "v1.4.0"
+  ],
+  "fetch-missing": {
+   "FetchError": "could not reach  ([Errno 2] No such file or directory: '$SB/rel/nope')",
+   "status": null
+  },
+  "fetch-toobig": {
+   "FetchError": "latest is larger than 2 bytes",
+   "status": null
+  },
+  "fetch-ok": "v1.6.0"
+ }
+}
+
+## stderr
+(empty)
+

@@ -1,0 +1,27 @@
+## rc
+0
+
+## stdout
+Jeb uninstall (dry run) from $T/clone
+$ $PYTHON3 -I $T/clone/desktop/jebctl uninstall --dry-run --verbose
+$ launchctl bootout gui/$UID/com.jeb.desktop.release
+$ launchctl bootout gui/$UID/com.jeb.desktop.update
+$ launchctl bootout gui/$UID/com.jeb.desktop.watchdog
+$ launchctl bootout gui/$UID/com.jeb.desktop
+remove $SB/home/Library/LaunchAgents/com.jeb.desktop.plist
+remove $SB/home/Library/LaunchAgents/com.jeb.desktop.watchdog.plist
+remove $SB/home/Library/LaunchAgents/com.jeb.desktop.update.plist
+remove $SB/home/Library/LaunchAgents/com.jeb.desktop.release.plist
+remove $SB/home/Applications/JebDesktop.app
+kept versions and logs
+settings $SB/home/.claude/settings.json: CLAUDE_CODE_PLUGIN_DIRS absent
+farm kept (0 file(s) in $SB/home/.claude/plugins/data); --purge-farm removes it
+the files at $T/clone were not removed
+
+## stderr
+(empty)
+
+## fake.log (claude, gh, launchctl calls)
+$SB/home/.local/bin/claude plugin list --json
+$SB/home/.local/bin/claude plugin marketplace list --json
+

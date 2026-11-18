@@ -1,0 +1,41 @@
+## rc
+2
+
+## stdout
+./install [--dev] [--repin] [--add-path] [--build-from-source] [--no-agents] [--dry-run] [--verbose]: set Jeb up from this clone or bundle.
+
+  release bundle:         the README's way. The signed Jeb-<tag>-macos-<arch>.zip is unpacked into ~/.jeb/versions/<tag>, and its own
+                          Python runs `python/bin/python3 -I install` there. No git, Xcode or Command Line Tools: the app is prebuilt.
+                          ~/.jeb/current is pointed at the bundle; the LaunchAgents, the plugin entry and the jebctl link use only that
+                          path. --dev and --build-from-source are refused. Updates download the next bundle and switch `current`.
+
+  release mode (default): the clone follows release tags signed by a pinned signer (the clone is moved to the newest
+                          verified tag; a 6-hourly agent fetches new ones, verifies, gates them and switches). No local
+                          edits expected.
+                          Updates only follow tags signed by a pinned signer: desktop/release-signers is copied to
+                          ~/Library/Application Support/Jeb/release-signers on the first install (never replaced by an install
+                          without --repin). An installed Jeb adopts the file of a newer release it has verified (signed by a key
+                          already pinned), which is how keys rotate.
+  --repin                 replace the pinned signers with this clone's or bundle's desktop/release-signers (the manual way to rotate keys).
+  --add-path              add ~/.local/bin (where `jebctl` is linked) to the shell profile (zsh ~/.zprofile, bash
+                          ~/.bash_profile, else ~/.profile; backup first). The PATH is optional: without it one line says
+                          to run ~/.local/bin/jebctl.
+  --build-from-source     release mode only: compile the app when no verified prebuilt one can be downloaded (or JEB_ALLOW_BUILD=1).
+                          By default release mode never compiles: it downloads the release's app over HTTPS and stops with a plain reason when the prebuilt app cannot be had.
+  --dev                   owner mode: runs from the working tree; local src edits ship through the update gates (compiles; needs
+                          swiftc from the Command Line Tools).
+  --verbose               every command and detail; by default one short line per step.
+
+  --no-agents             sandbox only (./release smoke): no LaunchAgents, launchctl or jebctl link; needs a HOME other than the real one.
+A git clone (developers) still installs the old way and converts to a bundle on its first release-mode follow.
+Preflight (git clone, release mode): macOS, /usr/bin/python3 and git (DEVELOPER_DIR points at the Command Line Tools only when the
+selected Xcode fails, e.g. its license was never accepted); claude missing is only a note.
+Steps: preflight, `desktop/jebctl install` (first build through the gates, LaunchAgents, start), then the mod registered through Claude
+Code's plugin system (`claude plugin marketplace add` + `claude plugin install jeb@jeb`; options and the farm carry over from the old
+jeb@inline id, and Jeb's own CLAUDE_CODE_PLUGIN_DIRS entry is removed from ~/.claude/settings.json, backup first). --dev keeps the
+CLAUDE_CODE_PLUGIN_DIRS entry (hot reload). --dry-run changes nothing.
+Env overrides (tests): JEB_HOME, JEB_APP_DIR, JEB_LAUNCHAGENTS, JEB_SETTINGS, JEB_BACKUPS, JEB_STORE_DIR, JEB_BIN_DIR, JEB_PROFILE, JEB_TOOLS_DIR, JEB_NO_LAUNCHCTL.
+
+## stderr
+(empty)
+

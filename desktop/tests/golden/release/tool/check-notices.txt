@@ -1,0 +1,10 @@
+## rc
+0
+
+## stdout
+notices ok
+missing: release: THIRD-PARTY-NOTICES.md is missing or does not carry the line 'python-build-standalone: 20261013 (CPython 3.12.15)'; regenerate the notices from the new python-build-standalone release's full archive (python/PYTHON.json and python/licenses/) and update that line
+
+## stderr
+(empty)
+

@@ -1,0 +1,95 @@
+## rc
+0
+
+## stdout
+{
+ "key_line": {
+  "plain": [
+   "AAAAC3NzaC1lZDI1NTE5AAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   null
+  ],
+  "ns-jeb": [
+   "AAAAC3NzaC1lZDI1NTE5AAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   [
+    1,
+    [
+     "jeb-release"
+    ]
+   ]
+  ],
+  "ns-both": [
+   "AAAAC3NzaC1lZDI1NTE5AAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   [
+    1,
+    [
+     "git",
+     "jeb-release"
+    ]
+   ]
+  ],
+  "ns-git-only": [
+   "AAAAC3NzaC1lZDI1NTE5AAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   [
+    1,
+    [
+     "git"
+    ]
+   ]
+  ],
+  "other-option": [
+   "AAAAC3NzaC1lZDI1NTE5AAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   [
+    2,
+    [
+     "jeb-release"
+    ]
+   ]
+  ],
+  "valid-after": [
+   "AAAAC3NzaC1lZDI1NTE5AAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   null
+  ],
+  "comment": null,
+  "blank": null,
+  "no-key": null,
+  "ecdsa": [
+   "AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGQ",
+   null
+  ],
+  "sk": [
+   "AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIA",
+   null
+  ]
+ },
+ "parse_signers": {
+  "two-good": [
+   [
+    "jeb-release",
+    "ssh-ed25519",
+    "AAAAC3NzaC1lZDI1NTE5AAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+   ],
+   [
+    "me@example.com",
+    "ssh-ed25519",
+    "AAAAC3NzaC1lZDI1NTE5AAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+   ]
+  ],
+  "comment-and-good": [
+   [
+    "jeb-release",
+    "ssh-ed25519",
+    "AAAAC3NzaC1lZDI1NTE5AAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+   ]
+  ],
+  "git-only": null,
+  "other-option": null,
+  "plain-no-ns": null,
+  "empty": null,
+  "only-comments": null,
+  "mixed-bad": null
+ }
+}
+
+## stderr
+(empty)
+

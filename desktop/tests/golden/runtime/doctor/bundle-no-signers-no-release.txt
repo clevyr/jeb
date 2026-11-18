@@ -1,0 +1,59 @@
+## rc
+1
+
+## stdout
+ok    macOS
+ok    $SB/home/.jeb/current resolves to a Jeb bundle
+ok    bundled Python runs ($SB/home/.jeb/current/python/bin/python3)
+ok    one version on disk (v1.4.0)
+ok    claude found ($SB/home/.local/bin/claude)
+FIX   jebctl command: ask Claude to repair Jeb (it re-runs the install)
+ok    install mode: release
+FIX   app bundle $SB/home/Applications/JebDesktop.app: ask Claude to repair Jeb (it re-runs the install)
+FIX   app's mod folder (JebMod) has hooks/pixel-art.ts: ask Claude to repair Jeb (it re-runs the install)
+FIX   LaunchAgent plist com.jeb.desktop: ask Claude to repair Jeb (it re-runs the install)
+skip  LaunchAgent loaded com.jeb.desktop: skipped (sandbox)
+FIX   LaunchAgent plist com.jeb.desktop.watchdog: ask Claude to repair Jeb (it re-runs the install)
+skip  LaunchAgent loaded com.jeb.desktop.watchdog: skipped (sandbox)
+FIX   LaunchAgent plist com.jeb.desktop.release: ask Claude to repair Jeb (it re-runs the install)
+skip  LaunchAgent loaded com.jeb.desktop.release: skipped (sandbox)
+FIX   exactly one JebDesktop running (0): run: jebctl start (more than one: jebctl quit, then jebctl start)
+ok    no quit marker
+ok    updates not paused
+FIX   plugin jeb@jeb installed and enabled in Claude Code: ask Claude to repair Jeb (it re-runs the install)
+FIX   mod store file: start a new Claude Code session so the plugin loads
+ok    last update result: none
+ok    state folder: $SB/home/Library/Application Support/Jeb
+FIX   release signers pinned: ask Claude to repair Jeb (it re-runs the install)
+skip  GitHub releases not checked: could not reach  ([Errno 2] No such file or directory: '$SB/rel/latest')
+10 problem(s)
+
+## stderr
+(empty)
+
+## release-state.json
+{
+ "bridge_reset": 1,
+ "checked": null,
+ "failed": [],
+ "installed": [
+  {
+   "at": 1,
+   "stamp": null,
+   "tag": "v1.4.0"
+  }
+ ],
+ "last": null,
+ "layout": "bundle"
+}
+
+## stub.log (argv of every native binary the run executed; detached prune-versions/reload-agents calls filtered)
+$SB/home/.jeb/current/python/bin/python3 -I -c 0
+
+## fake.log (claude, gh, launchctl calls)
+$SB/home/.local/bin/claude plugin list --json
+$SB/home/.local/bin/claude plugin marketplace list --json
+
+## ~/.jeb/current
+versions/v1.4.0
+

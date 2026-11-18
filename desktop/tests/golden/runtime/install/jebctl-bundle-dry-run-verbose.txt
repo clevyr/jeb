@@ -1,0 +1,33 @@
+## rc
+0
+
+## stdout
+signers: pin $SB/home/.jeb/versions/v1.4.0/desktop/release-signers -> $SB/home/Library/Application Support/Jeb/release-signers
+1. gates and first start through the updater (prebuilt app, never compiled)
+$ $PYTHON3 -I $SB/home/.jeb/versions/v1.4.0/desktop/updater.py --force --no-watch --quick --prebuilt $SB/home/.jeb/versions/v1.4.0/app/JebDesktop --no-compile
+$SB/home/.jeb/current -> versions/v1.4.0
+2. plists
+plist com.jeb.desktop: JEB_MOD=$SB/home/.jeb/current/mod JEB_SRC=$SB/home/.jeb/current/desktop/src
+plist com.jeb.desktop.watchdog: JEB_MOD=$SB/home/.jeb/current/mod JEB_SRC=$SB/home/.jeb/current/desktop/src
+plist com.jeb.desktop.release: JEB_MOD=$SB/home/.jeb/current/mod JEB_SRC=$SB/home/.jeb/current/desktop/src
+3-5. hand-over, LaunchAgents (copy, bootout, bootstrap), waiting for the desktop and the jebctl link: skipped (--no-agents)
+
+## stderr
+(empty)
+
+## release-state.json
+{}
+
+## fake.log (claude, gh, launchctl calls)
+$SB/home/.local/bin/claude plugin list --json
+$SB/home/.local/bin/claude plugin marketplace list --json
+$SB/home/.local/bin/claude plugin list --json
+$SB/home/.local/bin/claude plugin marketplace list --json
+$SB/home/.local/bin/claude plugin list --json
+$SB/home/.local/bin/claude plugin marketplace list --json
+$SB/home/.local/bin/claude plugin list --json
+$SB/home/.local/bin/claude plugin marketplace list --json
+
+## ~/.jeb/current
+versions/v1.4.0
+

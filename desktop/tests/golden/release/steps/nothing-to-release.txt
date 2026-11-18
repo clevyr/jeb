@@ -1,0 +1,9 @@
+## rc
+1
+
+## stdout
+(empty)
+
+## stderr
+no feat, fix, perf, revert or breaking commits since v1.2.0, so nothing to release (commit subjects follow Conventional Commits; pass patch, minor or major to release anyway)
+

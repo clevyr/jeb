@@ -1,0 +1,31 @@
+## rc
+1
+
+## stdout
+ok    macOS
+ok    git (Command Line Tools)
+ok    swiftc
+ok    /usr/bin/python3
+ok    claude found ($SB/home/.local/bin/claude)
+FIX   jebctl command: open a new terminal, or add $SB/home/.local/bin to PATH (./install --add-path)
+ok    install mode: dev
+FIX   app bundle $SB/home/Applications/JebDesktop.app: run: ./install
+FIX   app's mod folder (JebMod) has hooks/pixel-art.ts: reinstall: ./install
+FIX   LaunchAgent plist com.jeb.desktop: run: ./install
+skip  LaunchAgent loaded com.jeb.desktop: skipped (sandbox)
+FIX   LaunchAgent plist com.jeb.desktop.watchdog: run: ./install
+skip  LaunchAgent loaded com.jeb.desktop.watchdog: skipped (sandbox)
+FIX   LaunchAgent plist com.jeb.desktop.update: run: ./install
+skip  LaunchAgent loaded com.jeb.desktop.update: skipped (sandbox)
+FIX   exactly one JebDesktop running (0): run: jebctl start (more than one: jebctl quit, then jebctl start)
+ok    no quit marker
+ok    updates not paused
+FIX   plugin registered in $SB/home/.claude/settings.json: run: ./install again
+FIX   mod store file: start a new Claude Code session so the plugin loads
+ok    last update result: none
+ok    state folder: $SB/home/Library/Application Support/Jeb
+9 problem(s)
+
+## stderr
+(empty)
+

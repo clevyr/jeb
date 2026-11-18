@@ -1,0 +1,36 @@
+## rc
+0
+
+## stdout
+Jeb install (dev mode, dry run) from $T/clone
+preflight ok: macOS, /usr/bin/python3, git, swiftc
+$ /usr/bin/python3 -I $T/clone/desktop/jebctl install --mode dev --dry-run --verbose
+mode: dev
+1. first build through the updater (compile, smoke, headless start)
+$ python3 -I $T/clone/desktop/updater.py --force --no-watch --quick
+2. plists
+plist com.jeb.desktop: JEB_MOD=$T/clone/mod JEB_SRC=$T/clone/desktop/src
+plist com.jeb.desktop.watchdog: JEB_MOD=$T/clone/mod JEB_SRC=$T/clone/desktop/src
+plist com.jeb.desktop.update: JEB_MOD=$T/clone/mod JEB_SRC=$T/clone/desktop/src
+3. hand the desktop over from any running instance
+4. LaunchAgents
+$ cp $SB/home/Library/Application Support/Jeb/launchd/com.jeb.desktop.plist $SB/home/Library/LaunchAgents/com.jeb.desktop.plist
+$ cp $SB/home/Library/Application Support/Jeb/launchd/com.jeb.desktop.watchdog.plist $SB/home/Library/LaunchAgents/com.jeb.desktop.watchdog.plist
+$ cp $SB/home/Library/Application Support/Jeb/launchd/com.jeb.desktop.update.plist $SB/home/Library/LaunchAgents/com.jeb.desktop.update.plist
+$ launchctl bootout gui/$UID/com.jeb.desktop
+$ launchctl bootout gui/$UID/com.jeb.desktop.watchdog
+$ launchctl bootout gui/$UID/com.jeb.desktop.update
+$ launchctl bootout gui/$UID/com.jeb.desktop.release
+remove $SB/home/Library/LaunchAgents/com.jeb.desktop.release.plist (not part of dev mode)
+$ launchctl bootstrap gui/$UID $SB/home/Library/LaunchAgents/com.jeb.desktop.update.plist
+$ launchctl bootstrap gui/$UID $SB/home/Library/LaunchAgents/com.jeb.desktop.watchdog.plist
+$ launchctl bootstrap gui/$UID $SB/home/Library/LaunchAgents/com.jeb.desktop.plist
+5. jebctl on PATH
+link $SB/home/.local/bin/jebctl -> $T/clone/desktop/jebctl
+Run Jeb's tool as ~/.local/bin/jebctl
+settings $SB/home/.claude/settings.json: CLAUDE_CODE_PLUGIN_DIRS set -> $T/clone/mod
+  (dry run: not written)
+
+## stderr
+(empty)
+

@@ -1,0 +1,17 @@
+## rc
+0
+
+## stdout
+usage: watchdog.py [-h] [--dry-run] [--fake-procs FAKE_PROCS]
+                   [--no-recheck-wait] [--sample-only]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --dry-run
+  --fake-procs FAKE_PROCS
+  --no-recheck-wait     tests: skip the 10 s between stale checks
+  --sample-only         only the telemetry sample: no supervision, no signals
+
+## stderr
+(empty)
+

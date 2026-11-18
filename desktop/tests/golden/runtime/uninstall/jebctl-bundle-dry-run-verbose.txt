@@ -1,0 +1,37 @@
+## rc
+0
+
+## stdout
+$ launchctl bootout gui/$UID/com.jeb.desktop.release
+$ launchctl bootout gui/$UID/com.jeb.desktop.update
+$ launchctl bootout gui/$UID/com.jeb.desktop.watchdog
+$ launchctl bootout gui/$UID/com.jeb.desktop
+remove $SB/home/Library/LaunchAgents/com.jeb.desktop.plist
+remove $SB/home/Library/LaunchAgents/com.jeb.desktop.watchdog.plist
+remove $SB/home/Library/LaunchAgents/com.jeb.desktop.update.plist
+remove $SB/home/Library/LaunchAgents/com.jeb.desktop.release.plist
+remove $SB/home/Applications/JebDesktop.app
+kept versions and logs
+
+## stderr
+(empty)
+
+## release-state.json
+{
+ "bridge_reset": 1,
+ "checked": null,
+ "failed": [],
+ "installed": [
+  {
+   "at": 1,
+   "stamp": null,
+   "tag": "v1.4.0"
+  }
+ ],
+ "last": null,
+ "layout": "bundle"
+}
+
+## ~/.jeb/current
+versions/v1.4.0
+

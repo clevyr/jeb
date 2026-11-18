@@ -1,0 +1,30 @@
+## interpreter
+$ART_PY (Python 3.9.6, Pillow 11.3.0); build.py <work> <work>/pixel-art.ts; logo.py <work>/pixel-art.ts <work>/logo <work>/icon.png
+
+## build.py rc
+0
+
+## build.py stdout
+206 sprites, 294 frames, 109 colours; runtime data 138678 bytes; gifs 178504 bytes
+$WORK/scene-day-busy.png
+$WORK/scene-evening-banjo.png
+$WORK/scene-night.png
+
+## build.py stderr
+(empty)
+
+## logo.py rc
+0
+
+## logo.py stdout
+(empty)
+
+## logo.py stderr
+(empty)
+
+## exact-byte outputs (the tracked file is the golden; this records that the generator still reproduces it)
+mod/hooks/pixel-art.ts: sha256 eed52c8fbce14236b2100f717ad76366463595b2e00dd378ff7d7ac4950fdba4  138678 bytes  tracked file same bytes
+docs/logo.svg: sha256 89ef56b7c3d09afd86737ce8f89a0c1ed8200316778679c1cf653c63f108fc86  48281 bytes  tracked file same bytes
+docs/logo.png: sha256 a52ac9614149b2450b11560e11233e6e2b9063608cb41cff73e5b685704f4c6f  4790 bytes  tracked file same bytes
+mod/.claude-plugin/icon.png: sha256 6358cd55708b6df55bae2a7d13f2b3696cd4cecf62fbdd8c619614f0a727bb2d  4598 bytes  tracked file same bytes
+

@@ -1,0 +1,22 @@
+## rc
+0
+
+## stdout
+{
+ "cur=v1.4.0 skip=-": [
+  "v1.6.0"
+ ],
+ "cur=v1.4.0 skip=v1.6.0": [
+  "v1.5.0"
+ ],
+ "cur=v1.6.0 skip=-": [],
+ "cur=None skip=-": [
+  "v1.6.0"
+ ],
+ "cur=v1.4.0 skip=v1.6.0,v1.5.0": [],
+ "cur=v1.5.0 skip=v1.6.0": []
+}
+
+## stderr
+(empty)
+

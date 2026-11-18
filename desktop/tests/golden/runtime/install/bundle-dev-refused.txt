@@ -1,0 +1,23 @@
+## rc
+1
+
+## stdout
+(empty)
+
+## stderr
+install: a release bundle has no source to build: --dev and --build-from-source are for a git clone
+
+## release-state.json
+{}
+
+## fake.log (claude, gh, launchctl calls)
+$SB/home/.local/bin/claude plugin list --json
+$SB/home/.local/bin/claude plugin marketplace list --json
+$SB/home/.local/bin/claude plugin list --json
+$SB/home/.local/bin/claude plugin marketplace list --json
+$SB/home/.local/bin/claude plugin list --json
+$SB/home/.local/bin/claude plugin marketplace list --json
+
+## ~/.jeb/current
+versions/v1.4.0
+

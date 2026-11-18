@@ -1,0 +1,9 @@
+## rc
+1
+
+## stdout
+(empty)
+
+## stderr
+the tree is not clean (commit or stash first)
+

@@ -1,0 +1,9 @@
+## rc
+1
+
+## stdout
+(empty)
+
+## stderr
+usage: jebctl install [--mode dev|release] [--repin] [--add-path] [--build-from-source] [--no-agents] [--dry-run] [--verbose]
+

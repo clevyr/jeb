@@ -1,0 +1,37 @@
+## rc
+0
+
+## stdout
+Uninstalling Jeb (dry run)
+  LaunchAgents and app ... would remove
+  jebctl command ... not installed
+  plugin ... would unregister
+  farm ... kept (1 file(s)); --purge-farm removes it
+the files at $SB/home/.jeb/versions/v1.4.0 were not removed
+
+## stderr
+(empty)
+
+## release-state.json
+{
+ "bridge_reset": 1,
+ "checked": null,
+ "failed": [],
+ "installed": [
+  {
+   "at": 1,
+   "stamp": null,
+   "tag": "v1.4.0"
+  }
+ ],
+ "last": null,
+ "layout": "bundle"
+}
+
+## fake.log (claude, gh, launchctl calls)
+$SB/home/.local/bin/claude plugin list --json
+$SB/home/.local/bin/claude plugin marketplace list --json
+
+## ~/.jeb/current
+versions/v1.4.0
+

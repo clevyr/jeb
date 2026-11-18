@@ -1,0 +1,33 @@
+## rc
+1
+
+## stdout
+(empty)
+
+## stderr
+v1.4.0 is older than v1.5.0, the oldest release this one can roll back to (older ones predate the key rotation and the Python-free update path); v1.5.1 stays installed.
+
+## release-state.json
+{
+ "bridge_reset": 1,
+ "checked": null,
+ "failed": [],
+ "installed": [
+  {
+   "at": 1,
+   "stamp": null,
+   "tag": "v1.4.0"
+  },
+  {
+   "at": 2,
+   "stamp": null,
+   "tag": "v1.5.1"
+  }
+ ],
+ "last": null,
+ "layout": "bundle"
+}
+
+## ~/.jeb/current
+versions/v1.5.1
+

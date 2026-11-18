@@ -1,0 +1,9 @@
+## rc
+1
+
+## stdout
+(empty)
+
+## stderr
+HEAD already carries a release tag: v1.2.0
+

@@ -1,0 +1,17 @@
+## rc
+0
+
+## stdout
+installed app: none
+running: 0
+quit marker: no
+perf (last hour): no samples
+updates: on
+last update: none
+saved versions: none
+agents installed: desktop=no, watchdog=no, release=no
+mode: release; clone at branch main; signers NOT pinned (no updates); last release check never
+
+## stderr
+(empty)
+

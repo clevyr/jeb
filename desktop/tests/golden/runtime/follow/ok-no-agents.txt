@@ -1,0 +1,76 @@
+## rc
+0
+
+## stdout
+signers: adopting the release-signers of v1.4.0
+bundle: Jeb-v1.5.0-macos-$ARCH.zip matches the signed manifest; unpacked into $SB/home/.jeb/versions/v1.5.0
+follow: now on v1.5.0
+signers: the pin already matches v1.5.0's
+plugin: registering jeb@jeb: ok
+versions: v1.4.0 is this process's own folder; it goes once this run exits
+
+## stderr
+(empty)
+
+## release-state.json
+{
+ "bridge_reset": 1,
+ "checked": 1780000000,
+ "failed": [],
+ "installed": [
+  {
+   "at": 1,
+   "stamp": null,
+   "tag": "v1.4.0"
+  },
+  {
+   "at": 1780000000,
+   "stamp": null,
+   "tag": "v1.5.0"
+  }
+ ],
+ "last": {
+  "app": "prebuilt",
+  "at": 1780000000,
+  "result": "ok",
+  "tag": "v1.5.0"
+ },
+ "layout": "bundle",
+ "signers_from": "v1.5.0"
+}
+
+## update-status.json
+{
+ "at": 1780000000,
+ "clicked": false,
+ "detail": "updated to v1.5.0",
+ "phase": "done",
+ "pid": 4242,
+ "result": "updated",
+ "source": "release",
+ "started": 1780000000,
+ "step": null,
+ "steps": null
+}
+
+## release.log
+2026-05-28 15:26:40 signers: adopting the release-signers of v1.4.0
+2026-05-28 15:26:40 bundle: Jeb-v1.5.0-macos-$ARCH.zip matches the signed manifest; unpacked into $SB/home/.jeb/versions/v1.5.0
+2026-05-28 15:26:40 follow: now on v1.5.0
+2026-05-28 15:26:40 signers: the pin already matches v1.5.0's
+2026-05-28 15:26:40 plugin: registering jeb@jeb: ok
+
+## stub.log (argv of every native binary the run executed; detached prune-versions/reload-agents calls filtered)
+$SB/home/.jeb/versions/v1.5.0/desktop/bin/jebctl apply $SB/home/.jeb/versions/v1.5.0 --not-final --lock-held --no-watch
+
+## fake.log (claude, gh, launchctl calls)
+$SB/home/.local/bin/claude plugin list --json
+$SB/home/.local/bin/claude plugin marketplace list --json
+$SB/home/.local/bin/claude plugin list --json
+$SB/home/.local/bin/claude plugin marketplace list --json
+$SB/home/.local/bin/claude plugin marketplace add $SB/home/.jeb/current
+$SB/home/.local/bin/claude plugin install jeb@jeb --scope user
+
+## ~/.jeb/current
+versions/v1.5.0
+

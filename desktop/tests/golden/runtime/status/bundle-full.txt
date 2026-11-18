@@ -1,0 +1,59 @@
+## rc
+0
+
+## stdout
+installed app: none
+running: 0
+quit marker: yes (stays quit until login or `jebctl start`)
+perf (last hour): calm median 0.40 % cpu, max rss $N MB, over target: passing CPU/RSS
+updates: paused
+last update: ok 20260527-190000 at 2026-05-28 13:26:40: smoke and start passed
+rejected builds: 2
+saved versions: 20260527-190000, 20260520-010101
+agents installed: desktop=yes, watchdog=no, release=no
+mode: release; bundle v1.4.0; signers pinned; last release check 2026-05-28 14:26:40, last result gates-rejected v1.5.1; failed tags: v1.5.0, v1.5.1
+
+## stderr
+(empty)
+
+## release-state.json
+{
+ "bridge_reset": 1,
+ "checked": 1779996400,
+ "failed": [
+  "v1.5.0",
+  "v1.5.1"
+ ],
+ "installed": [
+  {
+   "at": 1,
+   "stamp": null,
+   "tag": "v1.4.0"
+  }
+ ],
+ "last": {
+  "app": "prebuilt",
+  "at": 1779996400,
+  "result": "gates-rejected",
+  "tag": "v1.5.1"
+ },
+ "layout": "bundle"
+}
+
+## updater-state.json
+{
+ "last": {
+  "at": 1779992800,
+  "result": "ok",
+  "stamp": "20260527-190000",
+  "why": "smoke and start passed"
+ },
+ "rejected": [
+  "20260520-010101",
+  "20260521-020202"
+ ]
+}
+
+## ~/.jeb/current
+versions/v1.4.0
+

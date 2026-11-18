@@ -1,0 +1,9 @@
+## rc
+1
+
+## stdout
+(empty)
+
+## stderr
+release: 1.2.3 is not a release tag (vX.Y.Z)
+

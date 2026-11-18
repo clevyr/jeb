@@ -1,0 +1,29 @@
+## rc
+0
+
+## stdout
+signers: adopting the release-signers of v1.4.0
+would download v1.5.0 (file://$SB/rel), verify its signed manifest, run the gates, point $SB/home/.jeb/current at it, then remove v1.4.0
+
+## stderr
+(empty)
+
+## release-state.json
+{
+ "bridge_reset": 1,
+ "checked": null,
+ "failed": [],
+ "installed": [
+  {
+   "at": 1,
+   "stamp": null,
+   "tag": "v1.4.0"
+  }
+ ],
+ "last": null,
+ "layout": "bundle"
+}
+
+## ~/.jeb/current
+versions/v1.4.0
+

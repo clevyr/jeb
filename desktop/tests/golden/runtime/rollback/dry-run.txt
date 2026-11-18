@@ -1,0 +1,39 @@
+## rc
+0
+
+## stdout
+rolling back v1.5.1 -> v1.5.0: downloading v1.5.0 again
+bundle: Jeb-v1.5.0-macos-$ARCH.zip matches the signed manifest; unpacked into $SB/home/.jeb/versions/v1.5.0
+versions: v1.5.1 is this process's own folder; it goes once this run exits
+rolled back v1.5.1 -> v1.5.0; the running app hands over within a few seconds
+
+## stderr
+(empty)
+
+## release-state.json
+{
+ "bridge_reset": 1,
+ "checked": null,
+ "failed": [],
+ "installed": [
+  {
+   "at": 1,
+   "stamp": null,
+   "tag": "v1.5.0"
+  },
+  {
+   "at": 2,
+   "stamp": null,
+   "tag": "v1.5.1"
+  }
+ ],
+ "last": null,
+ "layout": "bundle"
+}
+
+## stub.log (argv of every native binary the run executed; detached prune-versions/reload-agents calls filtered)
+$SB/home/.jeb/versions/v1.5.0/desktop/bin/jebctl apply $SB/home/.jeb/versions/v1.5.0 --not-final --lock-held
+
+## ~/.jeb/current
+versions/v1.5.0
+

@@ -1,0 +1,50 @@
+## rc
+0
+
+## stdout
+updates on
+
+## stderr
+(empty)
+
+## release-state.json
+{
+ "bridge_reset": 1,
+ "checked": 1779996400,
+ "failed": [
+  "v1.5.0",
+  "v1.5.1"
+ ],
+ "installed": [
+  {
+   "at": 1,
+   "stamp": null,
+   "tag": "v1.4.0"
+  }
+ ],
+ "last": {
+  "app": "prebuilt",
+  "at": 1779996400,
+  "result": "gates-rejected",
+  "tag": "v1.5.1"
+ },
+ "layout": "bundle"
+}
+
+## updater-state.json
+{
+ "last": {
+  "at": 1779992800,
+  "result": "ok",
+  "stamp": "20260527-190000",
+  "why": "smoke and start passed"
+ },
+ "rejected": [
+  "20260520-010101",
+  "20260521-020202"
+ ]
+}
+
+## ~/.jeb/current
+versions/v1.4.0
+

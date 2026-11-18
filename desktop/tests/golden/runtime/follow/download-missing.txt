@@ -1,0 +1,48 @@
+## rc
+0
+
+## stdout
+signers: adopting the release-signers of v1.4.0
+follow: could not get v1.5.0: v1.5.0: could not reach  ([Errno 2] No such file or directory: '$SB/rel/download/v1.5.0/Jeb-v1.5.0-manifest.json'); will try again later
+
+## stderr
+(empty)
+
+## release-state.json
+{
+ "bridge_reset": 1,
+ "checked": 1780000000,
+ "failed": [],
+ "installed": [
+  {
+   "at": 1,
+   "stamp": null,
+   "tag": "v1.4.0"
+  }
+ ],
+ "last": null,
+ "layout": "bundle",
+ "signers_from": "v1.4.0"
+}
+
+## update-status.json
+{
+ "at": 1780000000,
+ "clicked": false,
+ "detail": "app download failed; will retry",
+ "phase": "done",
+ "pid": 4242,
+ "result": "error",
+ "source": "release",
+ "started": 1780000000,
+ "step": null,
+ "steps": null
+}
+
+## release.log
+2026-05-28 15:26:40 signers: adopting the release-signers of v1.4.0
+2026-05-28 15:26:40 follow: could not get v1.5.0: v1.5.0: could not reach  ([Errno 2] No such file or directory: '$SB/rel/download/v1.5.0/Jeb-v1.5.0-manifest.json'); will try again later
+
+## ~/.jeb/current
+versions/v1.4.0
+

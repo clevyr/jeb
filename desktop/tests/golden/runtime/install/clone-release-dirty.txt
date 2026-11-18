@@ -1,0 +1,16 @@
+## rc
+1
+
+## stdout
+Installing Jeb (release mode, dry run)
+  checks ... failed
+
+## stderr
+install: the clone has local changes, so it could not follow releases; commit or stash them, or use --dev
+
+## fake.log (claude, gh, launchctl calls)
+$SB/home/.local/bin/claude plugin list --json
+$SB/home/.local/bin/claude plugin marketplace list --json
+$SB/home/.local/bin/claude plugin list --json
+$SB/home/.local/bin/claude plugin marketplace list --json
+

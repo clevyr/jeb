@@ -1,0 +1,58 @@
+## rc
+0
+
+## stdout
+signers: adopting the release-signers of v1.4.0
+follow: v1.5.0 rejected (arch): desktop/bin/jebctl is not built for $ARCH (not a Mach-O); it will not be retried
+follow: no verified release newer than v1.4.0
+
+## stderr
+(empty)
+
+## release-state.json
+{
+ "bridge_reset": 1,
+ "checked": 1780000000,
+ "failed": [
+  "v1.5.0"
+ ],
+ "failed_why": {
+  "v1.5.0": {
+   "pin": "$SHA256",
+   "why": "arch"
+  }
+ },
+ "installed": [
+  {
+   "at": 1,
+   "stamp": null,
+   "tag": "v1.4.0"
+  }
+ ],
+ "last": null,
+ "layout": "bundle",
+ "signers_from": "v1.4.0"
+}
+
+## update-status.json
+{
+ "at": 1780000000,
+ "clicked": false,
+ "detail": "no verified release newer than v1.4.0",
+ "phase": "done",
+ "pid": 4242,
+ "result": "up-to-date",
+ "source": "release",
+ "started": 1780000000,
+ "step": null,
+ "steps": null
+}
+
+## release.log
+2026-05-28 15:26:40 signers: adopting the release-signers of v1.4.0
+2026-05-28 15:26:40 follow: v1.5.0 rejected (arch): desktop/bin/jebctl is not built for $ARCH (not a Mach-O); it will not be retried
+2026-05-28 15:26:40 follow: no verified release newer than v1.4.0
+
+## ~/.jeb/current
+versions/v1.4.0
+

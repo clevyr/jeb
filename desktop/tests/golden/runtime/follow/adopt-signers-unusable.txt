@@ -1,0 +1,58 @@
+## rc
+0
+
+## stdout
+signers: v1.4.0's release-signers is not usable; the pin stays
+follow: v1.5.0 rejected (signature): the manifest is not signed by a pinned signer; it is retried when the pinned signers change
+follow: no verified release newer than v1.4.0
+
+## stderr
+(empty)
+
+## release-state.json
+{
+ "bridge_reset": 1,
+ "checked": 1780000000,
+ "failed": [
+  "v1.5.0"
+ ],
+ "failed_why": {
+  "v1.5.0": {
+   "pin": "$SHA256",
+   "why": "signature"
+  }
+ },
+ "installed": [
+  {
+   "at": 1,
+   "stamp": null,
+   "tag": "v1.4.0"
+  }
+ ],
+ "last": null,
+ "layout": "bundle",
+ "signers_from": "v1.3.0"
+}
+
+## update-status.json
+{
+ "at": 1780000000,
+ "clicked": false,
+ "detail": "no verified release newer than v1.4.0",
+ "phase": "done",
+ "pid": 4242,
+ "result": "up-to-date",
+ "source": "release",
+ "started": 1780000000,
+ "step": null,
+ "steps": null
+}
+
+## release.log
+2026-05-28 15:26:40 signers: v1.4.0's release-signers is not usable; the pin stays
+2026-05-28 15:26:40 follow: v1.5.0 rejected (signature): the manifest is not signed by a pinned signer; it is retried when the pinned signers change
+2026-05-28 15:26:40 follow: no verified release newer than v1.4.0
+
+## ~/.jeb/current
+versions/v1.4.0
+

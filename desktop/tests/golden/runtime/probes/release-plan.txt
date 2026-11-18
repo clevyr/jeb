@@ -1,0 +1,46 @@
+## rc
+0
+
+## stdout
+{
+ "feat-and-fix": {
+  "level": "minor",
+  "notes": "### Features\n\n- add the still (abc1234)\n\n### Fixes\n\n- no more leaks (def5678)"
+ },
+ "fix-only": {
+  "level": "patch",
+  "notes": "### Fixes\n\n- leak (abc1234)"
+ },
+ "bang-major": {
+  "level": "major",
+  "notes": "### Breaking changes\n\n- drop the old store (abc1234)\n\n### Features\n\n- drop the old store (abc1234)\n\n### Fixes\n\n- tidy (def5678)"
+ },
+ "breaking-footer": {
+  "level": "major",
+  "notes": "### Breaking changes\n\n- the store moved (abc1234)"
+ },
+ "breaking-change-dash": {
+  "level": "major",
+  "notes": "### Breaking changes\n\n- node 22 (abc1234)"
+ },
+ "nothing": {
+  "level": null,
+  "notes": ""
+ },
+ "perf-revert-scoped": {
+  "level": "major",
+  "notes": "### Breaking changes\n\n- hooks (c3)\n\n### Features\n\n- night sky (d4)\n\n### Fixes\n\n- hooks (c3)\n\n### Performance\n\n- fewer layers (a1)\n\n### Reverts\n\n- feat: add the still (b2)"
+ },
+ "empty": {
+  "level": null,
+  "notes": ""
+ },
+ "odd-shapes": {
+  "level": "minor",
+  "notes": "### Features\n\n- no space (a1)\n- upper (b2)"
+ }
+}
+
+## stderr
+(empty)
+

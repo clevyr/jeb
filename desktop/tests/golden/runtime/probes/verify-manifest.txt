@@ -1,0 +1,31 @@
+## rc
+0
+
+## stdout
+{
+ "good": null,
+ "unknown-signer": [
+  "the manifest is not signed by a pinned signer",
+  "signature"
+ ],
+ "replayed-tag": [
+  "the signed manifest names v1.5.0, not v1.5.2 (replayed)",
+  "content"
+ ],
+ "invalid-json": [
+  "the manifest is not valid JSON",
+  "content"
+ ],
+ "wrong-sig-for-manifest": [
+  "the manifest is not signed by a pinned signer",
+  "signature"
+ ],
+ "missing-sig": [
+  "the manifest is not signed by a pinned signer",
+  "signature"
+ ]
+}
+
+## stderr
+(empty)
+

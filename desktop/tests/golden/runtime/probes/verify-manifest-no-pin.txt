@@ -1,0 +1,14 @@
+## rc
+0
+
+## stdout
+{
+ "good-but-no-pin": [
+  "no signers are pinned",
+  "signature"
+ ]
+}
+
+## stderr
+(empty)
+

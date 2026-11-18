@@ -1,0 +1,45 @@
+## rc
+0
+
+## stdout
+follow: updates are paused; skipping
+
+## stderr
+(empty)
+
+## release-state.json
+{
+ "bridge_reset": 1,
+ "checked": null,
+ "failed": [],
+ "installed": [
+  {
+   "at": 1,
+   "stamp": null,
+   "tag": "v1.4.0"
+  }
+ ],
+ "last": null,
+ "layout": "bundle"
+}
+
+## update-status.json
+{
+ "at": 1780000000,
+ "clicked": false,
+ "detail": "updates are paused",
+ "phase": "done",
+ "pid": 4242,
+ "result": "error",
+ "source": "release",
+ "started": 1780000000,
+ "step": null,
+ "steps": null
+}
+
+## release.log
+2026-05-28 15:26:40 follow: updates are paused; skipping
+
+## ~/.jeb/current
+versions/v1.4.0
+

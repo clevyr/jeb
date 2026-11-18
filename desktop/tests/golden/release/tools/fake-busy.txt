@@ -1,0 +1,223 @@
+## invocation
+fake.py <store> 3 busy 6  (clock pinned at 1780000000, advancing 0.5 s per sleep; random.seed(7); the module's own random.Random(7))
+
+## rc
+0
+
+## stdout
+(empty)
+
+## stderr
+(empty)
+
+## final store.json
+{
+ "farm": {
+  "barn": {
+   "apples": 23,
+   "bales": 0,
+   "corn": 9,
+   "sticks": 0
+  },
+  "built": [],
+  "components": {
+   "barrel": 0,
+   "coil": 0,
+   "post": 0
+  },
+  "creative": {
+   "arc": null,
+   "art": [],
+   "festival": {
+    "d": "",
+    "tint": ""
+   },
+   "structures": [],
+   "total": 0
+  },
+  "crops": {
+   "apples": [
+    3,
+    2,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "corn": [
+    0,
+    1,
+    2,
+    3,
+    0,
+    1,
+    2,
+    3
+   ],
+   "tobacco": [
+    3,
+    2,
+    1,
+    0,
+    3,
+    2,
+    1,
+    0
+   ]
+  },
+  "goods": {
+   "aged": [],
+   "appleButter": 0,
+   "twists": 0,
+   "whiskey": 0
+  },
+  "ledger": {
+   "cash": 1590,
+   "total": 1620
+  },
+  "lifetime": {
+   "bales": 12,
+   "balesTraded": 0,
+   "inputTokens": 0,
+   "outputTokens": 0,
+   "workMs": 0
+  },
+  "materials": {
+   "copper": 0,
+   "iron": 0,
+   "lumber": 10,
+   "stone": 2,
+   "straw": 43,
+   "sugar": 0
+  },
+  "progress": {
+   "apples": 0,
+   "corn": 0,
+   "tobacco": 0
+  },
+  "quilt": [
+   {
+    "c": "B",
+    "camp": "",
+    "d": "2026-10-01"
+   },
+   {
+    "c": "G",
+    "camp": "",
+    "d": "2026-10-01"
+   },
+   {
+    "c": "R",
+    "camp": "",
+    "d": "2026-10-01"
+   },
+   {
+    "c": "P",
+    "camp": "",
+    "d": "2026-10-01"
+   },
+   {
+    "c": "Y",
+    "camp": "",
+    "d": "2026-10-01"
+   },
+   {
+    "c": "N",
+    "camp": "",
+    "d": "2026-10-01"
+   },
+   {
+    "c": "B",
+    "camp": "",
+    "d": "2026-10-01"
+   },
+   {
+    "c": "G",
+    "camp": "",
+    "d": "2026-10-01"
+   }
+  ],
+  "rev": 1,
+  "shelf": {
+   "appleCinnamon": 7,
+   "lightning": 0
+  },
+  "still": {
+   "hasBatch": false,
+   "steps": 0
+  },
+  "surprises": [],
+  "unlockDay": {
+   "coffee": "",
+   "d": "",
+   "done": 0,
+   "n": 0,
+   "next": 0,
+   "since": ""
+  },
+  "unlocks": [],
+  "upgrades": [],
+  "version": 10
+ },
+ "live:fake0": {
+  "at": 1780000004500,
+  "busy": true,
+  "frame": 9,
+  "hands": [
+   {
+    "look": 0,
+    "plot": "corn"
+   }
+  ],
+  "line": "Fine day for it.",
+  "live": "B",
+  "mood": "working",
+  "pose": "edit",
+  "saidAt": 1780000004500,
+  "v": 1
+ },
+ "live:fake1": {
+  "act": "sip",
+  "at": 1780000004500,
+  "busy": true,
+  "frame": 9,
+  "hands": [
+   {
+    "look": 1,
+    "plot": "corn"
+   }
+  ],
+  "line": "Corn's comin' on.",
+  "live": "G",
+  "mood": "working",
+  "pose": "still",
+  "saidAt": 1780000001500,
+  "v": 1
+ },
+ "live:fake2": {
+  "act": "nap",
+  "at": 1780000004500,
+  "busy": true,
+  "frame": 9,
+  "hands": [
+   {
+    "look": 2,
+    "plot": "corn"
+   }
+  ],
+  "live": "R",
+  "mood": "working",
+  "pose": "think",
+  "v": 1
+ }
+}
+
+## store.json.writes (ms wall time of each write)
+1780000000000.0
+1780000001500.0
+1780000002000.0
+1780000004000.0
+1780000004500.0
+

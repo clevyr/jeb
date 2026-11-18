@@ -1,0 +1,30 @@
+## rc
+0
+
+## stdout
+2026-05-28 15:26:40 pid 100: heartbeat stale on two checks; restarting
+2026-05-28 15:26:40 would send SIGTERM to 100: stale heartbeat
+2026-05-28 15:26:40 would run: launchctl kickstart gui/$UID/com.jeb.desktop
+
+## stderr
+(empty)
+
+## release-state.json
+{
+ "bridge_reset": 1,
+ "checked": null,
+ "failed": [],
+ "installed": [
+  {
+   "at": 1,
+   "stamp": null,
+   "tag": "v1.4.0"
+  }
+ ],
+ "last": null,
+ "layout": "bundle"
+}
+
+## ~/.jeb/current
+versions/v1.4.0
+
