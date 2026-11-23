@@ -250,14 +250,24 @@ func backupStoreFile(_ f: String) throws -> String {
 /// The child never sees CLAUDE_CODE_PLUGIN_DIRS; input is fed to its stdin, which is /dev/null otherwise.
 func claudePlugin(_ args: [String], timeout: Double = 120, input: String? = nil) -> (rc: Int32?, out: String) {
     guard let cl = findClaude() else { return (nil, "claude was not found") }
+    return runPluginProcess(cl, args: ["plugin"] + args, timeout: timeout, input: input,
+                            timedOut: "claude plugin \(args.joined(separator: " ")) timed out after \(Int(timeout)) seconds")
+}
+
+/// Runs exe with args under the claude CLI's rules (no CLAUDE_CODE_PLUGIN_DIRS, input on stdin when given); (status, output),
+/// or (nil, timedOut) when it has not exited within timeout seconds. The exit is signalled by terminationHandler, set before
+/// run(): waitUntilExit on a pool thread (no run loop) can miss the exit and the caller then hung with the child long gone.
+func runPluginProcess(_ exe: String, args: [String], timeout: Double, input: String?, timedOut: String) -> (rc: Int32?, out: String) {
     let p = Process()
-    p.executableURL = URL(fileURLWithPath: cl)
-    p.arguments = ["plugin"] + args
+    p.executableURL = URL(fileURLWithPath: exe)
+    p.arguments = args
     p.environment = ProcessInfo.processInfo.environment.filter { $0.key != pluginDirsKey }
     let o = Pipe(), e = Pipe(), i = Pipe()
     p.standardOutput = o
     p.standardError = e
     p.standardInput = input == nil ? FileHandle.nullDevice : i
+    let exited = DispatchSemaphore(value: 0)
+    p.terminationHandler = { _ in exited.signal() }
     do { try p.run() } catch { return (nil, error.localizedDescription) }
     var od = Data(), ed = Data()
     let g = DispatchGroup()
@@ -268,10 +278,11 @@ func claudePlugin(_ args: [String], timeout: Double = 120, input: String? = nil)
         try? i.fileHandleForWriting.write(contentsOf: Data(text.utf8))
         try? i.fileHandleForWriting.close()
     }
-    g.enter(); DispatchQueue.global().async { p.waitUntilExit(); g.leave() }
-    if g.wait(timeout: .now() + timeout) == .timedOut {
+    let deadline = DispatchTime.now() + timeout
+    if exited.wait(timeout: deadline) == .timedOut || g.wait(timeout: deadline) == .timedOut {
         kill(p.processIdentifier, SIGKILL)
-        return (nil, "claude plugin \(args.joined(separator: " ")) timed out after \(Int(timeout)) seconds")
+        _ = exited.wait(timeout: .now() + 5)
+        return (nil, timedOut)
     }
     return (p.terminationStatus, (String(decoding: od, as: UTF8.self) + String(decoding: ed, as: UTF8.self)).trimmingCharacters(in: .whitespacesAndNewlines))
 }

@@ -17,6 +17,24 @@ func pluginTests(_ t: Tester) {
     }
     func backupsIn(_ dir: String) -> [String] { ((try? FileManager.default.contentsOfDirectory(atPath: dir)) ?? []).sorted() }
 
+    t.test("plugin: a child's exit is seen without hanging, and a slow one is cut off at the timeout") {
+        let start = Date()
+        let ok = runPluginProcess("/usr/bin/true", args: [], timeout: 20, input: nil, timedOut: "late")
+        t.eq(ok.rc, 0, "true exits 0")
+        let bad = runPluginProcess("/usr/bin/false", args: [], timeout: 20, input: nil, timedOut: "late")
+        t.eq(bad.rc, 1, "false exits 1")
+        t.check(Date().timeIntervalSince(start) < 10, "exits were seen promptly")
+        let echo = runPluginProcess("/bin/cat", args: [], timeout: 20, input: "hi", timedOut: "late")
+        t.eq(echo.out, "hi", "input reaches stdin, output comes back")
+        let slow = Date()
+        let cut = runPluginProcess("/bin/sleep", args: ["30"], timeout: 1, input: nil, timedOut: "late")
+        t.check(cut.rc == nil, "a slow child has no status")
+        t.eq(cut.out, "late", "timeout message")
+        t.check(Date().timeIntervalSince(slow) < 10, "the timeout returned without hanging")
+        let missing = runPluginProcess("/nonexistent/x", args: [], timeout: 5, input: nil, timedOut: "late")
+        t.check(missing.rc == nil, "a missing program has no status")
+    }
+
     t.test("plugin: the removal plan") {
         let mod = t.scratch("plan") + "/mod"
         func plan(_ v: String?) -> [String?] { let p = planRemoval(v, mod); return [p.action, p.new] }
