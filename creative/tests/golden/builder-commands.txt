@@ -1,0 +1,4 @@
+/Users/golden/.local/bin/claude plugin validate .
+/Users/golden/.nvm/versions/node/v24.15.0/bin/node /Users/golden/Library/Caches/jeb-creative/tools/node_modules/typescript/bin/tsc --noEmit -p tsconfig.gate.json
+/Users/golden/.local/bin/claude plugin test .
+/Users/golden/.claude/venvs/jeb-art/bin/python -I -B art/src/build.py art/out hooks/pixel-art.ts

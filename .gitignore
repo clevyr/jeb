@@ -43,6 +43,11 @@ desktop/src/parity-status.md
 # Hostile-gate scratch copies
 creative/tools/cases/
 
+# Compiled creative builder (built by creative/build.sh)
+creative/jeb-creative-build-next
+creative/jeb-creative-build-next.tmp
+creative/jeb-creative-tests
+
 # Compiled jebctl (built by desktop/cli/build.sh)
 desktop/cli/jebctl
 desktop/cli/jebctl.*

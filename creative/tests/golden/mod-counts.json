@@ -1,0 +1,11 @@
+{
+ "locked_blocks": {
+  "guard.test.tsx": 33,
+  "perf.test.tsx": 19,
+  "lore.test.tsx": 3,
+  "drops.test.tsx": 58
+ },
+ "test_count": 368,
+ "hooks_bytes": 555083,
+ "tree_size": 2377297
+}

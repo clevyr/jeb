@@ -1,0 +1,1179 @@
+{
+  "success": true,
+  "strict": false,
+  "target": "<MOD>/.claude-plugin/plugin.json",
+  "manifest": {
+    "file": "<MOD>/.claude-plugin/plugin.json",
+    "type": "plugin",
+    "errors": [],
+    "warnings": [
+      {
+        "path": "author",
+        "message": "No author information provided. Consider adding author details for plugin attribution",
+        "code": null
+      }
+    ],
+    "notes": [
+      "types ./types/index.d.ts declares on $: nothing (no EngineInterface member)",
+      "types ./types/index.d.ts declares state: jeb.say, jeb.anim, jeb.farm, jeb.kept"
+    ],
+    "gatingHooks": [],
+    "wasm": [],
+    "modules": []
+  },
+  "contents": [
+    {
+      "file": "<MOD>/hooks/hooks.json",
+      "type": "hooks",
+      "errors": [],
+      "warnings": [],
+      "notes": [
+        "./register.tsx hooks: session.start, session.measure, config.set, prompt.submit, turn.start, turn.step, tool.call, turn.complete, agent.spawn, classic.SubagentStop, classic.TeammateIdle, classic.PreToolUse, classic.SessionStart, session.compact, session.end",
+        "./register.tsx gating hook without .catch: config.set",
+        "./register.tsx gating hook without .catch: prompt.submit",
+        "./register.tsx gating hook without .catch: tool.call",
+        "./register.tsx gating hook without .catch: agent.spawn",
+        "./register.tsx gating hook without .catch: classic.SubagentStop",
+        "./register.tsx gating hook without .catch: classic.TeammateIdle",
+        "./register.tsx gating hook without .catch: classic.PreToolUse",
+        "./register.tsx gating hook without .catch: classic.SessionStart",
+        "./register.tsx gating hook without .catch: session.compact",
+        "./register.tsx calls: $.agent.list (via refreshAgents), $.clock.every, $.clock.now, $.env.get, $.model.complete (via askHaiku, askHaikuArea), $.session.id (via adoptSession, resolveSession), $.session.repo (via resolveArea, resolveCamp), $.session.root (via resolveArea, resolveCamp), $.state.get, $.state.set, $.store.delete (via liveStore), $.store.get, $.store.keys (via pruneLive), $.store.set",
+        "./register.tsx env writes: nothing",
+        "./register.tsx env reads: JEB_CREATIVITY, JEB_NEWS, JEB_UNLOCKS, JEB_VISITS",
+        "./register.tsx state writes: jeb.anim, jeb.farm, jeb.kept, jeb.say",
+        "./register.tsx state reads: jeb.anim, jeb.farm, jeb.kept, jeb.say"
+      ],
+      "gatingHooks": [
+        {
+          "module": "./register.tsx",
+          "pattern": "config.set",
+          "hook": "config.set",
+          "hasCatch": false
+        },
+        {
+          "module": "./register.tsx",
+          "pattern": "prompt.submit",
+          "hook": "prompt.submit",
+          "hasCatch": false
+        },
+        {
+          "module": "./register.tsx",
+          "pattern": "tool.call",
+          "hook": "tool.call",
+          "hasCatch": false
+        },
+        {
+          "module": "./register.tsx",
+          "pattern": "agent.spawn",
+          "hook": "agent.spawn",
+          "hasCatch": false
+        },
+        {
+          "module": "./register.tsx",
+          "pattern": "classic.SubagentStop",
+          "hook": "classic.SubagentStop",
+          "hasCatch": false
+        },
+        {
+          "module": "./register.tsx",
+          "pattern": "classic.TeammateIdle",
+          "hook": "classic.TeammateIdle",
+          "hasCatch": false
+        },
+        {
+          "module": "./register.tsx",
+          "pattern": "classic.PreToolUse",
+          "hook": "classic.PreToolUse",
+          "hasCatch": false
+        },
+        {
+          "module": "./register.tsx",
+          "pattern": "classic.SessionStart",
+          "hook": "classic.SessionStart",
+          "hasCatch": false
+        },
+        {
+          "module": "./register.tsx",
+          "pattern": "session.compact",
+          "hook": "session.compact",
+          "hasCatch": false
+        }
+      ],
+      "wasm": [],
+      "modules": [
+        {
+          "module": "./register.tsx",
+          "uses": {
+            "events": [
+              "session.start",
+              "session.measure",
+              "config.set",
+              "prompt.submit",
+              "turn.start",
+              "turn.step",
+              "tool.call",
+              "turn.complete",
+              "agent.spawn",
+              "classic.SubagentStop",
+              "classic.TeammateIdle",
+              "classic.PreToolUse",
+              "classic.SessionStart",
+              "session.compact",
+              "session.end"
+            ],
+            "calls": [
+              "agent.list",
+              "clock.every",
+              "clock.now",
+              "env.get",
+              "model.complete",
+              "session.id",
+              "session.repo",
+              "session.root",
+              "state.get",
+              "state.set",
+              "store.delete",
+              "store.get",
+              "store.keys",
+              "store.set"
+            ],
+            "env": {
+              "reads": [
+                "JEB_CREATIVITY",
+                "JEB_NEWS",
+                "JEB_UNLOCKS",
+                "JEB_VISITS"
+              ],
+              "writes": []
+            },
+            "state": {
+              "reads": [
+                {
+                  "plugin": "jeb",
+                  "key": "anim"
+                },
+                {
+                  "plugin": "jeb",
+                  "key": "farm"
+                },
+                {
+                  "plugin": "jeb",
+                  "key": "kept"
+                },
+                {
+                  "plugin": "jeb",
+                  "key": "say"
+                }
+              ],
+              "writes": [
+                {
+                  "plugin": "jeb",
+                  "key": "anim"
+                },
+                {
+                  "plugin": "jeb",
+                  "key": "farm"
+                },
+                {
+                  "plugin": "jeb",
+                  "key": "kept"
+                },
+                {
+                  "plugin": "jeb",
+                  "key": "say"
+                }
+              ]
+            },
+            "hosts": {
+              "named": [],
+              "unread": []
+            }
+          },
+          "hooks": [
+            {
+              "pattern": "session.start",
+              "matcher": {
+                "has": {}
+              },
+              "defaultKeys": [],
+              "isGate": false,
+              "hasCatch": false
+            },
+            {
+              "pattern": "session.measure",
+              "matcher": {
+                "has": {}
+              },
+              "defaultKeys": [],
+              "isGate": false,
+              "hasCatch": false
+            },
+            {
+              "pattern": "config.set",
+              "matcher": {
+                "has": {}
+              },
+              "defaultKeys": [],
+              "isGate": true,
+              "hasCatch": false
+            },
+            {
+              "pattern": "prompt.submit",
+              "matcher": {
+                "has": {}
+              },
+              "defaultKeys": [],
+              "isGate": true,
+              "hasCatch": false
+            },
+            {
+              "pattern": "turn.start",
+              "matcher": {
+                "has": {}
+              },
+              "defaultKeys": [],
+              "isGate": false,
+              "hasCatch": false
+            },
+            {
+              "pattern": "turn.step",
+              "matcher": {
+                "has": {}
+              },
+              "defaultKeys": [],
+              "isGate": false,
+              "hasCatch": false
+            },
+            {
+              "pattern": "tool.call",
+              "matcher": {
+                "has": {}
+              },
+              "defaultKeys": [],
+              "isGate": true,
+              "hasCatch": false
+            },
+            {
+              "pattern": "turn.complete",
+              "matcher": {
+                "has": {}
+              },
+              "defaultKeys": [],
+              "isGate": false,
+              "hasCatch": false
+            },
+            {
+              "pattern": "agent.spawn",
+              "matcher": {
+                "has": {}
+              },
+              "defaultKeys": [],
+              "isGate": true,
+              "hasCatch": false
+            },
+            {
+              "pattern": "classic.SubagentStop",
+              "matcher": {
+                "has": {}
+              },
+              "defaultKeys": [],
+              "isGate": true,
+              "hasCatch": false
+            },
+            {
+              "pattern": "classic.TeammateIdle",
+              "matcher": {
+                "has": {}
+              },
+              "defaultKeys": [],
+              "isGate": true,
+              "hasCatch": false
+            },
+            {
+              "pattern": "classic.PreToolUse",
+              "matcher": {
+                "has": {}
+              },
+              "defaultKeys": [],
+              "isGate": true,
+              "hasCatch": false
+            },
+            {
+              "pattern": "classic.SessionStart",
+              "matcher": {
+                "has": {}
+              },
+              "defaultKeys": [],
+              "isGate": true,
+              "hasCatch": false
+            },
+            {
+              "pattern": "session.compact",
+              "matcher": {
+                "has": {}
+              },
+              "defaultKeys": [],
+              "isGate": true,
+              "hasCatch": false
+            },
+            {
+              "pattern": "session.end",
+              "matcher": {
+                "has": {}
+              },
+              "defaultKeys": [],
+              "isGate": false,
+              "hasCatch": false
+            }
+          ],
+          "nextTo": [],
+          "telemetry": [],
+          "clients": [],
+          "breaksPromptCache": false,
+          "nouns": {
+            "adds": [],
+            "addsUnlessThere": [],
+            "withholds": [],
+            "replaces": []
+          },
+          "shaders": []
+        }
+      ]
+    },
+    {
+      "file": "<MOD>/tests/anon.test.tsx",
+      "type": "hooks",
+      "errors": [],
+      "warnings": [
+        {
+          "path": "line 523, column 25",
+          "message": "error TS2345: Argument of type '{ text: string; command: { name: string; args: string; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Type '{ text: string; command: { name: string; args: string; }; }' is missing the following properties from type 'PromptSubmitInput': wait, origin",
+          "code": null
+        },
+        {
+          "path": "line 525, column 23",
+          "message": "error TS2769: No overload matches this call. Overload 2 of 2, '(input: ((Omit<ToolInputOf<\"Bash\", { command: string; timeout?: number | undefined; description?: string | undefined; run_in_background?: boolean | undefined; dangerouslyDisableSandbox?: boolean | undefined; }>, \"tool_use_id\"> & ToolCallReserved<...>) | ... 162 more ... | (Omit<...> & ToolCallReserved<...>)) & AgentLoop): Promise<...>', gave the following error. Type '\"mcp__claude_ai_Zorbleflux__getJiraIssue\"' is not assignable to type '\"Bash\" | \"Monitor\" | \"Edit\" | \"NotebookEdit\" | \"Write\" | \"Read\" | \"Grep\" | \"Glob\" | \"LSP\" | \"WebFetch\" | \"WebSearch\" | \"Agent\" | \"Workflow\" | \"PublishPlugin\" | \"AppifactRepl\" | ... 148 more ... | \"mcp__claude-in-chrome__upload_image\"'.",
+          "code": null
+        },
+        {
+          "path": "line 526, column 23",
+          "message": "error TS2769: No overload matches this call. Overload 2 of 2, '(input: ((Omit<ToolInputOf<\"Bash\", { command: string; timeout?: number | undefined; description?: string | undefined; run_in_background?: boolean | undefined; dangerouslyDisableSandbox?: boolean | undefined; }>, \"tool_use_id\"> & ToolCallReserved<...>) | ... 162 more ... | (Omit<...> & ToolCallReserved<...>)) & AgentLoop): Promise<...>', gave the following error. Type '\"GlimmerTool\"' is not assignable to type '\"Bash\" | \"Monitor\" | \"Edit\" | \"NotebookEdit\" | \"Write\" | \"Read\" | \"Grep\" | \"Glob\" | \"LSP\" | \"WebFetch\" | \"WebSearch\" | \"Agent\" | \"Workflow\" | \"PublishPlugin\" | \"AppifactRepl\" | ... 148 more ... | \"mcp__claude-in-chrome__upload_image\"'.",
+          "code": null
+        },
+        {
+          "path": "line 551, column 25",
+          "message": "error TS2345: Argument of type '{ text: string; }' is not assignable to parameter of type 'PromptSubmitInput'. Type '{ text: string; }' is missing the following properties from type 'PromptSubmitInput': wait, origin",
+          "code": null
+        },
+        {
+          "path": "line 557, column 25",
+          "message": "error TS2769: No overload matches this call. Overload 1 of 2, '(input: ((Omit<ToolInputOf<\"Bash\", { command: string; timeout?: number | undefined; description?: string | undefined; run_in_background?: boolean | undefined; dangerouslyDisableSandbox?: boolean | undefined; }>, \"tool_use_id\"> & ToolCallReserved<...>) | ... 162 more ... | (Omit<...> & ToolCallReserved<...>)) & Pick<...> & AgentLoop): Promise<...>', gave the following error. Type 'string | undefined' is not assignable to type '\"Bash\" | \"Monitor\" | \"Edit\" | \"NotebookEdit\" | \"Write\" | \"Read\" | \"Grep\" | \"Glob\" | \"LSP\" | \"WebFetch\" | \"WebSearch\" | \"Agent\" | \"Workflow\" | \"PublishPlugin\" | \"AppifactRepl\" | ... 148 more ... | \"mcp__claude-in-chrome__upload_image\"'. Type 'undefined' is not assignable to type '\"Bash\" | \"Monitor\" | \"Edit\" | \"NotebookEdit\" | \"Write\" | \"Read\" | \"Grep\" | \"Glob\" | \"LSP\" | \"WebFetch\" | \"WebSearch\" | \"Agent\" | \"Workflow\" | \"PublishPlugin\" | \"AppifactRepl\" | ... 148 more ... | \"mcp__claude-in-chr… [+984 chars]",
+          "code": null
+        },
+        {
+          "path": "line 566, column 3",
+          "message": "error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+          "code": null
+        },
+        {
+          "path": "line 589, column 3",
+          "message": "error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+          "code": null
+        },
+        {
+          "path": "line 594, column 25",
+          "message": "error TS2345: Argument of type '{ text: string; isMeta: true; }' is not assignable to parameter of type 'PromptSubmitInput'. Type '{ text: string; isMeta: true; }' is missing the following properties from type 'PromptSubmitInput': wait, origin",
+          "code": null
+        },
+        {
+          "path": "line 660, column 25",
+          "message": "error TS2345: Argument of type '{ text: string; }' is not assignable to parameter of type 'PromptSubmitInput'. Type '{ text: string; }' is missing the following properties from type 'PromptSubmitInput': wait, origin",
+          "code": null
+        }
+      ],
+      "notes": [],
+      "gatingHooks": [],
+      "wasm": [],
+      "modules": []
+    },
+    {
+      "file": "<MOD>/tests/drops.test.tsx",
+      "type": "hooks",
+      "errors": [],
+      "warnings": [
+        {
+          "path": "line 981, column 3",
+          "message": "error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+          "code": null
+        },
+        {
+          "path": "line 1041, column 22",
+          "message": "error TS2345: Argument of type '{ key: string; value: false; }' is not assignable to parameter of type 'ConfigSetInput'. Type '{ key: string; value: false; }' is missing the following properties from type 'ConfigSetInput': previous, provider, origin",
+          "code": null
+        },
+        {
+          "path": "line 1046, column 22",
+          "message": "error TS2345: Argument of type '{ key: string; value: true; }' is not assignable to parameter of type 'ConfigSetInput'. Type '{ key: string; value: true; }' is missing the following properties from type 'ConfigSetInput': previous, provider, origin",
+          "code": null
+        },
+        {
+          "path": "line 1214, column 25",
+          "message": "error TS2345: Argument of type '{ text: string; }' is not assignable to parameter of type 'PromptSubmitInput'. Type '{ text: string; }' is missing the following properties from type 'PromptSubmitInput': wait, origin",
+          "code": null
+        },
+        {
+          "path": "line 1308, column 3",
+          "message": "error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+          "code": null
+        }
+      ],
+      "notes": [],
+      "gatingHooks": [],
+      "wasm": [],
+      "modules": []
+    },
+    {
+      "file": "<MOD>/tests/fixes.test.tsx",
+      "type": "hooks",
+      "errors": [],
+      "warnings": [
+        {
+          "path": "line 143, column 25",
+          "message": "error TS2345: Argument of type '{ text: string; }' is not assignable to parameter of type 'PromptSubmitInput'. Type '{ text: string; }' is missing the following properties from type 'PromptSubmitInput': wait, origin",
+          "code": null
+        }
+      ],
+      "notes": [],
+      "gatingHooks": [],
+      "wasm": [],
+      "modules": []
+    },
+    {
+      "file": "<MOD>/tests/guard.test.tsx",
+      "type": "hooks",
+      "errors": [],
+      "warnings": [
+        {
+          "path": "line 735, column 22",
+          "message": "error TS2556: A spread argument must either have a tuple type or be passed to a rest parameter.",
+          "code": null
+        },
+        {
+          "path": "line 809, column 8",
+          "message": "error TS2345: Argument of type 'string' is not assignable to parameter of type 'Pattern'.",
+          "code": null
+        }
+      ],
+      "notes": [],
+      "gatingHooks": [],
+      "wasm": [],
+      "modules": []
+    },
+    {
+      "file": "<MOD>/tests/harden.test.tsx",
+      "type": "hooks",
+      "errors": [],
+      "warnings": [
+        {
+          "path": "line 100, column 35",
+          "message": "error TS2345: Argument of type '{ prompt: string; description: string; subagentType: string; }' is not assignable to parameter of type 'AgentSpawnInput'. Type '{ prompt: string; description: string; subagentType: string; }' is missing the following properties from type 'AgentSpawnInput': tool_use_id, provider, parentModel, background, fork",
+          "code": null
+        }
+      ],
+      "notes": [],
+      "gatingHooks": [],
+      "wasm": [],
+      "modules": []
+    },
+    {
+      "file": "<MOD>/tests/jeb.test.tsx",
+      "type": "hooks",
+      "errors": [],
+      "warnings": [
+        {
+          "path": "line 192, column 18",
+          "message": "error TS2344: Type 'TestBody | TestOptions' does not satisfy the constraint '(...args: any) => any'. Type 'TestOptions' is not assignable to type '(...args: any) => any'. Type 'TestOptions' provides no match for the signature '(...args: any): any'.",
+          "code": null
+        },
+        {
+          "path": "line 597, column 22",
+          "message": "error TS2345: Argument of type '{ key: string; value: string; }' is not assignable to parameter of type 'ConfigSetInput'. Type '{ key: string; value: string; }' is missing the following properties from type 'ConfigSetInput': previous, provider, origin",
+          "code": null
+        },
+        {
+          "path": "line 598, column 22",
+          "message": "error TS2345: Argument of type '{ key: string; value: false; }' is not assignable to parameter of type 'ConfigSetInput'. Type '{ key: string; value: false; }' is missing the following properties from type 'ConfigSetInput': previous, provider, origin",
+          "code": null
+        },
+        {
+          "path": "line 599, column 22",
+          "message": "error TS2345: Argument of type '{ key: string; value: string; }' is not assignable to parameter of type 'ConfigSetInput'. Type '{ key: string; value: string; }' is missing the following properties from type 'ConfigSetInput': previous, provider, origin",
+          "code": null
+        },
+        {
+          "path": "line 600, column 22",
+          "message": "error TS2345: Argument of type '{ key: string; value: true; }' is not assignable to parameter of type 'ConfigSetInput'. Type '{ key: string; value: true; }' is missing the following properties from type 'ConfigSetInput': previous, provider, origin",
+          "code": null
+        },
+        {
+          "path": "line 1057, column 34",
+          "message": "error TS2304: Cannot find name 'setTimeout'.",
+          "code": null
+        },
+        {
+          "path": "line 1064, column 32",
+          "message": "error TS2304: Cannot find name 'setTimeout'.",
+          "code": null
+        },
+        {
+          "path": "line 1071, column 32",
+          "message": "error TS2304: Cannot find name 'setTimeout'.",
+          "code": null
+        },
+        {
+          "path": "line 1074, column 32",
+          "message": "error TS2304: Cannot find name 'setTimeout'.",
+          "code": null
+        },
+        {
+          "path": "line 1164, column 21",
+          "message": "error TS2769: No overload matches this call. Overload 1 of 2, '(input: Omit<ToolInputOf<\"WebFetch\", { url: string; prompt: string; offset?: number | undefined; }>, \"tool_use_id\"> & ToolCallReserved<\"WebFetch\"> & Pick<...> & AgentLoop): Promise<...>', gave the following error. Argument of type '{ tool: \"WebFetch\"; url: string; }' is not assignable to parameter of type 'Omit<ToolInputOf<\"WebFetch\", { url: string; prompt: string; offset?: number | undefined; }>, \"tool_use_id\"> & ToolCallReserved<\"WebFetch\"> & Pick<...> & AgentLoop'. Property 'prompt' is missing in type '{ tool: \"WebFetch\"; url: string; }' but required in type 'Omit<ToolInputOf<\"WebFetch\", { url: string; prompt: string; offset?: number | undefined; }>, \"tool_use_id\">'. Overload 2 of 2, '(input: ((Omit<ToolInputOf<\"Bash\", { command: string; timeout?: number | undefined; description?: string | undefined; run_in_background?: boolean | undefined; dangerouslyDisableSandbox?: boolean | undefined; }>, \"tool_use_id\">… [+994 chars]",
+          "code": null
+        },
+        {
+          "path": "line 1173, column 25",
+          "message": "error TS2345: Argument of type '{ text: string; }' is not assignable to parameter of type 'PromptSubmitInput'. Type '{ text: string; }' is missing the following properties from type 'PromptSubmitInput': wait, origin",
+          "code": null
+        },
+        {
+          "path": "line 2429, column 3",
+          "message": "error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+          "code": null
+        },
+        {
+          "path": "line 4048, column 22",
+          "message": "error TS2345: Argument of type '{ key: string; value: string; }' is not assignable to parameter of type 'ConfigSetInput'. Type '{ key: string; value: string; }' is missing the following properties from type 'ConfigSetInput': previous, provider, origin",
+          "code": null
+        },
+        {
+          "path": "line 4214, column 34",
+          "message": "error TS2769: No overload matches this call. Overload 1 of 2, '(input: ((Omit<ToolInputOf<\"Bash\", { command: string; timeout?: number | undefined; description?: string | undefined; run_in_background?: boolean | undefined; dangerouslyDisableSandbox?: boolean | undefined; }>, \"tool_use_id\"> & ToolCallReserved<...>) | ... 162 more ... | (Omit<...> & ToolCallReserved<...>)) & Pick<...> & AgentLoop): Promise<...>', gave the following error. Argument of type '{ tool: string; command: string; }' is not assignable to parameter of type '((Omit<ToolInputOf<\"Bash\", { command: string; timeout?: number | undefined; description?: string | undefined; run_in_background?: boolean | undefined; dangerouslyDisableSandbox?: boolean | undefined; }>, \"tool_use_id\"> & ToolCallReserved<...>) | ... 162 more ... | (Omit<...> & ToolCallReserved<...>)) & Pick<...> & A...'. Type '{ tool: string; command: string; }' is not assignable to type 'Omit<ToolInputOf<\"mcp__claude-in-chrome__upload_image\", { imag… [+1915 chars]",
+          "code": null
+        },
+        {
+          "path": "line 4214, column 65",
+          "message": "error TS2769: No overload matches this call. Overload 1 of 2, '(input: ((Omit<ToolInputOf<\"Bash\", { command: string; timeout?: number | undefined; description?: string | undefined; run_in_background?: boolean | undefined; dangerouslyDisableSandbox?: boolean | undefined; }>, \"tool_use_id\"> & ToolCallReserved<...>) | ... 162 more ... | (Omit<...> & ToolCallReserved<...>)) & Pick<...> & AgentLoop): Promise<...>', gave the following error. Argument of type '{ tool: string; command: string; }' is not assignable to parameter of type '((Omit<ToolInputOf<\"Bash\", { command: string; timeout?: number | undefined; description?: string | undefined; run_in_background?: boolean | undefined; dangerouslyDisableSandbox?: boolean | undefined; }>, \"tool_use_id\"> & ToolCallReserved<...>) | ... 162 more ... | (Omit<...> & ToolCallReserved<...>)) & Pick<...> & A...'. Type '{ tool: string; command: string; }' is not assignable to type 'Omit<ToolInputOf<\"mcp__claude-in-chrome__upload_image\", { imag… [+1915 chars]",
+          "code": null
+        },
+        {
+          "path": "line 4733, column 12",
+          "message": "error TS18048: 'variant' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4733, column 28",
+          "message": "error TS18048: 'base' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4734, column 12",
+          "message": "error TS18048: 'variant' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4734, column 28",
+          "message": "error TS18048: 'base' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4735, column 12",
+          "message": "error TS18048: 'variant' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4735, column 40",
+          "message": "error TS18048: 'base' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4736, column 5",
+          "message": "error TS18048: 'variant' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4737, column 30",
+          "message": "error TS18048: 'base' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4738, column 32",
+          "message": "error TS18048: 'variant' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4738, column 43",
+          "message": "error TS18048: 'variant' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4740, column 59",
+          "message": "error TS18048: 'variant' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4744, column 28",
+          "message": "error TS18048: 'variant' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4744, column 39",
+          "message": "error TS18048: 'variant' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4744, column 66",
+          "message": "error TS18048: 'base' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4744, column 66",
+          "message": "error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'. Type 'undefined' is not assignable to type 'string'.",
+          "code": null
+        },
+        {
+          "path": "line 4744, column 82",
+          "message": "error TS18048: 'base' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4744, column 90",
+          "message": "error TS18048: 'base' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4747, column 64",
+          "message": "error TS18048: 'variant' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4747, column 87",
+          "message": "error TS18048: 'variant' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4748, column 63",
+          "message": "error TS18048: 'base' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4748, column 63",
+          "message": "error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'. Type 'undefined' is not assignable to type 'string'.",
+          "code": null
+        },
+        {
+          "path": "line 4748, column 79",
+          "message": "error TS18048: 'base' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4748, column 87",
+          "message": "error TS18048: 'base' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4766, column 22",
+          "message": "error TS2532: Object is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4766, column 22",
+          "message": "error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'. Type 'undefined' is not assignable to type 'string'.",
+          "code": null
+        },
+        {
+          "path": "line 4768, column 13",
+          "message": "error TS2339: Property 'w' does not exist on type 'PixelSprite | undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4768, column 16",
+          "message": "error TS2339: Property 'h' does not exist on type 'PixelSprite | undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4768, column 19",
+          "message": "error TS2339: Property 'frames' does not exist on type 'PixelSprite | undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4781, column 39",
+          "message": "error TS18048: 'dx' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4781, column 54",
+          "message": "error TS18048: 'dx' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4781, column 68",
+          "message": "error TS18048: 'dy' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4781, column 83",
+          "message": "error TS18048: 'dy' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4781, column 101",
+          "message": "error TS18048: 'dy' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4781, column 115",
+          "message": "error TS18048: 'dx' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4787, column 16",
+          "message": "error TS2532: Object is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4806, column 22",
+          "message": "error TS2532: Object is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4806, column 22",
+          "message": "error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'. Type 'undefined' is not assignable to type 'string'.",
+          "code": null
+        },
+        {
+          "path": "line 4810, column 46",
+          "message": "error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'. Type 'undefined' is not assignable to type 'number'.",
+          "code": null
+        },
+        {
+          "path": "line 4811, column 60",
+          "message": "error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'. Type 'undefined' is not assignable to type 'number'.",
+          "code": null
+        },
+        {
+          "path": "line 4828, column 29",
+          "message": "error TS2532: Object is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4837, column 49",
+          "message": "error TS2538: Type 'undefined' cannot be used as an index type.",
+          "code": null
+        },
+        {
+          "path": "line 4849, column 50",
+          "message": "error TS2532: Object is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4849, column 50",
+          "message": "error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'. Type 'undefined' is not assignable to type 'string'.",
+          "code": null
+        },
+        {
+          "path": "line 4867, column 5",
+          "message": "error TS2532: Object is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4898, column 13",
+          "message": "error TS2339: Property 'w' does not exist on type 'PixelSprite | undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4898, column 16",
+          "message": "error TS2339: Property 'h' does not exist on type 'PixelSprite | undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 4898, column 19",
+          "message": "error TS2339: Property 'frames' does not exist on type 'PixelSprite | undefined'.",
+          "code": null
+        }
+      ],
+      "notes": [],
+      "gatingHooks": [],
+      "wasm": [],
+      "modules": []
+    },
+    {
+      "file": "<MOD>/tests/little.test.tsx",
+      "type": "hooks",
+      "errors": [],
+      "warnings": [
+        {
+          "path": "line 413, column 7",
+          "message": "error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+          "code": null
+        },
+        {
+          "path": "line 419, column 7",
+          "message": "error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+          "code": null
+        },
+        {
+          "path": "line 422, column 3",
+          "message": "error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+          "code": null
+        },
+        {
+          "path": "line 441, column 3",
+          "message": "error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+          "code": null
+        }
+      ],
+      "notes": [],
+      "gatingHooks": [],
+      "wasm": [],
+      "modules": []
+    },
+    {
+      "file": "<MOD>/tests/perf.test.tsx",
+      "type": "hooks",
+      "errors": [],
+      "warnings": [
+        {
+          "path": "line 344, column 3",
+          "message": "error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+          "code": null
+        },
+        {
+          "path": "line 350, column 10",
+          "message": "error TS18048: 'eightHours' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 350, column 50",
+          "message": "error TS18048: 'oneHour' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 351, column 10",
+          "message": "error TS18048: 'eightHours' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 351, column 48",
+          "message": "error TS18048: 'oneHour' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 352, column 10",
+          "message": "error TS18048: 'eightHours' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 352, column 48",
+          "message": "error TS18048: 'oneHour' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 353, column 10",
+          "message": "error TS18048: 'tenHours' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 353, column 48",
+          "message": "error TS18048: 'oneHour' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 354, column 10",
+          "message": "error TS18048: 'tenHours' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 354, column 46",
+          "message": "error TS18048: 'oneHour' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 355, column 10",
+          "message": "error TS18048: 'tenHours' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 355, column 46",
+          "message": "error TS18048: 'oneHour' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 356, column 10",
+          "message": "error TS18048: 'tenHours' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 357, column 10",
+          "message": "error TS18048: 'tenHours' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 358, column 10",
+          "message": "error TS18048: 'tenHours' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 360, column 3",
+          "message": "error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+          "code": null
+        },
+        {
+          "path": "line 390, column 3",
+          "message": "error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+          "code": null
+        },
+        {
+          "path": "line 404, column 10",
+          "message": "error TS18048: 'tenHours' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 404, column 48",
+          "message": "error TS18048: 'twoHours' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 405, column 10",
+          "message": "error TS18048: 'tenHours' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 405, column 46",
+          "message": "error TS18048: 'twoHours' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 406, column 10",
+          "message": "error TS18048: 'tenHours' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 406, column 46",
+          "message": "error TS18048: 'twoHours' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 407, column 10",
+          "message": "error TS18048: 'tenHours' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 409, column 10",
+          "message": "error TS18048: 'tenHours' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 410, column 10",
+          "message": "error TS18048: 'tenHours' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 434, column 3",
+          "message": "error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+          "code": null
+        },
+        {
+          "path": "line 463, column 25",
+          "message": "error TS2345: Argument of type '{ text: string; isMeta: true; }' is not assignable to parameter of type 'PromptSubmitInput'. Type '{ text: string; isMeta: true; }' is missing the following properties from type 'PromptSubmitInput': wait, origin",
+          "code": null
+        },
+        {
+          "path": "line 468, column 3",
+          "message": "error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+          "code": null
+        },
+        {
+          "path": "line 488, column 3",
+          "message": "error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+          "code": null
+        },
+        {
+          "path": "line 515, column 3",
+          "message": "error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+          "code": null
+        },
+        {
+          "path": "line 594, column 3",
+          "message": "error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+          "code": null
+        },
+        {
+          "path": "line 612, column 3",
+          "message": "error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+          "code": null
+        },
+        {
+          "path": "line 643, column 3",
+          "message": "error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+          "code": null
+        },
+        {
+          "path": "line 658, column 3",
+          "message": "error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+          "code": null
+        },
+        {
+          "path": "line 668, column 23",
+          "message": "error TS2769: No overload matches this call. Overload 1 of 2, '(input: (Omit<ToolInputOf<\"Bash\", { command: string; timeout?: number | undefined; description?: string | undefined; run_in_background?: boolean | undefined; dangerouslyDisableSandbox?: boolean | undefined; }>, \"tool_use_id\"> & ToolCallReserved<...> & Pick<...> & AgentLoop) | (Omit<...> & ... 2 more ... & AgentLoop)): Promise<...>', gave the following error. Argument of type '{ command: string; tool: \"Bash\" | \"Read\"; } | { file_path: string; tool: \"Bash\" | \"Read\"; }' is not assignable to parameter of type '(Omit<ToolInputOf<\"Bash\", { command: string; timeout?: number | undefined; description?: string | undefined; run_in_background?: boolean | undefined; dangerouslyDisableSandbox?: boolean | undefined; }>, \"tool_use_id\"> & ToolCallReserved<...> & Pick<...> & AgentLoop) | (Omit<...> & ... 2 more ... & AgentLoop)'. Type '{ command: string; tool: \"Bash\" | \"Read\"; }' is not assignable to type '(Omit<ToolInputOf<\"Bash… [+3636 chars]",
+          "code": null
+        },
+        {
+          "path": "line 685, column 3",
+          "message": "error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+          "code": null
+        },
+        {
+          "path": "line 687, column 10",
+          "message": "error TS18048: 'late' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 687, column 44",
+          "message": "error TS18048: 'early' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 688, column 10",
+          "message": "error TS18048: 'late' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 688, column 42",
+          "message": "error TS18048: 'early' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 689, column 10",
+          "message": "error TS18048: 'late' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 689, column 42",
+          "message": "error TS18048: 'early' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 690, column 10",
+          "message": "error TS18048: 'late' is possibly 'undefined'.",
+          "code": null
+        },
+        {
+          "path": "line 726, column 3",
+          "message": "error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+          "code": null
+        },
+        {
+          "path": "line 784, column 25",
+          "message": "error TS2345: Argument of type '{ text: string; }' is not assignable to parameter of type 'PromptSubmitInput'. Type '{ text: string; }' is missing the following properties from type 'PromptSubmitInput': wait, origin",
+          "code": null
+        },
+        {
+          "path": "line 824, column 25",
+          "message": "error TS2345: Argument of type '{ text: string; isMeta: true; }' is not assignable to parameter of type 'PromptSubmitInput'. Type '{ text: string; isMeta: true; }' is missing the following properties from type 'PromptSubmitInput': wait, origin",
+          "code": null
+        },
+        {
+          "path": "line 898, column 5",
+          "message": "error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+          "code": null
+        },
+        {
+          "path": "line 930, column 3",
+          "message": "error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+          "code": null
+        }
+      ],
+      "notes": [],
+      "gatingHooks": [],
+      "wasm": [],
+      "modules": []
+    },
+    {
+      "file": "<MOD>/tests/settle.test.tsx",
+      "type": "hooks",
+      "errors": [],
+      "warnings": [
+        {
+          "path": "line 339, column 27",
+          "message": "error TS2345: Argument of type '{ text: string; command: { name: string; args: string; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Type '{ text: string; command: { name: string; args: string; }; }' is missing the following properties from type 'PromptSubmitInput': wait, origin",
+          "code": null
+        }
+      ],
+      "notes": [],
+      "gatingHooks": [],
+      "wasm": [],
+      "modules": []
+    }
+  ],
+  "provides": {
+    "modules": [
+      {
+        "path": "hooks/register.tsx"
+      }
+    ],
+    "hooks": [],
+    "mcpServers": [],
+    "lspServers": [],
+    "monitors": [],
+    "skills": [],
+    "commands": [],
+    "agents": [],
+    "outputStyles": [],
+    "themes": [],
+    "workflows": [],
+    "bin": []
+  },
+  "hosts": {
+    "named": [],
+    "unread": [],
+    "declared": {
+      "plugin": false,
+      "servers": []
+    }
+  },
+  "advice": [],
+  "directory": {
+    "profile": null,
+    "findings": [
+      {
+        "code": "README_MISSING",
+        "title": "README missing",
+        "severity": "error",
+        "blocking": true,
+        "hold": false,
+        "file": "README.md",
+        "field": "",
+        "message": "This plugin has no README.md. People who install it and the directory's automated review read the README to learn what it does; the first line of a README in the plugin folder also stands in as the listing summary when plugin.json has no description.",
+        "fix": "Add a README.md to the plugin folder describing what the plugin does, how to use it, and any setup it needs, in at least 40 words. A README at the repository root also counts for a plugin in a sub-folder."
+      },
+      {
+        "code": "LICENSE_MISSING",
+        "title": "License missing",
+        "severity": "error",
+        "blocking": true,
+        "hold": false,
+        "file": "LICENSE",
+        "field": "",
+        "message": "This plugin has no LICENSE file and plugin.json has no `license`. The directory requires one of them.",
+        "fix": "Add a LICENSE file to the plugin folder, or set `license` (an SPDX id) in plugin.json. A LICENSE at the repository root also counts for a plugin in a sub-folder."
+      }
+    ],
+    "undecided": [],
+    "incomplete": true,
+    "failure": null,
+    "notes": [
+      "hooks/hooks.json names a hooks module (a code file listed under `modules`). The plugin directory has rules of its own for such code, and these checks apply none of them, so passing here does not mean the directory accepts the plugin. The developer portal's own validation applies those rules."
+    ]
+  }
+}

@@ -1,0 +1,28 @@
+{
+ "files_chars": 570468,
+ "forbidden": {
+  "\\$\\.http\\.": 0,
+  "\\$\\.process\\.": 0,
+  "\\$\\.fs\\.(write|remove|mkdir|rename)": 0,
+  "ui\\.notify": 0,
+  "on\\(\\s*['\"`]prompt\\.(compose|section|context|attachment)": 0,
+  "on\\(\\s*['\"`]attribution\\.text": 0,
+  "component: '(UserMessage|AssistantMessage|ToolUse|ToolResult|ToolGroup|AskUserQuestion|InfoNotice|CommandOutput)'": 0,
+  "\\beval\\(": 0,
+  "new Function\\(": 0
+ },
+ "counted": {
+  "model calls": 2,
+  "mcp calls": 0,
+  "fs reads": 0,
+  "timers": 1,
+  "raw timers": 0,
+  "fetch calls": 0,
+  "ui calls": 0,
+  "ui hooks": 0,
+  "commands": 0,
+  "sound or voice": 0,
+  "indexed $": 0,
+  "aliased $": 0
+ }
+}
