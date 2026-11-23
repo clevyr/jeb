@@ -4,65 +4,33 @@
 ## stdout
 {
  "plan": {
-  "value=None remove=False": [
-   "set",
-   "$SB/home/.jeb/current/mod"
-  ],
   "value=None remove=True": [
    "absent",
    null
-  ],
-  "value='' remove=False": [
-   "set",
-   "$SB/home/.jeb/current/mod"
   ],
   "value='' remove=True": [
    "absent",
    ""
   ],
-  "value='$SB/home/.jeb/current/mod' remove=False": [
-   "keep",
-   "$SB/home/.jeb/current/mod"
-  ],
   "value='$SB/home/.jeb/current/mod' remove=True": [
    "drop",
    null
-  ],
-  "value='/x/other' remove=False": [
-   "append",
-   "/x/other:$SB/home/.jeb/current/mod"
   ],
   "value='/x/other' remove=True": [
    "absent",
    "/x/other"
   ],
-  "value='/x/other:$SB/home/.jeb/current/mod' remove=False": [
-   "keep",
-   "/x/other:$SB/home/.jeb/current/mod"
-  ],
   "value='/x/other:$SB/home/.jeb/current/mod' remove=True": [
    "remove",
    "/x/other"
-  ],
-  "value='$SB/home/.jeb/current/mod:/x/other' remove=False": [
-   "keep",
-   "$SB/home/.jeb/current/mod:/x/other"
   ],
   "value='$SB/home/.jeb/current/mod:/x/other' remove=True": [
    "remove",
    "/x/other"
   ],
-  "value='$SB/home/.jeb/current/mod/' remove=False": [
-   "keep",
-   "$SB/home/.jeb/current/mod/"
-  ],
   "value='$SB/home/.jeb/current/mod/' remove=True": [
    "drop",
    null
-  ],
-  "value='/x/a:/x/b' remove=False": [
-   "append",
-   "/x/a:/x/b:$SB/home/.jeb/current/mod"
   ],
   "value='/x/a:/x/b' remove=True": [
    "absent",
@@ -89,38 +57,20 @@
   null
  ],
  "edit_register_dry_transcript": [
-  "--- settings env value None, remove=False",
-  "settings $SB/home/.claude/settings.json: CLAUDE_CODE_PLUGIN_DIRS set -> $SB/home/.jeb/current/mod",
-  "  (dry run: not written)",
-  "=> set",
   "--- settings env value None, remove=True",
   "settings $SB/home/.claude/settings.json: CLAUDE_CODE_PLUGIN_DIRS absent",
   "=> absent",
-  "--- settings env value '/x/other', remove=False",
-  "settings $SB/home/.claude/settings.json: CLAUDE_CODE_PLUGIN_DIRS append -> /x/other:$SB/home/.jeb/current/mod",
-  "  (dry run: not written)",
-  "=> append",
   "--- settings env value '/x/other', remove=True",
   "settings $SB/home/.claude/settings.json: CLAUDE_CODE_PLUGIN_DIRS absent -> /x/other",
   "=> absent",
-  "--- settings env value '$SB/home/.jeb/current/mod', remove=False",
-  "settings $SB/home/.claude/settings.json: CLAUDE_CODE_PLUGIN_DIRS keep -> $SB/home/.jeb/current/mod",
-  "=> keep",
   "--- settings env value '$SB/home/.jeb/current/mod', remove=True",
   "settings $SB/home/.claude/settings.json: CLAUDE_CODE_PLUGIN_DIRS drop",
   "  (dry run: not written)",
   "=> drop",
-  "--- settings env value '/x/other:$SB/home/.jeb/current/mod', remove=False",
-  "settings $SB/home/.claude/settings.json: CLAUDE_CODE_PLUGIN_DIRS keep -> /x/other:$SB/home/.jeb/current/mod",
-  "=> keep",
   "--- settings env value '/x/other:$SB/home/.jeb/current/mod', remove=True",
   "settings $SB/home/.claude/settings.json: CLAUDE_CODE_PLUGIN_DIRS remove -> /x/other",
   "  (dry run: not written)",
   "=> remove",
-  "--- no settings file, add",
-  "settings $SB/home/.claude/settings.json: CLAUDE_CODE_PLUGIN_DIRS set -> $SB/home/.jeb/current/mod",
-  "  (dry run: not written)",
-  "=> set",
   "--- register dry",
   "would register jeb@jeb from $SB/home/.jeb/current (marketplace added)",
   "=> ok",

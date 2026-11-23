@@ -162,45 +162,43 @@ fake.py <store> 3 busy 6  (clock pinned at 1780000000, advancing 0.5 s per sleep
   "version": 10
  },
  "live:fake0": {
-  "at": 1780000004500,
+  "at": 1780000004000,
   "busy": true,
-  "frame": 9,
+  "frame": 8,
   "hands": [
    {
     "look": 0,
     "plot": "corn"
    }
   ],
-  "line": "Fine day for it.",
+  "line": "Hand's out in the tobacco.",
   "live": "B",
   "mood": "working",
   "pose": "edit",
-  "saidAt": 1780000004500,
+  "saidAt": 1780000000000,
   "v": 1
  },
  "live:fake1": {
   "act": "sip",
-  "at": 1780000004500,
+  "at": 1780000004000,
   "busy": true,
-  "frame": 9,
+  "frame": 8,
   "hands": [
    {
     "look": 1,
     "plot": "corn"
    }
   ],
-  "line": "Corn's comin' on.",
   "live": "G",
   "mood": "working",
   "pose": "still",
-  "saidAt": 1780000001500,
   "v": 1
  },
  "live:fake2": {
   "act": "nap",
-  "at": 1780000004500,
+  "at": 1780000004000,
   "busy": true,
-  "frame": 9,
+  "frame": 8,
   "hands": [
    {
     "look": 2,
@@ -216,8 +214,6 @@ fake.py <store> 3 busy 6  (clock pinned at 1780000000, advancing 0.5 s per sleep
 
 ## store.json.writes (ms wall time of each write)
 1780000000000.0
-1780000001500.0
 1780000002000.0
 1780000004000.0
-1780000004500.0
 

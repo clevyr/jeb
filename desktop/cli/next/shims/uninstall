@@ -1,0 +1,9 @@
+#!/bin/sh
+# Staged for Phase F (the v1.6.0 cutover), which moves this file to the repo root as ./uninstall and into every bundle.
+# In a bundle it hands over to the bundle's own jebctl; in a source checkout there is no jebctl to run.
+here=$(dirname "$0")
+if [ -x "$here/desktop/bin/jebctl" ]; then
+  exec "$here/desktop/bin/jebctl" uninstall "$@"
+fi
+echo "uninstall: this is a source checkout, not a release bundle; see CONTRIBUTING.md to remove a working-tree build" >&2
+exit 1

@@ -1,0 +1,2491 @@
+{
+ "about": {
+  "what": "Per animated sprite, each frame that save_gif() writes (identical consecutive frames are merged): how many colours Pillow's quantize(colors=63, MEDIANCUT, no dither) saw, and whether the GIF frame decodes back to the scaled source frame exactly.",
+  "made_by": "scratchpad/gif-colours.py (throwaway, not in the repo) against mod/art/src at the capture commit; see desktop/tests/golden/README.md",
+  "pillow": "11.3.0",
+  "python": "3.9.6",
+  "scale": 4,
+  "opaque_colours": "distinct RGB among pixels with alpha >= 128 in the x4 frame (the colours a Swift exact-palette GIF encoder must carry)",
+  "colours_seen_by_quantizer": "distinct RGB in big.convert('RGB'): opaque_colours plus (0,0,0) when the frame has transparent pixels, which save_gif() hands to the quantizer and then covers with index 63",
+  "exact": "every opaque source pixel decodes to the same RGB with alpha 255 and every transparent one to alpha 0 (Pillow decode of the built GIF)",
+  "transparent_rgb_in_file": "the RGB the file's transparent index carries (Pillow's RGBA conversion keeps it; ImageIO zeroes it)",
+  "alphas": "listed only when a frame has alpha values other than 0/255",
+  "limit": "63 colours (index 63 is the transparency slot); over_limit lists sprite[frame] with opaque_colours > 63 or exact == false",
+  "max_opaque_colours": 26,
+  "over_limit": []
+ },
+ "sprites": {
+  "jeb-idle": {
+   "gif": "gifs/jeb-idle.gif",
+   "size": [
+    80,
+    160
+   ],
+   "frames": [
+    {
+     "opaque_colours": 17,
+     "colours_seen_by_quantizer": 18,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 17,
+     "colours_seen_by_quantizer": 18,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-banjo": {
+   "gif": "gifs/jeb-banjo.gif",
+   "size": [
+    80,
+    160
+   ],
+   "frames": [
+    {
+     "opaque_colours": 19,
+     "colours_seen_by_quantizer": 20,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 19,
+     "colours_seen_by_quantizer": 20,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-sip": {
+   "gif": "gifs/jeb-sip.gif",
+   "size": [
+    80,
+    160
+   ],
+   "frames": [
+    {
+     "opaque_colours": 20,
+     "colours_seen_by_quantizer": 21,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 20,
+     "colours_seen_by_quantizer": 21,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-hoe": {
+   "gif": "gifs/jeb-hoe.gif",
+   "size": [
+    80,
+    160
+   ],
+   "frames": [
+    {
+     "opaque_colours": 19,
+     "colours_seen_by_quantizer": 20,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 19,
+     "colours_seen_by_quantizer": 20,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-broom": {
+   "gif": "gifs/jeb-broom.gif",
+   "size": [
+    80,
+    160
+   ],
+   "frames": [
+    {
+     "opaque_colours": 18,
+     "colours_seen_by_quantizer": 19,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 18,
+     "colours_seen_by_quantizer": 19,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-stir": {
+   "gif": "gifs/jeb-stir.gif",
+   "size": [
+    80,
+    160
+   ],
+   "frames": [
+    {
+     "opaque_colours": 18,
+     "colours_seen_by_quantizer": 19,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 18,
+     "colours_seen_by_quantizer": 19,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-salute": {
+   "gif": "gifs/jeb-salute.gif",
+   "size": [
+    80,
+    160
+   ],
+   "frames": [
+    {
+     "opaque_colours": 17,
+     "colours_seen_by_quantizer": 18,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 17,
+     "colours_seen_by_quantizer": 18,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-wave": {
+   "gif": "gifs/jeb-wave.gif",
+   "size": [
+    80,
+    160
+   ],
+   "frames": [
+    {
+     "opaque_colours": 18,
+     "colours_seen_by_quantizer": 19,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 18,
+     "colours_seen_by_quantizer": 19,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-idle--halloween": {
+   "gif": "gifs/jeb-idle--halloween.gif",
+   "size": [
+    80,
+    192
+   ],
+   "frames": [
+    {
+     "opaque_colours": 16,
+     "colours_seen_by_quantizer": 17,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 16,
+     "colours_seen_by_quantizer": 17,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-banjo--halloween": {
+   "gif": "gifs/jeb-banjo--halloween.gif",
+   "size": [
+    80,
+    192
+   ],
+   "frames": [
+    {
+     "opaque_colours": 19,
+     "colours_seen_by_quantizer": 20,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 19,
+     "colours_seen_by_quantizer": 20,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-sip--halloween": {
+   "gif": "gifs/jeb-sip--halloween.gif",
+   "size": [
+    80,
+    192
+   ],
+   "frames": [
+    {
+     "opaque_colours": 19,
+     "colours_seen_by_quantizer": 20,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 19,
+     "colours_seen_by_quantizer": 20,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-hoe--halloween": {
+   "gif": "gifs/jeb-hoe--halloween.gif",
+   "size": [
+    80,
+    192
+   ],
+   "frames": [
+    {
+     "opaque_colours": 18,
+     "colours_seen_by_quantizer": 19,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 18,
+     "colours_seen_by_quantizer": 19,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-broom--halloween": {
+   "gif": "gifs/jeb-broom--halloween.gif",
+   "size": [
+    80,
+    192
+   ],
+   "frames": [
+    {
+     "opaque_colours": 18,
+     "colours_seen_by_quantizer": 19,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 19,
+     "colours_seen_by_quantizer": 20,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-stir--halloween": {
+   "gif": "gifs/jeb-stir--halloween.gif",
+   "size": [
+    80,
+    192
+   ],
+   "frames": [
+    {
+     "opaque_colours": 17,
+     "colours_seen_by_quantizer": 18,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 17,
+     "colours_seen_by_quantizer": 18,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-salute--halloween": {
+   "gif": "gifs/jeb-salute--halloween.gif",
+   "size": [
+    80,
+    192
+   ],
+   "frames": [
+    {
+     "opaque_colours": 16,
+     "colours_seen_by_quantizer": 17,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 16,
+     "colours_seen_by_quantizer": 17,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-wave--halloween": {
+   "gif": "gifs/jeb-wave--halloween.gif",
+   "size": [
+    80,
+    192
+   ],
+   "frames": [
+    {
+     "opaque_colours": 17,
+     "colours_seen_by_quantizer": 18,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 17,
+     "colours_seen_by_quantizer": 18,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-idle--thanksgiving": {
+   "gif": "gifs/jeb-idle--thanksgiving.gif",
+   "size": [
+    80,
+    192
+   ],
+   "frames": [
+    {
+     "opaque_colours": 23,
+     "colours_seen_by_quantizer": 24,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 23,
+     "colours_seen_by_quantizer": 24,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-banjo--thanksgiving": {
+   "gif": "gifs/jeb-banjo--thanksgiving.gif",
+   "size": [
+    80,
+    192
+   ],
+   "frames": [
+    {
+     "opaque_colours": 24,
+     "colours_seen_by_quantizer": 25,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 24,
+     "colours_seen_by_quantizer": 25,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-sip--thanksgiving": {
+   "gif": "gifs/jeb-sip--thanksgiving.gif",
+   "size": [
+    80,
+    192
+   ],
+   "frames": [
+    {
+     "opaque_colours": 26,
+     "colours_seen_by_quantizer": 27,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 26,
+     "colours_seen_by_quantizer": 27,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-hoe--thanksgiving": {
+   "gif": "gifs/jeb-hoe--thanksgiving.gif",
+   "size": [
+    80,
+    192
+   ],
+   "frames": [
+    {
+     "opaque_colours": 25,
+     "colours_seen_by_quantizer": 26,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 25,
+     "colours_seen_by_quantizer": 26,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-broom--thanksgiving": {
+   "gif": "gifs/jeb-broom--thanksgiving.gif",
+   "size": [
+    80,
+    192
+   ],
+   "frames": [
+    {
+     "opaque_colours": 24,
+     "colours_seen_by_quantizer": 25,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 24,
+     "colours_seen_by_quantizer": 25,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-stir--thanksgiving": {
+   "gif": "gifs/jeb-stir--thanksgiving.gif",
+   "size": [
+    80,
+    192
+   ],
+   "frames": [
+    {
+     "opaque_colours": 24,
+     "colours_seen_by_quantizer": 25,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 24,
+     "colours_seen_by_quantizer": 25,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-salute--thanksgiving": {
+   "gif": "gifs/jeb-salute--thanksgiving.gif",
+   "size": [
+    80,
+    192
+   ],
+   "frames": [
+    {
+     "opaque_colours": 23,
+     "colours_seen_by_quantizer": 24,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 23,
+     "colours_seen_by_quantizer": 24,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-wave--thanksgiving": {
+   "gif": "gifs/jeb-wave--thanksgiving.gif",
+   "size": [
+    80,
+    192
+   ],
+   "frames": [
+    {
+     "opaque_colours": 24,
+     "colours_seen_by_quantizer": 25,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 24,
+     "colours_seen_by_quantizer": 25,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-idle--christmas": {
+   "gif": "gifs/jeb-idle--christmas.gif",
+   "size": [
+    80,
+    192
+   ],
+   "frames": [
+    {
+     "opaque_colours": 19,
+     "colours_seen_by_quantizer": 20,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 19,
+     "colours_seen_by_quantizer": 20,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-banjo--christmas": {
+   "gif": "gifs/jeb-banjo--christmas.gif",
+   "size": [
+    80,
+    192
+   ],
+   "frames": [
+    {
+     "opaque_colours": 21,
+     "colours_seen_by_quantizer": 22,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 21,
+     "colours_seen_by_quantizer": 22,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-sip--christmas": {
+   "gif": "gifs/jeb-sip--christmas.gif",
+   "size": [
+    80,
+    192
+   ],
+   "frames": [
+    {
+     "opaque_colours": 22,
+     "colours_seen_by_quantizer": 23,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 22,
+     "colours_seen_by_quantizer": 23,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-hoe--christmas": {
+   "gif": "gifs/jeb-hoe--christmas.gif",
+   "size": [
+    80,
+    192
+   ],
+   "frames": [
+    {
+     "opaque_colours": 21,
+     "colours_seen_by_quantizer": 22,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 21,
+     "colours_seen_by_quantizer": 22,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-broom--christmas": {
+   "gif": "gifs/jeb-broom--christmas.gif",
+   "size": [
+    80,
+    192
+   ],
+   "frames": [
+    {
+     "opaque_colours": 22,
+     "colours_seen_by_quantizer": 23,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 22,
+     "colours_seen_by_quantizer": 23,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-stir--christmas": {
+   "gif": "gifs/jeb-stir--christmas.gif",
+   "size": [
+    80,
+    192
+   ],
+   "frames": [
+    {
+     "opaque_colours": 20,
+     "colours_seen_by_quantizer": 21,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 20,
+     "colours_seen_by_quantizer": 21,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-salute--christmas": {
+   "gif": "gifs/jeb-salute--christmas.gif",
+   "size": [
+    80,
+    192
+   ],
+   "frames": [
+    {
+     "opaque_colours": 19,
+     "colours_seen_by_quantizer": 20,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 19,
+     "colours_seen_by_quantizer": 20,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "jeb-wave--christmas": {
+   "gif": "gifs/jeb-wave--christmas.gif",
+   "size": [
+    80,
+    192
+   ],
+   "frames": [
+    {
+     "opaque_colours": 19,
+     "colours_seen_by_quantizer": 20,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 19,
+     "colours_seen_by_quantizer": 20,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "blue-wag": {
+   "gif": "gifs/blue-wag.gif",
+   "size": [
+    80,
+    52
+   ],
+   "frames": [
+    {
+     "opaque_colours": 5,
+     "colours_seen_by_quantizer": 6,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 5,
+     "colours_seen_by_quantizer": 6,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "blue-run": {
+   "gif": "gifs/blue-run.gif",
+   "size": [
+    80,
+    52
+   ],
+   "frames": [
+    {
+     "opaque_colours": 5,
+     "colours_seen_by_quantizer": 6,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 5,
+     "colours_seen_by_quantizer": 6,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "blue-bark": {
+   "gif": "gifs/blue-bark.gif",
+   "size": [
+    80,
+    52
+   ],
+   "frames": [
+    {
+     "opaque_colours": 6,
+     "colours_seen_by_quantizer": 7,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 5,
+     "colours_seen_by_quantizer": 6,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "hand-work": {
+   "gif": "gifs/hand-work.gif",
+   "size": [
+    64,
+    112
+   ],
+   "frames": [
+    {
+     "opaque_colours": 10,
+     "colours_seen_by_quantizer": 11,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 10,
+     "colours_seen_by_quantizer": 11,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "hand-work-0": {
+   "gif": "gifs/hand-work-0.gif",
+   "size": [
+    64,
+    112
+   ],
+   "frames": [
+    {
+     "opaque_colours": 10,
+     "colours_seen_by_quantizer": 11,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 10,
+     "colours_seen_by_quantizer": 11,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "hand-work-1": {
+   "gif": "gifs/hand-work-1.gif",
+   "size": [
+    64,
+    112
+   ],
+   "frames": [
+    {
+     "opaque_colours": 9,
+     "colours_seen_by_quantizer": 10,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 9,
+     "colours_seen_by_quantizer": 10,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "hand-work-2": {
+   "gif": "gifs/hand-work-2.gif",
+   "size": [
+    64,
+    112
+   ],
+   "frames": [
+    {
+     "opaque_colours": 9,
+     "colours_seen_by_quantizer": 10,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 9,
+     "colours_seen_by_quantizer": 10,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "hand-work-3": {
+   "gif": "gifs/hand-work-3.gif",
+   "size": [
+    64,
+    112
+   ],
+   "frames": [
+    {
+     "opaque_colours": 9,
+     "colours_seen_by_quantizer": 10,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 9,
+     "colours_seen_by_quantizer": 10,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "hand-work-4": {
+   "gif": "gifs/hand-work-4.gif",
+   "size": [
+    64,
+    112
+   ],
+   "frames": [
+    {
+     "opaque_colours": 9,
+     "colours_seen_by_quantizer": 10,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 9,
+     "colours_seen_by_quantizer": 10,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "hand-work-5": {
+   "gif": "gifs/hand-work-5.gif",
+   "size": [
+    64,
+    112
+   ],
+   "frames": [
+    {
+     "opaque_colours": 10,
+     "colours_seen_by_quantizer": 11,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 10,
+     "colours_seen_by_quantizer": 11,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "cow": {
+   "gif": "gifs/cow.gif",
+   "size": [
+    88,
+    60
+   ],
+   "frames": [
+    {
+     "opaque_colours": 4,
+     "colours_seen_by_quantizer": 5,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 4,
+     "colours_seen_by_quantizer": 5,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "revenuer": {
+   "gif": "gifs/revenuer.gif",
+   "size": [
+    128,
+    60
+   ],
+   "frames": [
+    {
+     "opaque_colours": 6,
+     "colours_seen_by_quantizer": 7,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 6,
+     "colours_seen_by_quantizer": 7,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "turkey": {
+   "gif": "gifs/turkey.gif",
+   "size": [
+    56,
+    52
+   ],
+   "frames": [
+    {
+     "opaque_colours": 6,
+     "colours_seen_by_quantizer": 7,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 6,
+     "colours_seen_by_quantizer": 7,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "hen": {
+   "gif": "gifs/hen.gif",
+   "size": [
+    40,
+    40
+   ],
+   "frames": [
+    {
+     "opaque_colours": 4,
+     "colours_seen_by_quantizer": 5,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 4,
+     "colours_seen_by_quantizer": 5,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "smoke": {
+   "gif": "gifs/smoke.gif",
+   "size": [
+    40,
+    48
+   ],
+   "frames": [
+    {
+     "opaque_colours": 2,
+     "colours_seen_by_quantizer": 3,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 1,
+     "colours_seen_by_quantizer": 2,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 2,
+     "colours_seen_by_quantizer": 3,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "fire": {
+   "gif": "gifs/fire.gif",
+   "size": [
+    56,
+    24
+   ],
+   "frames": [
+    {
+     "opaque_colours": 2,
+     "colours_seen_by_quantizer": 3,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 2,
+     "colours_seen_by_quantizer": 3,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "steam": {
+   "gif": "gifs/steam.gif",
+   "size": [
+    32,
+    32
+   ],
+   "frames": [
+    {
+     "opaque_colours": 2,
+     "colours_seen_by_quantizer": 3,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 2,
+     "colours_seen_by_quantizer": 3,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "dust": {
+   "gif": "gifs/dust.gif",
+   "size": [
+    40,
+    24
+   ],
+   "frames": [
+    {
+     "opaque_colours": 2,
+     "colours_seen_by_quantizer": 3,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 1,
+     "colours_seen_by_quantizer": 2,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "rig-store": {
+   "gif": "gifs/rig-store.gif",
+   "size": [
+    160,
+    80
+   ],
+   "frames": [
+    {
+     "opaque_colours": 9,
+     "colours_seen_by_quantizer": 10,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 9,
+     "colours_seen_by_quantizer": 10,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "rig-mill": {
+   "gif": "gifs/rig-mill.gif",
+   "size": [
+    160,
+    80
+   ],
+   "frames": [
+    {
+     "opaque_colours": 10,
+     "colours_seen_by_quantizer": 11,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 10,
+     "colours_seen_by_quantizer": 11,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "rig-mail": {
+   "gif": "gifs/rig-mail.gif",
+   "size": [
+    160,
+    80
+   ],
+   "frames": [
+    {
+     "opaque_colours": 8,
+     "colours_seen_by_quantizer": 9,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 8,
+     "colours_seen_by_quantizer": 9,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "rig-tractor": {
+   "gif": "gifs/rig-tractor.gif",
+   "size": [
+    160,
+    80
+   ],
+   "frames": [
+    {
+     "opaque_colours": 7,
+     "colours_seen_by_quantizer": 8,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 7,
+     "colours_seen_by_quantizer": 8,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "rig-tripper": {
+   "gif": "gifs/rig-tripper.gif",
+   "size": [
+    160,
+    80
+   ],
+   "frames": [
+    {
+     "opaque_colours": 7,
+     "colours_seen_by_quantizer": 8,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 7,
+     "colours_seen_by_quantizer": 8,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "moon": {
+   "gif": "gifs/moon.gif",
+   "size": [
+    36,
+    36
+   ],
+   "frames": [
+    {
+     "opaque_colours": 1,
+     "colours_seen_by_quantizer": 2,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 1,
+     "colours_seen_by_quantizer": 2,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 1,
+     "colours_seen_by_quantizer": 2,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 1,
+     "colours_seen_by_quantizer": 2,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 1,
+     "colours_seen_by_quantizer": 2,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 1,
+     "colours_seen_by_quantizer": 2,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 1,
+     "colours_seen_by_quantizer": 2,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 1,
+     "colours_seen_by_quantizer": 2,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "lantern": {
+   "gif": "gifs/lantern.gif",
+   "size": [
+    20,
+    32
+   ],
+   "frames": [
+    {
+     "opaque_colours": 2,
+     "colours_seen_by_quantizer": 3,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 2,
+     "colours_seen_by_quantizer": 3,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "zz": {
+   "gif": "gifs/zz.gif",
+   "size": [
+    32,
+    32
+   ],
+   "frames": [
+    {
+     "opaque_colours": 1,
+     "colours_seen_by_quantizer": 2,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 1,
+     "colours_seen_by_quantizer": 2,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "firefly": {
+   "gif": "gifs/firefly.gif",
+   "size": [
+    12,
+    12
+   ],
+   "frames": [
+    {
+     "opaque_colours": 2,
+     "colours_seen_by_quantizer": 3,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 1,
+     "colours_seen_by_quantizer": 2,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "truck-empty": {
+   "gif": "gifs/truck-empty.gif",
+   "size": [
+    168,
+    88
+   ],
+   "frames": [
+    {
+     "opaque_colours": 8,
+     "colours_seen_by_quantizer": 9,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 8,
+     "colours_seen_by_quantizer": 9,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "truck-crate": {
+   "gif": "gifs/truck-crate.gif",
+   "size": [
+    168,
+    88
+   ],
+   "frames": [
+    {
+     "opaque_colours": 10,
+     "colours_seen_by_quantizer": 11,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 10,
+     "colours_seen_by_quantizer": 11,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "truck-jars": {
+   "gif": "gifs/truck-jars.gif",
+   "size": [
+    168,
+    88
+   ],
+   "frames": [
+    {
+     "opaque_colours": 9,
+     "colours_seen_by_quantizer": 10,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 9,
+     "colours_seen_by_quantizer": 10,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "truck-bales": {
+   "gif": "gifs/truck-bales.gif",
+   "size": [
+    168,
+    88
+   ],
+   "frames": [
+    {
+     "opaque_colours": 10,
+     "colours_seen_by_quantizer": 11,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 10,
+     "colours_seen_by_quantizer": 11,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "truck-apples": {
+   "gif": "gifs/truck-apples.gif",
+   "size": [
+    168,
+    88
+   ],
+   "frames": [
+    {
+     "opaque_colours": 10,
+     "colours_seen_by_quantizer": 11,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 10,
+     "colours_seen_by_quantizer": 11,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "truck-corn": {
+   "gif": "gifs/truck-corn.gif",
+   "size": [
+    168,
+    88
+   ],
+   "frames": [
+    {
+     "opaque_colours": 10,
+     "colours_seen_by_quantizer": 11,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 10,
+     "colours_seen_by_quantizer": 11,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "bluebird": {
+   "gif": "gifs/bluebird.gif",
+   "size": [
+    28,
+    20
+   ],
+   "frames": [
+    {
+     "opaque_colours": 3,
+     "colours_seen_by_quantizer": 4,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 4,
+     "colours_seen_by_quantizer": 5,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "owl": {
+   "gif": "gifs/owl.gif",
+   "size": [
+    36,
+    44
+   ],
+   "frames": [
+    {
+     "opaque_colours": 5,
+     "colours_seen_by_quantizer": 6,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 4,
+     "colours_seen_by_quantizer": 5,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "butterfly": {
+   "gif": "gifs/butterfly.gif",
+   "size": [
+    24,
+    20
+   ],
+   "frames": [
+    {
+     "opaque_colours": 4,
+     "colours_seen_by_quantizer": 4,
+     "exact": true
+    },
+    {
+     "opaque_colours": 3,
+     "colours_seen_by_quantizer": 4,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "creek": {
+   "gif": "gifs/creek.gif",
+   "size": [
+    48,
+    12
+   ],
+   "frames": [
+    {
+     "opaque_colours": 3,
+     "colours_seen_by_quantizer": 3,
+     "exact": true
+    },
+    {
+     "opaque_colours": 3,
+     "colours_seen_by_quantizer": 3,
+     "exact": true
+    }
+   ]
+  },
+  "fisher": {
+   "gif": "gifs/fisher.gif",
+   "size": [
+    44,
+    52
+   ],
+   "frames": [
+    {
+     "opaque_colours": 11,
+     "colours_seen_by_quantizer": 12,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 11,
+     "colours_seen_by_quantizer": 12,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "axe-stump": {
+   "gif": "gifs/axe-stump.gif",
+   "size": [
+    32,
+    44
+   ],
+   "frames": [
+    {
+     "opaque_colours": 5,
+     "colours_seen_by_quantizer": 6,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 5,
+     "colours_seen_by_quantizer": 6,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "mug": {
+   "gif": "gifs/mug.gif",
+   "size": [
+    24,
+    28
+   ],
+   "frames": [
+    {
+     "opaque_colours": 4,
+     "colours_seen_by_quantizer": 5,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 4,
+     "colours_seen_by_quantizer": 5,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  },
+  "cake": {
+   "gif": "gifs/cake.gif",
+   "size": [
+    36,
+    40
+   ],
+   "frames": [
+    {
+     "opaque_colours": 5,
+     "colours_seen_by_quantizer": 6,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "opaque_colours": 5,
+     "colours_seen_by_quantizer": 6,
+     "exact": true,
+     "transparent_rgb_in_file": [
+      [
+       0,
+       0,
+       0
+      ]
+     ]
+    }
+   ]
+  }
+ }
+}

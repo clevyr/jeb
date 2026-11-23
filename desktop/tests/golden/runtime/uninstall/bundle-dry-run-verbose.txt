@@ -3,7 +3,6 @@
 
 ## stdout
 Jeb uninstall (dry run) from $SB/home/.jeb/versions/v1.4.0
-$ $PYTHON3 -I $SB/home/.jeb/versions/v1.4.0/desktop/jebctl uninstall --dry-run --verbose
 $ launchctl bootout gui/$UID/com.jeb.desktop.release
 $ launchctl bootout gui/$UID/com.jeb.desktop.update
 $ launchctl bootout gui/$UID/com.jeb.desktop.watchdog

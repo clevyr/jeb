@@ -94,6 +94,7 @@ ridges-home.store.json  sha256 5b69ba99a7f3f698608b7b1c75962a838ac401f25cdd18e22
 ridges-jan.store.json  sha256 d79502f339d550054f7bc1f60715af5f0a56f9cdbb571ffe07cab805006d2f11  1523 bytes  tracked desktop/src/fixtures/ridges-jan.store.json: same bytes
 ridges-jul.store.json  sha256 b72f518a1bcdb69d419e2c174531d84851c3a4b0837113b168618c9c0ad0d9f9  1523 bytes  tracked desktop/src/fixtures/ridges-jul.store.json: same bytes
 ridges-night.store.json  sha256 9d2bcc567fcf8f24586ca7dcd13d93deea3d394fc8faba66f75bbc8f27602d66  1523 bytes  tracked desktop/src/fixtures/ridges-night.store.json: same bytes
+smoke.json  sha256 fb43c7c11bf26d47109023da1cb7ae08ca249f733f9593fc1cd4dcb100141cc5  10081 bytes  tracked desktop/src/fixtures/smoke.json: same bytes
 story-1.store.json  sha256 99979091d5f8c826fcc3a8260a9e8de9ade0267bbc52eb8e0bb9cc990bbebe98  1408 bytes  tracked desktop/src/fixtures/story-1.store.json: same bytes
 story-2.store.json  sha256 bcfa875d27b5c145afc1964738b95a39332fbc0067d81a46272209e4c8d658ca  1411 bytes  tracked desktop/src/fixtures/story-2.store.json: same bytes
 story-3.store.json  sha256 51cb4301a823063e7a520e77dd60aca800ec947b858f6588a4724a31ca7d4738  1409 bytes  tracked desktop/src/fixtures/story-3.store.json: same bytes

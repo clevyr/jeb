@@ -1,11 +1,12 @@
 ## rc
-1
+2
 
 ## stdout
-(empty)
+jebctl install: unknown option --build-from-source
+usage: jebctl install [--repin] [--add-path] [--no-agents] [--dry-run] [--verbose]
 
 ## stderr
-install: a release bundle has no source to build: --dev and --build-from-source are for a git clone
+(empty)
 
 ## release-state.json
 {}

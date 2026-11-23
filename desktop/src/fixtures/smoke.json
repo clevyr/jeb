@@ -1,0 +1,697 @@
+[
+ {
+  "name": "farm-day",
+  "now": 1792605600000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "farm-built",
+  "now": 1792605600000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "farm-night",
+  "now": 1783652400000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "quilt-stitch",
+  "now": 1792605600000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "pumpkin",
+  "now": 1793109600000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "christmas",
+  "now": 1797951600000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "thanksgiving",
+  "now": 1795705200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "groundhog",
+  "now": 1801580400000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "jeb-gate",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "jeb-sip",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "jeb-pose-read",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "jeb-pose-still",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "jeb-think",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "jeb-hoe",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "jeb-sweep",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "jeb-spooked",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "jeb-pleased",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "jeb-wink",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "jeb-working",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "jeb-banjo",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "jeb-nap",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "blue-chase",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "blue-errand",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "jeb-away",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "truck-home",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "truck-butter",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "puff",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "hands",
+  "now": 1792609200000,
+  "place": "fx00",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "workflow",
+  "now": 1792609200000,
+  "place": "fx00",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "mates",
+  "now": 1792609200000,
+  "place": "fx00",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "lanterns",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "visit-arrive",
+  "now": 1792609200000,
+  "place": "fx00",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "visit-deal",
+  "now": 1792609200000,
+  "place": "fx00",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "visit-opal",
+  "now": 1792609200000,
+  "place": "fx00",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "visit-tractor",
+  "now": 1792609200000,
+  "place": "fx00",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "visit-mail",
+  "now": 1792609200000,
+  "place": "fx00",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "ev-revenuer",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "ev-neighbor",
+  "now": 1792609200000,
+  "place": "fx00",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "ev-neighbor-walk",
+  "now": 1792609200000,
+  "place": "fx00",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "ev-bear",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "ev-whistlepig",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "ev-mothman",
+  "now": 1783652400000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "ev-bugs",
+  "now": 1782007200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "ev-bells",
+  "now": 1792936800000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "ev-storm",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "ev-turkeys",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "ev-parachute",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "ev-track",
+  "now": 1792620000000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "ev-hornworm",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "ev-applebutter",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "story-1",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "story-2",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "story-3",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "story-4",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "story-5",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "drops",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "festival",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "looks-1",
+  "now": 1781528400000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "looks-2",
+  "now": 1781373600000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "looks-3",
+  "now": 1781454600000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "looks-4",
+  "now": 1792620000000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "looks-5",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "looks-6",
+  "now": 1783652400000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "looks-7",
+  "now": 1767769200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "looks-8",
+  "now": 1772636400000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "looks-9",
+  "now": 1768492800000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "bubble",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "bubble-dim",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "cows",
+  "now": 1792609200000,
+  "place": "fx00",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "rain",
+  "now": 1792609200000,
+  "place": "fx00",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "rain-all",
+  "now": 1792609200000,
+  "place": "fx00",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "dry",
+  "now": 1792609200000,
+  "place": "fx00",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "lead-two",
+  "now": 1792609200000,
+  "place": "home",
+  "since": 800,
+  "env": {}
+ },
+ {
+  "name": "lead-hold",
+  "now": 1792609200000,
+  "place": "home",
+  "since": 800,
+  "env": {}
+ },
+ {
+  "name": "one-jeb",
+  "now": 1792609200000,
+  "place": "home",
+  "since": 0,
+  "env": {}
+ },
+ {
+  "name": "place-one",
+  "now": 1792609200000,
+  "place": "home",
+  "since": 5,
+  "env": {}
+ },
+ {
+  "name": "queue-order",
+  "now": 1792609200000,
+  "place": "home",
+  "since": 400,
+  "env": {}
+ },
+ {
+  "name": "visit-hold",
+  "now": 1792609200000,
+  "place": "fx00",
+  "since": 30,
+  "env": {}
+ },
+ {
+  "name": "quiet-home",
+  "now": 1792609200000,
+  "place": "fx00",
+  "since": 100,
+  "env": {}
+ },
+ {
+  "name": "home-quiet",
+  "now": 1792609200000,
+  "place": "home",
+  "since": 0,
+  "env": {}
+ },
+ {
+  "name": "goodbye",
+  "now": 1792609200000,
+  "place": "fx00",
+  "since": 300,
+  "env": {}
+ },
+ {
+  "name": "home-default",
+  "now": 1792609200000,
+  "place": "home",
+  "since": 800,
+  "env": {}
+ },
+ {
+  "name": "call-event",
+  "now": 1792609200000,
+  "place": "home",
+  "since": 400,
+  "env": {}
+ },
+ {
+  "name": "call-spell",
+  "now": 1792609200000,
+  "place": "home",
+  "since": 300,
+  "env": {}
+ },
+ {
+  "name": "call-spell-go",
+  "now": 1792609200000,
+  "place": "home",
+  "since": 1200,
+  "env": {}
+ },
+ {
+  "name": "fog",
+  "now": 1792609200000,
+  "place": "home",
+  "since": null,
+  "env": {}
+ },
+ {
+  "name": "ridges-home",
+  "now": 1792605600000,
+  "place": "home",
+  "since": null,
+  "env": {
+   "JEB_ANIMS": "band"
+  }
+ },
+ {
+  "name": "ridges-jul",
+  "now": 1783526400000,
+  "place": "home",
+  "since": null,
+  "env": {
+   "JEB_ANIMS": "band"
+  }
+ },
+ {
+  "name": "ridges-jan",
+  "now": 1799859600000,
+  "place": "home",
+  "since": null,
+  "env": {
+   "JEB_ANIMS": "band"
+  }
+ },
+ {
+  "name": "ridges-night",
+  "now": 1783652400000,
+  "place": "home",
+  "since": null,
+  "env": {
+   "JEB_ANIMS": "band"
+  }
+ },
+ {
+  "name": "ridges-camp0",
+  "now": 1792605600000,
+  "place": "fx00",
+  "since": 800,
+  "env": {
+   "JEB_ANIMS": "band"
+  }
+ },
+ {
+  "name": "ridges-camp1",
+  "now": 1792605600000,
+  "place": "fx01",
+  "since": 800,
+  "env": {
+   "JEB_ANIMS": "band"
+  }
+ },
+ {
+  "name": "ridges-camp2",
+  "now": 1799859600000,
+  "place": "fx02",
+  "since": 800,
+  "env": {
+   "JEB_ANIMS": "band"
+  }
+ },
+ {
+  "name": "ridges-camp3",
+  "now": 1783652400000,
+  "place": "fx03",
+  "since": 800,
+  "env": {
+   "JEB_ANIMS": "band"
+  }
+ },
+ {
+  "name": "area-camp",
+  "now": 1792609200000,
+  "place": "fx00",
+  "since": 800,
+  "env": {}
+ },
+ {
+  "name": "area-bad",
+  "now": 1792609200000,
+  "place": "fx00",
+  "since": 800,
+  "env": {}
+ },
+ {
+  "name": "area-trip",
+  "now": 1792609200000,
+  "place": "home",
+  "since": 400,
+  "env": {}
+ }
+]

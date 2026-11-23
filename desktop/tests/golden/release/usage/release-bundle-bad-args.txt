@@ -16,41 +16,48 @@
                           and adopt it from newer signed releases.
   ./release               the usual way. Picks the bump from the Conventional Commits since the last tag, as
                           release-please does (`!` or a BREAKING CHANGE footer: major, feat: minor, fix/perf/revert:
-                          patch; nothing releasable: refuses), writes release notes from them, then runs
-                          `desktop/jebctl release --parity --bump auto`. The first release (no tag yet) is
-                          1.0.0. The version always comes from the tags; plugin.json only records it.
+                          patch; nothing releasable: refuses) and writes release notes from them. The first
+                          release (no tag yet) is 1.0.0. The version always comes from the tags; plugin.json
+                          only records it.
   ./release patch|minor|major
                           the same with the bump forced. A new version is written to plugin.json and
                           committed (chore(release): v<version>) only after every check passes.
-                          Both run jebctl's checks (clean tree on the default branch, mod checks, universal
-                          release build, parity gate) before anything is written, then the signed tag
-                          v<version>, whose message carries the SHA-256 of the app zip. On success they ask
-                          once, then push <base> and <tag> and publish the GitHub release with those notes and the assets
-                          (`gh release create <tag> --verify-tag --notes-file ... <assets>`), only on y; it refuses when the app zip
-                          is missing. Assets: Jeb-<tag>-macos-$ARCH.zip and -x86_64.zip (the bundles users install: tree,
-                          prebuilt app, pinned Python), Jeb-<tag>-manifest.json and its .sig (signed with the tag's key in the
-                          `jeb-release` namespace), jebctl-macos (the universal native jebctl, also inside every bundle as
-                          desktop/bin/jebctl; its name, size and SHA-256 are in the manifest under "jebctl"; a new user's first
-                          copy is a curl of github.com/clevyr/jeb/releases/latest/download/jebctl-macos), and the older JebDesktop-<tag>-macos.zip (JebDesktop plus the universal detect and
-                          png2raw; installs from the git clone use it when it matches the hash in the signed tag; kept during the
-                          transition). Without a terminal they print those commands instead.
+                          Both run the checks (clean tree on the default branch, the signers jebctl pins, mod
+                          checks, universal release build, parity and day gates) before anything is written,
+                          then the signed tag v<version>, whose message carries the SHA-256 of the app zip.
+                          On success they ask once, then push <base> and <tag> and publish the GitHub release
+                          with those notes and the assets
+                          (`gh release create <tag> --verify-tag --notes-file ... <assets>`), only on y; it
+                          refuses when the app zip is missing. Assets: Jeb-<tag>-macos-$ARCH.zip and -x86_64.zip
+                          (the bundles users install: the tree, the prebuilt app and the native jebctl),
+                          Jeb-<tag>-manifest.json and its .sig (signed with the tag's key in the `jeb-release`
+                          namespace), jebctl-macos (the universal native jebctl, also inside every bundle as
+                          desktop/bin/jebctl; its name, size and SHA-256 are in the manifest under "jebctl"; a
+                          new user's first copy is a curl of
+                          github.com/clevyr/jeb/releases/latest/download/jebctl-macos), and
+                          JebDesktop-<tag>-macos.zip (JebDesktop plus the universal detect and png2raw; its
+                          SHA-256 is in the signed tag). Without a terminal they print those commands instead.
   ./release bundle --tag vX.Y.Z --out DIR [--ref REF] [--from-tree] [--app DIR] [--key K] [--signers F]
-                          builds the release bundles without releasing: Jeb-<tag>-macos-$ARCH.zip and -x86_64.zip (the tracked tree
-                          from `git archive REF` (default HEAD), or with --from-tree the working tree's files; the prebuilt app and the native
-                          jebctl from --app (default .git/jeb-release-<tag>/stage; JebDesktop, detect, png2raw and jebctl); python-build-standalone, pinned and pruned; bundle.json), then
-                          Jeb-<tag>-manifest.json signed with --key (default user.signingkey) in the `jeb-release` namespace and verified
-                          against the bundle's own desktop/release-signers (--signers replaces that file, for tests with a throwaway key).
-  ./release smoke [TAG]   sandboxed end-to-end check of a published release; never touches the real install. TAG defaults to the
-                          newest published release. Under <git dir>/jeb-smoke/<TAG>/ (an earlier one is moved to old-<time>), with a
-                          fake HOME, it downloads the manifest, its signature and the release's jebctl-macos over HTTPS (JEB_RELEASE_BASE
-                          overrides where releases are read; it is passed into the sandbox), verifies them against
-                          desktop/release-signers and runs that `jebctl-macos install --no-agents`, which downloads this Mac's zip, unpacks
-                          it into <home>/.jeb/versions/<TAG> and runs the bundle's own install (no LaunchAgent, launchctl or PATH change
-                          anywhere; a tag older than v1.5.0 is refused: its jebctl-macos installs with gh). It checks
-                          the prebuilt app was used, codesign, that JebMod and the settings entry are <home>/.jeb/current/mod, that
-                          current resolves and that versions/ holds one folder. Then `jebctl follow --dry-run` (the Python HTTPS path) and
-                          `jebctl doctor` run read-only (JEB_NO_LAUNCHCTL=1) and the doctor's output is shown. When the manifest lists jebctl it also downloads jebctl-macos and
-                          checks its SHA-256 against the manifest and that `--version` names the tag. Exit 1 on any failure.
+                          builds the release bundles without releasing: Jeb-<tag>-macos-$ARCH.zip and -x86_64.zip
+                          (the tracked tree from `git archive REF` (default HEAD), or with --from-tree the
+                          working tree's files; the prebuilt app and the native jebctl from --app (default
+                          .git/jeb-release-<tag>/stage; JebDesktop, detect, png2raw and jebctl); bundle.json),
+                          then Jeb-<tag>-manifest.json signed with --key (default user.signingkey) in the
+                          `jeb-release` namespace and verified against the bundle's own desktop/release-signers
+                          (--signers replaces that file, for tests with a throwaway key).
+  ./release smoke [TAG]   sandboxed end-to-end check of a published release; never touches the real install. TAG
+                          defaults to the newest published release. Under <git dir>/jeb-smoke/<TAG>/ (an earlier
+                          one is moved to old-<time>), with a fake HOME, it downloads the manifest, its signature
+                          and the release's jebctl-macos over HTTPS (JEB_RELEASE_BASE overrides where releases are
+                          read; it is passed into the sandbox), verifies them against desktop/release-signers,
+                          checks jebctl-macos against the manifest and that `--version` names the tag, and runs
+                          that `jebctl-macos install --no-agents`, which downloads this Mac's zip, unpacks it
+                          into <home>/.jeb/versions/<TAG> and runs the bundle's own install (no LaunchAgent,
+                          launchctl or PATH change anywhere; a tag older than v1.5.0 is refused: its
+                          jebctl-macos installs with gh). It checks the prebuilt app was used, codesign, that
+                          JebMod is <home>/.jeb/current/mod, that current resolves and that versions/ holds one
+                          folder. Then the installed `jebctl follow --dry-run` and `jebctl doctor` run read-only
+                          (JEB_NO_LAUNCHCTL=1) and the doctor's output is shown. Exit 1 on any failure.
   --dry-run               change nothing: no file, tag or push (smoke: prints the plan).
 
 ## stderr

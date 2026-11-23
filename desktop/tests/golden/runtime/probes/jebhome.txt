@@ -42,7 +42,7 @@
    "v1.4.0"
   ],
   "fetch-missing": {
-   "FetchError": "could not reach  ([Errno 2] No such file or directory: '$SB/rel/nope')",
+   "FetchError": "could not read $SB/rel/nope (No such file or directory)",
    "status": null
   },
   "fetch-toobig": {

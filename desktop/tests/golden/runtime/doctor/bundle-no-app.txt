@@ -4,7 +4,6 @@
 ## stdout
 ok    macOS
 ok    $SB/home/.jeb/current resolves to a Jeb bundle
-ok    bundled Python runs ($SB/home/.jeb/current/python/bin/python3)
 ok    one version on disk (v1.4.0)
 ok    claude found ($SB/home/.local/bin/claude)
 FIX   jebctl command: ask Claude to repair Jeb (it re-runs the install)
@@ -47,9 +46,6 @@ ok    GitHub releases reachable (newest v1.4.0)
  "last": null,
  "layout": "bundle"
 }
-
-## stub.log (argv of every native binary the run executed; detached prune-versions/reload-agents calls filtered)
-$SB/home/.jeb/current/python/bin/python3 -I -c 0
 
 ## fake.log (claude, gh, launchctl calls)
 $SB/home/.local/bin/claude plugin list --json

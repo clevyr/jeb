@@ -3,7 +3,7 @@
 
 ## stdout
 signers: adopting the release-signers of v1.4.0
-follow: could not get v1.5.0: v1.5.0: could not reach  ([Errno 2] No such file or directory: '$SB/rel/download/v1.5.0/Jeb-v1.5.0-manifest.json'); will try again later
+follow: could not get v1.5.0: v1.5.0: could not read $SB/rel/download/v1.5.0/Jeb-v1.5.0-manifest.json (No such file or directory); will try again later
 
 ## stderr
 (empty)
@@ -41,7 +41,7 @@ follow: could not get v1.5.0: v1.5.0: could not reach  ([Errno 2] No such file o
 
 ## release.log
 2026-05-28 15:26:40 signers: adopting the release-signers of v1.4.0
-2026-05-28 15:26:40 follow: could not get v1.5.0: v1.5.0: could not reach  ([Errno 2] No such file or directory: '$SB/rel/download/v1.5.0/Jeb-v1.5.0-manifest.json'); will try again later
+2026-05-28 15:26:40 follow: could not get v1.5.0: v1.5.0: could not read $SB/rel/download/v1.5.0/Jeb-v1.5.0-manifest.json (No such file or directory); will try again later
 
 ## ~/.jeb/current
 versions/v1.4.0

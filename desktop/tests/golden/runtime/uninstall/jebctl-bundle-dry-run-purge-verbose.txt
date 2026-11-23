@@ -2,6 +2,7 @@
 0
 
 ## stdout
+Jeb uninstall (dry run) from $SB/home/.jeb/versions/v1.4.0
 $ launchctl bootout gui/$UID/com.jeb.desktop.release
 $ launchctl bootout gui/$UID/com.jeb.desktop.update
 $ launchctl bootout gui/$UID/com.jeb.desktop.watchdog
@@ -15,6 +16,9 @@ purge $SB/home/Library/Application Support/Jeb/install-mode
 purge $SB/home/Library/Application Support/Jeb/release-signers
 purge $SB/home/Library/Application Support/Jeb/release-state.json
 purge $SB/home/Library/Application Support/Jeb
+settings $SB/home/.claude/settings.json: CLAUDE_CODE_PLUGIN_DIRS absent
+farm kept (0 file(s) in $SB/home/.claude/plugins/data); --purge-farm removes it
+the files at $SB/home/.jeb/versions/v1.4.0 were not removed
 
 ## stderr
 (empty)
@@ -34,6 +38,12 @@ purge $SB/home/Library/Application Support/Jeb
  "last": null,
  "layout": "bundle"
 }
+
+## fake.log (claude, gh, launchctl calls)
+$SB/home/.local/bin/claude plugin list --json
+$SB/home/.local/bin/claude plugin marketplace list --json
+$SB/home/.local/bin/claude plugin list --json
+$SB/home/.local/bin/claude plugin marketplace list --json
 
 ## ~/.jeb/current
 versions/v1.4.0

@@ -2,23 +2,8 @@
 2
 
 ## stdout
-./uninstall [--purge] [--purge-farm] [--remove-files] [--dry-run] [--verbose]: remove Jeb's install (the files stay unless --remove-files).
-
-  jebctl uninstall: stops and removes the LaunchAgents (including the release agent) and the app. --purge also
-                    deletes everything in the desktop's folder (JEB_HOME: versions, logs, state; passed through).
-  jebctl link:      ~/.local/bin/jebctl is removed when it points at this clone, and the two PATH lines `./install` added to
-                    the shell profile (backup first).
-  Claude Code:      `claude plugin uninstall jeb@jeb` and `claude plugin marketplace remove jeb` (Jeb's own marketplace only; the plugin's
-                    data and the farm stay unless --purge-farm). This install's mod/ entry (and an old clone's, in a bundle) is removed
-                    from CLAUDE_CODE_PLUGIN_DIRS in settings.json (backup first).
-  --purge-farm      also removes the farm file(s) ~/.claude/plugins/store/jeb_jeb-*.json and jeb_inline-*.json, after a backup.
-                    Default: the farm is kept.
-  --remove-files    last step (--remove-clone is the old name): deletes ~/.jeb entirely (the installed bundle, its Python, the
-                    ~/.jeb/bin: the standalone jebctl, and an older install's gh), and an old git clone of Jeb when release-state names one and it has no local changes.
-                    A git clone layout deletes only the standard clone ~/.jeb/repo (any other location is refused) and ~/.jeb/bin.
-                    Default: the files stay.
-  --verbose         every command and detail; by default one short line per step.
-Env overrides (tests): JEB_HOME, JEB_APP_DIR, JEB_LAUNCHAGENTS, JEB_SETTINGS, JEB_BACKUPS, JEB_STORE_DIR, JEB_BIN_DIR, JEB_PROFILE, JEB_TOOLS_DIR, JEB_NO_LAUNCHCTL.
+jebctl uninstall: unknown option --bogus
+usage: jebctl uninstall [--purge] [--purge-farm] [--remove-files] [--dry-run] [--verbose]
 
 ## stderr
 (empty)

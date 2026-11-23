@@ -1,0 +1,9 @@
+#!/bin/sh
+# Staged for Phase F (the v1.6.0 cutover), which moves this file to the repo root as ./install and into every bundle.
+# In a bundle it hands over to the bundle's own jebctl; in a source checkout there is no jebctl to run.
+here=$(dirname "$0")
+if [ -x "$here/desktop/bin/jebctl" ]; then
+  exec "$here/desktop/bin/jebctl" install "$@"
+fi
+echo "install: this is a source checkout, not a release bundle; see CONTRIBUTING.md to build and install a working-tree build" >&2
+exit 1

@@ -43,11 +43,11 @@ The plugin reloads in sessions started after a change.
 
 ## Art
 
-The sprites come from `mod/art/src/build.py`, which needs Pillow (`python3 -m pip install --user Pillow`):
+The sprites come from `jebart`, the Swift art tool in `art/` (it needs only the Xcode command line tools):
 
-    python3 mod/art/src/build.py mod/art/out mod/hooks/pixel-art.ts
+    art/build.sh && art/jebart build mod/art/out mod/hooks/pixel-art.ts
 
-That rewrites `mod/hooks/pixel-art.ts` and writes previews to `mod/art/out/` (not tracked). Rebuild the logo and the plugin icon with `python3 mod/art/src/logo.py mod/hooks/pixel-art.ts docs mod/.claude-plugin/icon.png`.
+That rewrites `mod/hooks/pixel-art.ts` and writes previews to `mod/art/out/` (not tracked). Rebuild the logo and the plugin icon with `art/jebart logo mod/hooks/pixel-art.ts docs mod/.claude-plugin/icon.png`.
 
 ## Commit messages and versions
 

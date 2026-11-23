@@ -9,7 +9,6 @@
   "com.jeb.desktop.update",
   "com.jeb.desktop.release"
  ],
- "INITIAL_VERSION": "1.0.0",
  "MANIFEST_MAX": 65536,
  "ROLLBACK_FLOOR": [
   1,
@@ -47,13 +46,7 @@
  "FP_TARGET": 120.0,
  "PATH": "/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin",
  "TAG_RE": "v(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)",
- "CC_RE": "(\\w+)(?:\\([^)]*\\))?(!)?:\\s*(.+)",
  "labels_for": {
-  "dev": [
-   "com.jeb.desktop",
-   "com.jeb.desktop.watchdog",
-   "com.jeb.desktop.update"
-  ],
   "release": [
    "com.jeb.desktop",
    "com.jeb.desktop.watchdog",

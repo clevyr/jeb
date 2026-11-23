@@ -3,13 +3,11 @@
 
 ## stdout
 bundle $ARCH:
-  Jeb-v9.9.9-macos-$ARCH.zip: $N MB, sha256 $SHA16
+  Jeb-v9.9.9-macos-$ARCH.zip: $N KB, sha256 $SHA16
 bundle x86_64:
-  note: 4 x86_64 Mach-O files are unsigned upstream (none has an invalid signature)
-  Jeb-v9.9.9-macos-x86_64.zip: $N MB, sha256 $SHA16
+  Jeb-v9.9.9-macos-x86_64.zip: $N KB, sha256 $SHA16
   jebctl-macos: $N KB, sha256 $SHA16
 manifest signed and verified against the bundle's release-signers: $SB/out/Jeb-v9.9.9-manifest.json
-warning: Rosetta is missing: the x86_64 Python was not import-tested
 made:
   $SB/out/Jeb-v9.9.9-manifest.json
   $SB/out/Jeb-v9.9.9-manifest.json.sig
@@ -42,7 +40,6 @@ Write signature to $SB/out/Jeb-v9.9.9-manifest.json.sig
   "sha256": "$SHA256",
   "size": "$SIZE"
  },
- "python": "3.12.15+20261013",
  "repo": "clevyr/jeb",
  "schema": 1,
  "tag": "v9.9.9",
@@ -60,9 +57,8 @@ jebctl-macos
 {
  "arch": "$ARCH",
  "commit": "$HEAD",
- "python": "3.12.15+20261013",
  "repo": "clevyr/jeb",
- "schema": 1,
+ "schema": 2,
  "tag": "v9.9.9",
  "version": "9.9.9"
 }
@@ -73,56 +69,15 @@ jebctl-macos
 .claude/skills/jeb-install/SKILL.md
 .claude/skills/jeb-update/SKILL.md
 LICENSE
-THIRD-PARTY-NOTICES.md
 app/JebDesktop
 app/detect
 app/png2raw
 bundle.json
 desktop/bin/jebctl
-desktop/cli/build.sh
-desktop/cli/main.swift
-desktop/jebctl
-desktop/jebhome.py
-desktop/plugdirs.py
 desktop/release-signers
-desktop/src/Area.swift
-desktop/src/Art.swift
-desktop/src/Banner.swift
-desktop/src/BannerArt.swift
-desktop/src/Bench.swift
-desktop/src/Broadcast.swift
-desktop/src/Camp.swift
-desktop/src/Cast.swift
-desktop/src/EmojiExport.swift
-desktop/src/Farm.swift
-desktop/src/FarmScene.swift
-desktop/src/Heartbeat.swift
-desktop/src/Holiday.swift
-desktop/src/Homestead.swift
-desktop/src/IconExport.swift
-desktop/src/JebLines.swift
-desktop/src/Live.swift
-desktop/src/PixelArt.swift
-desktop/src/Probe.swift
-desktop/src/Road.swift
-desktop/src/StatusMenu.swift
-desktop/src/Store.swift
-desktop/src/Story.swift
-desktop/src/Strip.swift
-desktop/src/UpdateNotifier.swift
-desktop/src/UpdateStatus.swift
-desktop/src/Valley.swift
-desktop/src/build.sh
-desktop/src/dev/analyze.py
-desktop/src/dev/batch2.sh
-desktop/src/dev/gate3.sh
-desktop/src/dev/m.sh
-desktop/src/dev/m60.sh
-desktop/src/dev/run-live.sh
 desktop/src/fixtures/area-bad.store.json
 desktop/src/fixtures/area-camp.store.json
 desktop/src/fixtures/area-trip.store.json
-desktop/src/fixtures/band-out.txt
 desktop/src/fixtures/blue-chase.store.json
 desktop/src/fixtures/blue-errand.store.json
 desktop/src/fixtures/bubble-dim.store.json
@@ -131,12 +86,6 @@ desktop/src/fixtures/call-event.store.json
 desktop/src/fixtures/call-spell-go.store.json
 desktop/src/fixtures/call-spell.store.json
 desktop/src/fixtures/christmas.store.json
-desktop/src/fixtures/compare1.txt
-desktop/src/fixtures/compare2.txt
-desktop/src/fixtures/compare3.txt
-desktop/src/fixtures/compare4.txt
-desktop/src/fixtures/compare5.txt
-desktop/src/fixtures/compare6.txt
 desktop/src/fixtures/cows.store.json
 desktop/src/fixtures/drops.store.json
 desktop/src/fixtures/dry.store.json
@@ -217,6 +166,7 @@ desktop/src/fixtures/ridges-home.store.json
 desktop/src/fixtures/ridges-jan.store.json
 desktop/src/fixtures/ridges-jul.store.json
 desktop/src/fixtures/ridges-night.store.json
+desktop/src/fixtures/smoke.json
 desktop/src/fixtures/story-1.store.json
 desktop/src/fixtures/story-2.store.json
 desktop/src/fixtures/story-3.store.json
@@ -232,42 +182,9 @@ desktop/src/fixtures/visit-mail.store.json
 desktop/src/fixtures/visit-opal.store.json
 desktop/src/fixtures/visit-tractor.store.json
 desktop/src/fixtures/workflow.store.json
-desktop/src/main.swift
-desktop/src/perf.sh
-desktop/src/tools/attach-fix.py
-desktop/src/tools/awake.swift
-desktop/src/tools/bundle.sh
-desktop/src/tools/carx/carx.swift
-desktop/src/tools/carx/carx2.swift
-desktop/src/tools/carx/carx3.swift
-desktop/src/tools/carx/carx4.swift
-desktop/src/tools/day.py
-desktop/src/tools/detect-src/main.swift
-desktop/src/tools/detect.swift
-desktop/src/tools/fake.py
-desktop/src/tools/grid-fix.py
-desktop/src/tools/latency.swift
-desktop/src/tools/parity.py
-desktop/src/tools/pixcheck.swift
-desktop/src/tools/png2raw.swift
-desktop/src/tools/raw2png.swift
-desktop/src/tools/status.py
-desktop/src/tools/up.swift
-desktop/src/tools/vis.swift
-desktop/src/tools/wins.swift
-desktop/src/watch.swift
-desktop/src/wl.swift
-desktop/updater.py
-desktop/watchdog.py
 install
 mod/.claude-plugin/icon.png
 mod/.claude-plugin/plugin.json
-mod/art/src/build.py
-mod/art/src/characters.py
-mod/art/src/farm.py
-mod/art/src/logo.py
-mod/art/src/nature.py
-mod/art/src/pixel.py
 mod/hooks/agents.ts
 mod/hooks/almanac.ts
 mod/hooks/anonymize.ts
@@ -318,233 +235,29 @@ mod/tsconfig.json
 mod/types/index.d.ts
 uninstall
 
-## arm64: python/ after PRUNE: 690 files; top-level folders and lib/python3.*/ entries
-bin
-lib
---
-python/lib/python3.12/LICENSE.txt
-python/lib/python3.12/__future__.py
-python/lib/python3.12/__hello__.py
-python/lib/python3.12/__phello__
-python/lib/python3.12/__pycache__
-python/lib/python3.12/_aix_support.py
-python/lib/python3.12/_collections_abc.py
-python/lib/python3.12/_compat_pickle.py
-python/lib/python3.12/_compression.py
-python/lib/python3.12/_markupbase.py
-python/lib/python3.12/_osx_support.py
-python/lib/python3.12/_py_abc.py
-python/lib/python3.12/_pydatetime.py
-python/lib/python3.12/_pydecimal.py
-python/lib/python3.12/_pyio.py
-python/lib/python3.12/_pylong.py
-python/lib/python3.12/_sitebuiltins.py
-python/lib/python3.12/_strptime.py
-python/lib/python3.12/_sysconfigdata__darwin_darwin.py
-python/lib/python3.12/_threading_local.py
-python/lib/python3.12/_weakrefset.py
-python/lib/python3.12/abc.py
-python/lib/python3.12/aifc.py
-python/lib/python3.12/antigravity.py
-python/lib/python3.12/argparse.py
-python/lib/python3.12/ast.py
-python/lib/python3.12/asyncio
-python/lib/python3.12/base64.py
-python/lib/python3.12/bdb.py
-python/lib/python3.12/bisect.py
-python/lib/python3.12/bz2.py
-python/lib/python3.12/cProfile.py
-python/lib/python3.12/calendar.py
-python/lib/python3.12/cgi.py
-python/lib/python3.12/cgitb.py
-python/lib/python3.12/chunk.py
-python/lib/python3.12/cmd.py
-python/lib/python3.12/code.py
-python/lib/python3.12/codecs.py
-python/lib/python3.12/codeop.py
-python/lib/python3.12/collections
-python/lib/python3.12/colorsys.py
-python/lib/python3.12/compileall.py
-python/lib/python3.12/concurrent
-python/lib/python3.12/config-3.12-darwin
-python/lib/python3.12/configparser.py
-python/lib/python3.12/contextlib.py
-python/lib/python3.12/contextvars.py
-python/lib/python3.12/copy.py
-python/lib/python3.12/copyreg.py
-python/lib/python3.12/crypt.py
-python/lib/python3.12/csv.py
-python/lib/python3.12/ctypes
-python/lib/python3.12/curses
-python/lib/python3.12/dataclasses.py
-python/lib/python3.12/datetime.py
-python/lib/python3.12/dbm
-python/lib/python3.12/decimal.py
-python/lib/python3.12/difflib.py
-python/lib/python3.12/dis.py
-python/lib/python3.12/doctest.py
-python/lib/python3.12/email
-python/lib/python3.12/encodings
-python/lib/python3.12/enum.py
-python/lib/python3.12/filecmp.py
-python/lib/python3.12/fileinput.py
-python/lib/python3.12/fnmatch.py
-python/lib/python3.12/fractions.py
-python/lib/python3.12/ftplib.py
-python/lib/python3.12/functools.py
-python/lib/python3.12/genericpath.py
-python/lib/python3.12/getopt.py
-python/lib/python3.12/getpass.py
-python/lib/python3.12/gettext.py
-python/lib/python3.12/glob.py
-python/lib/python3.12/graphlib.py
-python/lib/python3.12/gzip.py
-python/lib/python3.12/hashlib.py
-python/lib/python3.12/heapq.py
-python/lib/python3.12/hmac.py
-python/lib/python3.12/html
-python/lib/python3.12/http
-python/lib/python3.12/imaplib.py
-python/lib/python3.12/imghdr.py
-python/lib/python3.12/importlib
-python/lib/python3.12/inspect.py
-python/lib/python3.12/io.py
-python/lib/python3.12/ipaddress.py
-python/lib/python3.12/json
-python/lib/python3.12/keyword.py
-python/lib/python3.12/lib-dynload
-python/lib/python3.12/lib2to3
-python/lib/python3.12/linecache.py
-python/lib/python3.12/locale.py
-python/lib/python3.12/logging
-python/lib/python3.12/lzma.py
-python/lib/python3.12/mailbox.py
-python/lib/python3.12/mailcap.py
-python/lib/python3.12/mimetypes.py
-python/lib/python3.12/modulefinder.py
-python/lib/python3.12/multiprocessing
-python/lib/python3.12/netrc.py
-python/lib/python3.12/nntplib.py
-python/lib/python3.12/ntpath.py
-python/lib/python3.12/nturl2path.py
-python/lib/python3.12/numbers.py
-python/lib/python3.12/opcode.py
-python/lib/python3.12/operator.py
-python/lib/python3.12/optparse.py
-python/lib/python3.12/os.py
-python/lib/python3.12/pathlib.py
-python/lib/python3.12/pdb.py
-python/lib/python3.12/pickle.py
-python/lib/python3.12/pickletools.py
-python/lib/python3.12/pipes.py
-python/lib/python3.12/pkgutil.py
-python/lib/python3.12/platform.py
-python/lib/python3.12/plistlib.py
-python/lib/python3.12/poplib.py
-python/lib/python3.12/posixpath.py
-python/lib/python3.12/pprint.py
-python/lib/python3.12/profile.py
-python/lib/python3.12/pstats.py
-python/lib/python3.12/pty.py
-python/lib/python3.12/py_compile.py
-python/lib/python3.12/pyclbr.py
-python/lib/python3.12/pydoc.py
-python/lib/python3.12/pydoc_data
-python/lib/python3.12/queue.py
-python/lib/python3.12/quopri.py
-python/lib/python3.12/random.py
-python/lib/python3.12/re
-python/lib/python3.12/reprlib.py
-python/lib/python3.12/rlcompleter.py
-python/lib/python3.12/runpy.py
-python/lib/python3.12/sched.py
-python/lib/python3.12/secrets.py
-python/lib/python3.12/selectors.py
-python/lib/python3.12/shelve.py
-python/lib/python3.12/shlex.py
-python/lib/python3.12/shutil.py
-python/lib/python3.12/signal.py
-python/lib/python3.12/site-packages
-python/lib/python3.12/site.py
-python/lib/python3.12/smtplib.py
-python/lib/python3.12/sndhdr.py
-python/lib/python3.12/socket.py
-python/lib/python3.12/socketserver.py
-python/lib/python3.12/sqlite3
-python/lib/python3.12/sre_compile.py
-python/lib/python3.12/sre_constants.py
-python/lib/python3.12/sre_parse.py
-python/lib/python3.12/ssl.py
-python/lib/python3.12/stat.py
-python/lib/python3.12/statistics.py
-python/lib/python3.12/string.py
-python/lib/python3.12/stringprep.py
-python/lib/python3.12/struct.py
-python/lib/python3.12/subprocess.py
-python/lib/python3.12/sunau.py
-python/lib/python3.12/symtable.py
-python/lib/python3.12/sysconfig.py
-python/lib/python3.12/tabnanny.py
-python/lib/python3.12/tarfile.py
-python/lib/python3.12/telnetlib.py
-python/lib/python3.12/tempfile.py
-python/lib/python3.12/textwrap.py
-python/lib/python3.12/this.py
-python/lib/python3.12/threading.py
-python/lib/python3.12/timeit.py
-python/lib/python3.12/token.py
-python/lib/python3.12/tokenize.py
-python/lib/python3.12/tomllib
-python/lib/python3.12/trace.py
-python/lib/python3.12/traceback.py
-python/lib/python3.12/tracemalloc.py
-python/lib/python3.12/tty.py
-python/lib/python3.12/turtle.py
-python/lib/python3.12/types.py
-python/lib/python3.12/typing.py
-python/lib/python3.12/unittest
-python/lib/python3.12/urllib
-python/lib/python3.12/uu.py
-python/lib/python3.12/uuid.py
-python/lib/python3.12/venv
-python/lib/python3.12/warnings.py
-python/lib/python3.12/wave.py
-python/lib/python3.12/weakref.py
-python/lib/python3.12/webbrowser.py
-python/lib/python3.12/wsgiref
-python/lib/python3.12/xdrlib.py
-python/lib/python3.12/xml
-python/lib/python3.12/xmlrpc
-python/lib/python3.12/zipapp.py
-python/lib/python3.12/zipfile
-python/lib/python3.12/zipimport.py
-python/lib/python3.12/zoneinfo
+## arm64: required files
+install: present
+desktop/bin/jebctl: present
+desktop/release-signers: present
+desktop/src/fixtures/smoke.json: present
+mod: present
+mod/hooks/pixel-art.ts: present
+.claude-plugin/marketplace.json: present
+app/JebDesktop: present
+app/detect: present
+app/png2raw: present
 
-## arm64: PRUNE globs present under python/?
-lib/python3.*/test: absent
-lib/python3.*/idlelib: absent
-lib/python3.*/tkinter: absent
-lib/python3.*/turtledemo: absent
-lib/python3.*/ensurepip: absent
-lib/python3.*/site-packages/pip*: absent
-lib/python3.*/lib-dynload/_tkinter*: absent
-lib/tcl*: absent
-lib/tk*: absent
-lib/itcl*: absent
-lib/thread*: absent
-include: absent
-share: absent
-lib/pkgconfig: absent
-lib/libtcl*: absent
-lib/libtk*: absent
+## arm64: PRUNE globs present in the bundle?
+mod/art: absent
+desktop/src/fixtures/band-out.txt: absent
+desktop/src/fixtures/compare*.txt: absent
 
 ## x86_64 bundle.json
 {
  "arch": "x86_64",
  "commit": "$HEAD",
- "python": "3.12.15+20261013",
  "repo": "clevyr/jeb",
- "schema": 1,
+ "schema": 2,
  "tag": "v9.9.9",
  "version": "9.9.9"
 }
@@ -555,56 +268,15 @@ lib/libtk*: absent
 .claude/skills/jeb-install/SKILL.md
 .claude/skills/jeb-update/SKILL.md
 LICENSE
-THIRD-PARTY-NOTICES.md
 app/JebDesktop
 app/detect
 app/png2raw
 bundle.json
 desktop/bin/jebctl
-desktop/cli/build.sh
-desktop/cli/main.swift
-desktop/jebctl
-desktop/jebhome.py
-desktop/plugdirs.py
 desktop/release-signers
-desktop/src/Area.swift
-desktop/src/Art.swift
-desktop/src/Banner.swift
-desktop/src/BannerArt.swift
-desktop/src/Bench.swift
-desktop/src/Broadcast.swift
-desktop/src/Camp.swift
-desktop/src/Cast.swift
-desktop/src/EmojiExport.swift
-desktop/src/Farm.swift
-desktop/src/FarmScene.swift
-desktop/src/Heartbeat.swift
-desktop/src/Holiday.swift
-desktop/src/Homestead.swift
-desktop/src/IconExport.swift
-desktop/src/JebLines.swift
-desktop/src/Live.swift
-desktop/src/PixelArt.swift
-desktop/src/Probe.swift
-desktop/src/Road.swift
-desktop/src/StatusMenu.swift
-desktop/src/Store.swift
-desktop/src/Story.swift
-desktop/src/Strip.swift
-desktop/src/UpdateNotifier.swift
-desktop/src/UpdateStatus.swift
-desktop/src/Valley.swift
-desktop/src/build.sh
-desktop/src/dev/analyze.py
-desktop/src/dev/batch2.sh
-desktop/src/dev/gate3.sh
-desktop/src/dev/m.sh
-desktop/src/dev/m60.sh
-desktop/src/dev/run-live.sh
 desktop/src/fixtures/area-bad.store.json
 desktop/src/fixtures/area-camp.store.json
 desktop/src/fixtures/area-trip.store.json
-desktop/src/fixtures/band-out.txt
 desktop/src/fixtures/blue-chase.store.json
 desktop/src/fixtures/blue-errand.store.json
 desktop/src/fixtures/bubble-dim.store.json
@@ -613,12 +285,6 @@ desktop/src/fixtures/call-event.store.json
 desktop/src/fixtures/call-spell-go.store.json
 desktop/src/fixtures/call-spell.store.json
 desktop/src/fixtures/christmas.store.json
-desktop/src/fixtures/compare1.txt
-desktop/src/fixtures/compare2.txt
-desktop/src/fixtures/compare3.txt
-desktop/src/fixtures/compare4.txt
-desktop/src/fixtures/compare5.txt
-desktop/src/fixtures/compare6.txt
 desktop/src/fixtures/cows.store.json
 desktop/src/fixtures/drops.store.json
 desktop/src/fixtures/dry.store.json
@@ -699,6 +365,7 @@ desktop/src/fixtures/ridges-home.store.json
 desktop/src/fixtures/ridges-jan.store.json
 desktop/src/fixtures/ridges-jul.store.json
 desktop/src/fixtures/ridges-night.store.json
+desktop/src/fixtures/smoke.json
 desktop/src/fixtures/story-1.store.json
 desktop/src/fixtures/story-2.store.json
 desktop/src/fixtures/story-3.store.json
@@ -714,42 +381,9 @@ desktop/src/fixtures/visit-mail.store.json
 desktop/src/fixtures/visit-opal.store.json
 desktop/src/fixtures/visit-tractor.store.json
 desktop/src/fixtures/workflow.store.json
-desktop/src/main.swift
-desktop/src/perf.sh
-desktop/src/tools/attach-fix.py
-desktop/src/tools/awake.swift
-desktop/src/tools/bundle.sh
-desktop/src/tools/carx/carx.swift
-desktop/src/tools/carx/carx2.swift
-desktop/src/tools/carx/carx3.swift
-desktop/src/tools/carx/carx4.swift
-desktop/src/tools/day.py
-desktop/src/tools/detect-src/main.swift
-desktop/src/tools/detect.swift
-desktop/src/tools/fake.py
-desktop/src/tools/grid-fix.py
-desktop/src/tools/latency.swift
-desktop/src/tools/parity.py
-desktop/src/tools/pixcheck.swift
-desktop/src/tools/png2raw.swift
-desktop/src/tools/raw2png.swift
-desktop/src/tools/status.py
-desktop/src/tools/up.swift
-desktop/src/tools/vis.swift
-desktop/src/tools/wins.swift
-desktop/src/watch.swift
-desktop/src/wl.swift
-desktop/updater.py
-desktop/watchdog.py
 install
 mod/.claude-plugin/icon.png
 mod/.claude-plugin/plugin.json
-mod/art/src/build.py
-mod/art/src/characters.py
-mod/art/src/farm.py
-mod/art/src/logo.py
-mod/art/src/nature.py
-mod/art/src/pixel.py
 mod/hooks/agents.ts
 mod/hooks/almanac.ts
 mod/hooks/anonymize.ts
@@ -800,222 +434,20 @@ mod/tsconfig.json
 mod/types/index.d.ts
 uninstall
 
-## x86_64: python/ after PRUNE: 631 files; top-level folders and lib/python3.*/ entries
-bin
-lib
---
-python/lib/python3.12/LICENSE.txt
-python/lib/python3.12/__future__.py
-python/lib/python3.12/__hello__.py
-python/lib/python3.12/__phello__
-python/lib/python3.12/_aix_support.py
-python/lib/python3.12/_collections_abc.py
-python/lib/python3.12/_compat_pickle.py
-python/lib/python3.12/_compression.py
-python/lib/python3.12/_markupbase.py
-python/lib/python3.12/_osx_support.py
-python/lib/python3.12/_py_abc.py
-python/lib/python3.12/_pydatetime.py
-python/lib/python3.12/_pydecimal.py
-python/lib/python3.12/_pyio.py
-python/lib/python3.12/_pylong.py
-python/lib/python3.12/_sitebuiltins.py
-python/lib/python3.12/_strptime.py
-python/lib/python3.12/_sysconfigdata__darwin_darwin.py
-python/lib/python3.12/_threading_local.py
-python/lib/python3.12/_weakrefset.py
-python/lib/python3.12/abc.py
-python/lib/python3.12/aifc.py
-python/lib/python3.12/antigravity.py
-python/lib/python3.12/argparse.py
-python/lib/python3.12/ast.py
-python/lib/python3.12/asyncio
-python/lib/python3.12/base64.py
-python/lib/python3.12/bdb.py
-python/lib/python3.12/bisect.py
-python/lib/python3.12/bz2.py
-python/lib/python3.12/cProfile.py
-python/lib/python3.12/calendar.py
-python/lib/python3.12/cgi.py
-python/lib/python3.12/cgitb.py
-python/lib/python3.12/chunk.py
-python/lib/python3.12/cmd.py
-python/lib/python3.12/code.py
-python/lib/python3.12/codecs.py
-python/lib/python3.12/codeop.py
-python/lib/python3.12/collections
-python/lib/python3.12/colorsys.py
-python/lib/python3.12/compileall.py
-python/lib/python3.12/concurrent
-python/lib/python3.12/config-3.12-darwin
-python/lib/python3.12/configparser.py
-python/lib/python3.12/contextlib.py
-python/lib/python3.12/contextvars.py
-python/lib/python3.12/copy.py
-python/lib/python3.12/copyreg.py
-python/lib/python3.12/crypt.py
-python/lib/python3.12/csv.py
-python/lib/python3.12/ctypes
-python/lib/python3.12/curses
-python/lib/python3.12/dataclasses.py
-python/lib/python3.12/datetime.py
-python/lib/python3.12/dbm
-python/lib/python3.12/decimal.py
-python/lib/python3.12/difflib.py
-python/lib/python3.12/dis.py
-python/lib/python3.12/doctest.py
-python/lib/python3.12/email
-python/lib/python3.12/encodings
-python/lib/python3.12/enum.py
-python/lib/python3.12/filecmp.py
-python/lib/python3.12/fileinput.py
-python/lib/python3.12/fnmatch.py
-python/lib/python3.12/fractions.py
-python/lib/python3.12/ftplib.py
-python/lib/python3.12/functools.py
-python/lib/python3.12/genericpath.py
-python/lib/python3.12/getopt.py
-python/lib/python3.12/getpass.py
-python/lib/python3.12/gettext.py
-python/lib/python3.12/glob.py
-python/lib/python3.12/graphlib.py
-python/lib/python3.12/gzip.py
-python/lib/python3.12/hashlib.py
-python/lib/python3.12/heapq.py
-python/lib/python3.12/hmac.py
-python/lib/python3.12/html
-python/lib/python3.12/http
-python/lib/python3.12/imaplib.py
-python/lib/python3.12/imghdr.py
-python/lib/python3.12/importlib
-python/lib/python3.12/inspect.py
-python/lib/python3.12/io.py
-python/lib/python3.12/ipaddress.py
-python/lib/python3.12/json
-python/lib/python3.12/keyword.py
-python/lib/python3.12/lib-dynload
-python/lib/python3.12/lib2to3
-python/lib/python3.12/linecache.py
-python/lib/python3.12/locale.py
-python/lib/python3.12/logging
-python/lib/python3.12/lzma.py
-python/lib/python3.12/mailbox.py
-python/lib/python3.12/mailcap.py
-python/lib/python3.12/mimetypes.py
-python/lib/python3.12/modulefinder.py
-python/lib/python3.12/multiprocessing
-python/lib/python3.12/netrc.py
-python/lib/python3.12/nntplib.py
-python/lib/python3.12/ntpath.py
-python/lib/python3.12/nturl2path.py
-python/lib/python3.12/numbers.py
-python/lib/python3.12/opcode.py
-python/lib/python3.12/operator.py
-python/lib/python3.12/optparse.py
-python/lib/python3.12/os.py
-python/lib/python3.12/pathlib.py
-python/lib/python3.12/pdb.py
-python/lib/python3.12/pickle.py
-python/lib/python3.12/pickletools.py
-python/lib/python3.12/pipes.py
-python/lib/python3.12/pkgutil.py
-python/lib/python3.12/platform.py
-python/lib/python3.12/plistlib.py
-python/lib/python3.12/poplib.py
-python/lib/python3.12/posixpath.py
-python/lib/python3.12/pprint.py
-python/lib/python3.12/profile.py
-python/lib/python3.12/pstats.py
-python/lib/python3.12/pty.py
-python/lib/python3.12/py_compile.py
-python/lib/python3.12/pyclbr.py
-python/lib/python3.12/pydoc.py
-python/lib/python3.12/pydoc_data
-python/lib/python3.12/queue.py
-python/lib/python3.12/quopri.py
-python/lib/python3.12/random.py
-python/lib/python3.12/re
-python/lib/python3.12/reprlib.py
-python/lib/python3.12/rlcompleter.py
-python/lib/python3.12/runpy.py
-python/lib/python3.12/sched.py
-python/lib/python3.12/secrets.py
-python/lib/python3.12/selectors.py
-python/lib/python3.12/shelve.py
-python/lib/python3.12/shlex.py
-python/lib/python3.12/shutil.py
-python/lib/python3.12/signal.py
-python/lib/python3.12/site-packages
-python/lib/python3.12/site.py
-python/lib/python3.12/smtplib.py
-python/lib/python3.12/sndhdr.py
-python/lib/python3.12/socket.py
-python/lib/python3.12/socketserver.py
-python/lib/python3.12/sqlite3
-python/lib/python3.12/sre_compile.py
-python/lib/python3.12/sre_constants.py
-python/lib/python3.12/sre_parse.py
-python/lib/python3.12/ssl.py
-python/lib/python3.12/stat.py
-python/lib/python3.12/statistics.py
-python/lib/python3.12/string.py
-python/lib/python3.12/stringprep.py
-python/lib/python3.12/struct.py
-python/lib/python3.12/subprocess.py
-python/lib/python3.12/sunau.py
-python/lib/python3.12/symtable.py
-python/lib/python3.12/sysconfig.py
-python/lib/python3.12/tabnanny.py
-python/lib/python3.12/tarfile.py
-python/lib/python3.12/telnetlib.py
-python/lib/python3.12/tempfile.py
-python/lib/python3.12/textwrap.py
-python/lib/python3.12/this.py
-python/lib/python3.12/threading.py
-python/lib/python3.12/timeit.py
-python/lib/python3.12/token.py
-python/lib/python3.12/tokenize.py
-python/lib/python3.12/tomllib
-python/lib/python3.12/trace.py
-python/lib/python3.12/traceback.py
-python/lib/python3.12/tracemalloc.py
-python/lib/python3.12/tty.py
-python/lib/python3.12/turtle.py
-python/lib/python3.12/types.py
-python/lib/python3.12/typing.py
-python/lib/python3.12/unittest
-python/lib/python3.12/urllib
-python/lib/python3.12/uu.py
-python/lib/python3.12/uuid.py
-python/lib/python3.12/venv
-python/lib/python3.12/warnings.py
-python/lib/python3.12/wave.py
-python/lib/python3.12/weakref.py
-python/lib/python3.12/webbrowser.py
-python/lib/python3.12/wsgiref
-python/lib/python3.12/xdrlib.py
-python/lib/python3.12/xml
-python/lib/python3.12/xmlrpc
-python/lib/python3.12/zipapp.py
-python/lib/python3.12/zipfile
-python/lib/python3.12/zipimport.py
-python/lib/python3.12/zoneinfo
+## x86_64: required files
+install: present
+desktop/bin/jebctl: present
+desktop/release-signers: present
+desktop/src/fixtures/smoke.json: present
+mod: present
+mod/hooks/pixel-art.ts: present
+.claude-plugin/marketplace.json: present
+app/JebDesktop: present
+app/detect: present
+app/png2raw: present
 
-## x86_64: PRUNE globs present under python/?
-lib/python3.*/test: absent
-lib/python3.*/idlelib: absent
-lib/python3.*/tkinter: absent
-lib/python3.*/turtledemo: absent
-lib/python3.*/ensurepip: absent
-lib/python3.*/site-packages/pip*: absent
-lib/python3.*/lib-dynload/_tkinter*: absent
-lib/tcl*: absent
-lib/tk*: absent
-lib/itcl*: absent
-lib/thread*: absent
-include: absent
-share: absent
-lib/pkgconfig: absent
-lib/libtcl*: absent
-lib/libtk*: absent
+## x86_64: PRUNE globs present in the bundle?
+mod/art: absent
+desktop/src/fixtures/band-out.txt: absent
+desktop/src/fixtures/compare*.txt: absent
 

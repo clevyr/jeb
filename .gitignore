@@ -47,6 +47,10 @@ creative/tools/cases/
 desktop/cli/jebctl
 desktop/cli/jebctl.*
 
+# The dev jebctl, the Swift port before the cutover (built by desktop/cli/next/build.sh)
+desktop/cli/next/jebctl
+desktop/cli/next/jebctl.*
+
 # Compiled desktop tools (built from the .swift sources beside them)
 desktop/src/tools/png2raw
 desktop/src/tools/detect
@@ -88,3 +92,17 @@ id_ecdsa*
 id_ed25519*
 *_signing
 *_signing.pub
+
+# jebctl unit-test runner (built by desktop/cli/tests/run.sh)
+desktop/cli/jebctl-tests
+
+# the gates (built by desktop/gates/build.sh)
+desktop/gates/jebgates
+# the release tool (built by dev/release/build.sh)
+dev/release/release
+dev/release/release.tmp
+
+# Compiled jebart, the art tool (built by art/build.sh), and its unit-test runner (built by art/tests/run.sh)
+art/jebart
+art/jebart.*
+art/jebart-tests

@@ -3,10 +3,9 @@
 
 ## stdout
 Jeb install (release mode, dry run) from $SB/home/.jeb/versions/v1.4.0
-$ $PYTHON3 -I $SB/home/.jeb/versions/v1.4.0/desktop/jebctl install --mode release --repin --add-path --dry-run --verbose
 signers: pin $SB/home/.jeb/versions/v1.4.0/desktop/release-signers -> $SB/home/Library/Application Support/Jeb/release-signers
-1. gates and first start through the updater (prebuilt app, never compiled)
-$ $PYTHON3 -I $SB/home/.jeb/versions/v1.4.0/desktop/updater.py --force --no-watch --quick --prebuilt $SB/home/.jeb/versions/v1.4.0/app/JebDesktop --no-compile
+1. gates and first start through the bundle's jebctl apply (prebuilt app, never compiled)
+$ $SB/home/.jeb/versions/v1.4.0/desktop/bin/jebctl apply $SB/home/.jeb/versions/v1.4.0 --lock-held --no-watch
 $SB/home/.jeb/current -> versions/v1.4.0
 2. plists
 plist com.jeb.desktop: JEB_MOD=$SB/home/.jeb/current/mod JEB_SRC=$SB/home/.jeb/current/desktop/src

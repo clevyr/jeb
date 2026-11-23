@@ -2,29 +2,21 @@
 0
 
 ## stdout
-usage: updater.py [-h] [--src SRC] [--app-dir APP_DIR]
-                  [--versions-dir VERSIONS_DIR] [--force] [--now] [--no-watch]
-                  [--watch-secs WATCH_SECS] [--gates-only] [--quick]
-                  [--prebuilt PREBUILT] [--no-compile]
+jebctl apply: gate a release bundle's app and swap it in (what follow and install run; not for everyday use).
 
-optional arguments:
-  -h, --help            show this help message and exit
-  --src SRC
-  --app-dir APP_DIR
-  --versions-dir VERSIONS_DIR
-  --force               skip the debounce, the pause marker and the seen-hash
-                        checks
-  --now                 skip the debounce and the pause marker (the seen-hash
-                        checks stay)
-  --no-watch            do not watch the new build after the swap (install)
-  --watch-secs WATCH_SECS
-  --gates-only          stop after the gates; nothing is bundled or swapped
-  --quick               first install: compile, smoke and start gates only
-                        (parity and day skipped)
-  --prebuilt PREBUILT   use this binary instead of compiling the snapshot (a
-                        verified release asset)
-  --no-compile          release mode: never compile; reject when the prebuilt
-                        app or its helpers are missing
+  apply <bundle> [--not-final] [--lock-held] [--no-watch] [--gates-only] [--quick] [--watch-secs N]
+
+  <bundle>        an unpacked, verified schema 2 bundle folder (~/.jeb/versions/<tag>)
+  --not-final     write the phase lines of update-status.json only; the caller writes the final one
+  --lock-held     the caller holds release.lock: do not take it
+  --no-watch      do not watch the new build after the swap
+  --gates-only    run the gates and stop: nothing is installed, `current` and the app stay as they are
+  --quick         accepted and a no-op (parity and the day are release-time gates)
+  --watch-secs N  the watch window in seconds (default 600; JEB_APPLY_WATCH_SECS sets it too)
+
+The app is gated with a smoke render of every fixture and 20 s headless. `current` is pointed at the bundle just before the
+app is installed. On any failure `current` and the previous app are put back.
+Exit: 0 installed, 2 rejected by a gate, 3 rolled back after the swap, 1 any other error (usage included).
 
 ## stderr
 (empty)
