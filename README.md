@@ -74,7 +74,7 @@ Common problems:
 - **Nothing on the desktop and no menu bar item.** Jeb was quit or isn't running. Log out and back in, or ask Claude to check your Jeb install.
 - **The menu bar says "Waiting for art".** Jeb can't find its files, usually because the `~/.jeb` folder was moved or deleted. Ask Claude to install Jeb again.
 - **The desktop is empty.** Start a new Claude Code session; Jeb only joins sessions started after the install.
-- **Check for Updates says it couldn't start, or is taking too long.** Run `jebctl doctor` or `jebctl status`.
+- **Check for Updates says it couldn't start, or is taking too long.** The app reloads an update agent that launchd has dropped when you click, and at start; if the menu still says it couldn't start, run `jebctl doctor` or `jebctl status`.
 
 ## Removing Jeb
 

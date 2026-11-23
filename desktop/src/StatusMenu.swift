@@ -11,6 +11,8 @@
 // 30 min, "Checking for Updates…" for up to 60 s after a click until a status appears (then "Couldn't start the update"),
 // and "Updates Paused" with jebHome/updates-paused. Both lines refresh every second while the menu is open (UpdateStatus.swift
 // holds the pure logic). The whole block is left out when the agent's plist is not installed (JEB_LAUNCHAGENTS overrides ~/Library/LaunchAgents).
+// A kickstart that finds no service (launchd dropped the agent) bootstraps the plist and retries (AgentHeal.swift); when
+// that fails too, the info line says "Couldn't start the update — run jebctl doctor" at once.
 //
 // JEB_MENU_TEST=1 (testing only) also listens for the distributed notification
 // "com.jeb.desktop.menu-test" whose object is a menu item's title: the item's
@@ -27,6 +29,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     private var checkItem: NSMenuItem?
     private var agent: (mode: String, label: String, lock: String)?
     private var clickedAt: Double?
+    private var startProblem: String?      // the last click could not start the agent (AgentHeal); cleared by the next click
     private var refreshTimer: Timer?
     /// Shows one of every banner (main.swift wires it to the notifier).
     var onSample: (() -> Void)?
@@ -177,7 +180,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         let status = (try? Data(contentsOf: URL(fileURLWithPath: jebHome + "/update-status.json"))).flatMap(UpdateStatus.parse)
         let lines = UpdateText.lines(status: status, lockHeld: lockHeld(jebHome + "/" + agent.lock), paused: FileManager.default.fileExists(atPath: jebHome + "/updates-paused"),
                                      clickedAt: clickedAt, now: Date().timeIntervalSince1970)
-        info.title = lines.info ?? updateInfoLine(agent.mode)
+        info.title = startProblem ?? lines.info ?? updateInfoLine(agent.mode)
         check.title = lines.action
         check.isEnabled = lines.enabled
     }
@@ -215,14 +218,24 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         log("menu: check for updates (\(label))")
         clickedAt = Date().timeIntervalSince1970
         FileManager.default.createFile(atPath: jebHome + "/check-now", contents: nil, attributes: [.posixPermissions: 0o600])       // the agents skip the quiet wait for it
-        if env["JEB_MENU_TEST"] == "1" {
+        startProblem = nil
+        if AgentHeal.dryRun {
             log("menu: would kickstart \(target)")
             return
         }
         let task = Process()
         task.executableURL = URL(fileURLWithPath: "/bin/launchctl")
         task.arguments = ["kickstart", target]
-        task.terminationHandler = { p in log("menu: kickstart \(target) exited \(p.terminationStatus)") }
+        task.terminationHandler = { [weak self] p in
+            log("menu: kickstart \(target) exited \(p.terminationStatus)")
+            guard p.terminationStatus != 0 else { return }
+            // launchd may have dropped the agent (plist still installed): load it again and retry, else say so
+            AgentHeal.afterKickstart(label: label) { line in
+                self?.clickedAt = nil
+                self?.startProblem = line
+                self?.refreshUpdateItems()
+            }
+        }
         do { try task.run() } catch { log("menu: kickstart failed: \(error)") }
     }
 

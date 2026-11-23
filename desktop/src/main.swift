@@ -745,6 +745,7 @@ func bannerLook() -> BannerLook {
 let updateNotifier = UpdateNotifier(art: { desktop.art }, look: bannerLook)
 updateNotifier.start()
 statusMenu.onSample = { updateNotifier.preview {} }
+AgentHeal.atStartup()       // a release install's dropped agents are loaded again, off the main thread
 log("started (occlusion pause \(noPause ? "off" : "on"), idle pause after \(Int(idleSeconds)) s, art \(artPath))")
 
 /// Stops cleanly (SIGUSR1: a newer instance has taken over; the menu's Quit).

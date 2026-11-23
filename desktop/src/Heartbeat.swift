@@ -115,3 +115,76 @@ final class Heartbeat {
         writePrivate(prefix + "\"waiting\":\(waiting()),\"t\":\(Int(now.timeIntervalSince1970)),\(counters)}\n", to: heartbeatFile)
     }
 }
+
+/// The launchctl side of AgentHeal.swift: reads the plist, asks AgentHealRule, runs what it says. Everything here runs
+/// off the main thread (a Process is waited on); `report` is called on main.
+enum AgentHeal {
+    static let agentsDir = env["JEB_LAUNCHAGENTS"] ?? NSHomeDirectory() + "/Library/LaunchAgents"
+    static let liveRoot = NSHomeDirectory() + "/.jeb/current"
+    static let dryRun = env["JEB_MENU_TEST"] == "1" || env["JEB_NO_LAUNCHCTL"] == "1"
+    static var installMode: String { ((try? String(contentsOfFile: jebHome + "/install-mode", encoding: .utf8)) ?? "").trimmingCharacters(in: .whitespacesAndNewlines) }
+
+    /// A click's kickstart of `label` exited non-zero: bootstrap the plist and kickstart again when that is the cure.
+    static func afterKickstart(label: String, report: @escaping (String) -> Void) {
+        DispatchQueue.global(qos: .utility).async {
+            let f = facts(label, loaded: dryRun ? false : launchctl(["print", "gui/\(getuid())/\(label)"]) == 0)
+            let failed: (String) -> Void = { why in log("agents: \(why)"); DispatchQueue.main.async { report(AgentHealRule.menuLine) } }
+            switch AgentHealRule.onClick(f) {
+            case .none: failed("kickstart of \(label) failed although it is loaded")
+            case .skip(let why): log("agents: \(why)")
+            case .report(let why): failed(why)
+            case .bootstrap, .bootstrapThenKickstart:
+                guard bootstrap(f) else { return failed("bootstrap of \(label) failed") }
+                let target = "gui/\(getuid())/\(label)"
+                let status = launchctl(["kickstart", target])
+                log("menu: kickstart \(target) exited \(status) (after bootstrap)")
+                if status != 0 { failed("kickstart of \(label) failed after bootstrap") }
+            }
+        }
+    }
+
+    /// At start, a release install re-loads its release and watchdog agents when launchd has dropped them.
+    static func atStartup() {
+        let mode = installMode
+        guard mode == "release" else { return }
+        DispatchQueue.global(qos: .utility).async {
+            for label in AgentHealRule.startupLabels {
+                let f = facts(label, loaded: dryRun ? false : launchctl(["print", "gui/\(getuid())/\(label)"]) == 0, mode: mode)
+                switch AgentHealRule.atStart(f) {
+                case .none: break
+                case .skip(let why), .report(let why): log("agents: \(why)")
+                case .bootstrap, .bootstrapThenKickstart: _ = bootstrap(f)
+                }
+            }
+        }
+    }
+
+    /// Runs `launchctl bootstrap`; true when it loaded.
+    private static func bootstrap(_ f: AgentFacts) -> Bool {
+        guard let plist = f.plist else { return false }
+        log("agents: bootstrap \(plist)")
+        let status = launchctl(["bootstrap", "gui/\(getuid())", plist])
+        if status == 0 { log("agents: reloaded \(f.label)") } else { log("agents: bootstrap \(f.label) exited \(status)") }
+        return status == 0
+    }
+
+    private static func facts(_ label: String, loaded: Bool, mode: String? = nil) -> AgentFacts {
+        let path = "\(agentsDir)/\(label).plist"
+        let exists = FileManager.default.fileExists(atPath: path)
+        let plist = exists ? (try? Data(contentsOf: URL(fileURLWithPath: path))).flatMap { try? PropertyListSerialization.propertyList(from: $0, format: nil) as? [String: Any] } : nil
+        return AgentFacts(label: label, loaded: loaded, plist: exists ? path : nil, program: plist?["ProgramArguments"] as? [String] ?? [],
+                          installMode: mode ?? installMode, liveRoot: liveRoot, dryRun: dryRun)
+    }
+
+    /// launchctl's exit status (-1 when it could not run); never called under dryRun.
+    private static func launchctl(_ arguments: [String]) -> Int32 {
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+        task.arguments = arguments
+        task.standardOutput = FileHandle.nullDevice
+        task.standardError = FileHandle.nullDevice
+        do { try task.run() } catch { log("agents: launchctl \(arguments.first ?? "") failed: \(error)"); return -1 }
+        task.waitUntilExit()
+        return task.terminationStatus
+    }
+}
