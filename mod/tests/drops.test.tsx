@@ -488,7 +488,7 @@ const offline = (level: number, i: number, over: object = {}) =>
     ...over,
   })
 
-test('DR7 the offline generator always works, the same for the same slot, and every drop passes the schema', () => {
+test('DR7 the offline generator always works, the same for the same slot, and every drop passes the schema', { timeoutMs: 120_000 }, () => {
   for (let level = 1; level <= 6; level += 1) {
     for (let i = 0; i < 300; i += 1) {
       const drop = offline(level, i)

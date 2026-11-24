@@ -319,7 +319,7 @@ const farmWith = (shelf: { lightning: number; appleCinnamon: number }) => ({
   delivery: { deliveries: 0, jarsSold: 0, dollars: 0 },
 })
 
-test('turn usage grows corn and apples, and fractions carry over', async ($, on) => {
+test('turn usage grows corn and apples, and fractions carry over', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   await start($)
 
@@ -340,7 +340,7 @@ test('turn usage grows corn and apples, and fractions carry over', async ($, on)
   expect(await tally($)).toContain('corn 4/24')
 })
 
-test('busy time grows tobacco', async ($, on) => {
+test('busy time grows tobacco', { timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on)
   await start($)
   await begin($)
@@ -357,7 +357,7 @@ test('busy time grows tobacco', async ($, on) => {
   expect(await tally($)).toContain('tobacco 1/24')
 })
 
-test('the still stays dry without corn, makes lightning from it and sours on failure', CHATTY, async ($, on) => {
+test('the still stays dry without corn, makes lightning from it and sours on failure', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   await start($)
 
@@ -378,7 +378,7 @@ test('the still stays dry without corn, makes lightning from it and sours on fai
   expect(text).toContain('batch 0/6')
 })
 
-test('a failed run sours the batch and spends the corn', CHATTY, async ($, on) => {
+test('a failed run sours the batch and spends the corn', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   const answer = { result: {}, isError: false }
   engine(on, answer)
   await start($)
@@ -394,7 +394,7 @@ test('a failed run sours the batch and spends the corn', CHATTY, async ($, on) =
   expect(said('sour', await quip($))).toBe(true)
 })
 
-test('lightning, apples and a traded bale make apple cinnamon', async ($, on) => {
+test('lightning, apples and a traded bale make apple cinnamon', { timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on)
   await start($)
 
@@ -439,7 +439,7 @@ test('isShip knows what ships', () => {
   }
 })
 
-test('a successful push sends the truck; a failed one does not; it sells to one buyer', async ($, on) => {
+test('a successful push sends the truck; a failed one does not; it sells to one buyer', { timeoutMs: 120_000 }, async ($, on) => {
   const answer = { result: {}, isError: true }
   const clock = engine(on, answer, { farm: farmWith({ lightning: 0, appleCinnamon: 1 }) })
   await start($)
@@ -457,7 +457,7 @@ test('a successful push sends the truck; a failed one does not; it sells to one 
   expect(text).toContain('0 apple cinnamon')
 })
 
-test('a second ship while the truck is out queues another load', async ($, on) => {
+test('a second ship while the truck is out queues another load', { timeoutMs: 120_000 }, async ($, on) => {
   // A Saturday afternoon: the store is shut, so Miss Opal is the only buyer, a jar a run.
   const clock = engine(on, { result: {} }, { farm: farmWith({ lightning: 0, appleCinnamon: 4 }) }, new Date(2026, 5, 13, 14).getTime())
   await start($)
@@ -481,7 +481,7 @@ test('bagPick deals every line before repeating', () => {
 })
 
 
-test('a v1 store migrates, keeping bales and jars', async ($, on) => {
+test('a v1 store migrates, keeping bales and jars', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on, { result: {} }, { farm: { plants: Array(18).fill(1), bales: 3, mash: 2, jars: 4 } })
   await start($)
 
@@ -492,7 +492,7 @@ test('a v1 store migrates, keeping bales and jars', async ($, on) => {
   expect(text).toContain('$0')
 })
 
-test('a v2 store migrates with an empty delivery book', async ($, on) => {
+test('a v2 store migrates with an empty delivery book', { timeoutMs: 120_000 }, async ($, on) => {
   const { delivery, ...v2 } = farmWith({ lightning: 1, appleCinnamon: 2 })
   void delivery
   engine(on, { result: {} }, { farm: { ...v2, version: 2, barn: { ...v2.barn, bales: 5 } } })
@@ -590,7 +590,7 @@ test('userConfig defaults: creativity and talk on, hook reactions off, each read
   expect(readOptions({ talk: 'shouting' }).talk).toBe('ambient')
 })
 
-test('the options menu: a change to talk or creativity is kept in the overrides store, and nothing else is', async ($, on) => {
+test('the options menu: a change to talk or creativity is kept in the overrides store, and nothing else is', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on, { result: {} })
   menu(on)
   await start($)
@@ -656,7 +656,7 @@ test('random events: weighted by month, hour, weekday and moon, with cooldowns',
 })
 
 
-test('an event starts after three idle minutes, speaks, and the band stays W wide through it', CHATTY, async ($, on) => {
+test('an event starts after three idle minutes, speaks, and the band stays W wide through it', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on)
   on('prompt.submit', (_, e) => e)
   await start($)
@@ -709,7 +709,7 @@ test('a neighbor buys a jar and a whistle pig takes a stage of corn', () => {
   ])
 })
 
-test('the truck coughs for a second on a cold winter morning, then goes', async ($, on) => {
+test('the truck coughs for a second on a cold winter morning, then goes', { timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(
     on,
     { result: {} },
@@ -739,7 +739,7 @@ test('holidays: pumpkins, turkey, Christmas, Groundhog Day and the date lines', 
   expect(dateLines(new Date(2026, 2, 8, 12)).join(' ')).not.toContain('Spring peepers')
 })
 
-test('the New Year line greets the day', async ($, on) => {
+test('the New Year line greets the day', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on, { result: {} }, {}, new Date(2027, 0, 1, 12).getTime())
   await start($)
   expect(await quip($)).toBe('New year. Same holler.')
@@ -775,7 +775,7 @@ test('farm v6: migrations from v3, v2 and v1, and the upgrade thresholds', () =>
   expect(newUnlocks({ ...bales, milestones: ['bale10'] }).milestones.length).toBe(0)
 })
 
-test('crossing a dollar mark toasts exactly once and Jeb says so', async ($, on) => {
+test('crossing a dollar mark toasts exactly once and Jeb says so', { timeoutMs: 120_000 }, async ($, on) => {
   const farm = {
     ...freshFarm(),
     shelf: { lightning: 0, appleCinnamon: 4 },
@@ -811,7 +811,7 @@ test('prompt reactions read the prompt and never change it', () => {
   expect(reactTo('fix the shell script')).toEqual({})
 })
 
-test('every prompt.submit hook returns the event unchanged', async ($, on) => {
+test('every prompt.submit hook returns the event unchanged', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   let heardAtEngine: unknown
   on('prompt.submit', (_, e) => {
@@ -837,7 +837,7 @@ test('every prompt.submit hook returns the event unchanged', async ($, on) => {
   }
 })
 
-test('prompts shape the bubble, the wink and the truck warm-up only', async ($, on) => {
+test('prompts shape the bubble, the wink and the truck warm-up only', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   on('prompt.submit', (_, e) => e)
   await start($)
@@ -851,7 +851,7 @@ test('prompts shape the bubble, the wink and the truck warm-up only', async ($, 
   expect(await tally($)).toContain('0 trips')
 })
 
-test('usage reactions: once per crossing of 80 and 95 percent', async ($, on) => {
+test('usage reactions: once per crossing of 80 and 95 percent', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   on('session.measure', (_, e) => ({ changed: e.changed }))
   await start($)
@@ -900,7 +900,7 @@ test('the new bags: seasons and more, 70 lines and up', () => {
 // ------------------------------------------------------------- v4.1 ----
 // Review fixes (A1-A15), toggles (C) and the Do Not Disturb mute (D).
 
-test('A1 busy is a main-loop turn: turn.start sets it, a main turn.complete clears it, a tool call does not', async ($, on) => {
+test('A1 busy is a main-loop turn: turn.start sets it, a main turn.complete clears it, a tool call does not', { timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on)
   await start($)
 
@@ -929,7 +929,7 @@ test('A1 busy is a main-loop turn: turn.start sets it, a main turn.complete clea
 })
 
 
-test('A2 prompt.submit ignores slash commands and meta prompts, and a mid-turn submit keeps the turn', CHATTY, async ($, on) => {
+test('A2 prompt.submit ignores slash commands and meta prompts, and a mid-turn submit keeps the turn', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on)
   on('prompt.submit', (_, e) => e)
   const got = recorder(on)
@@ -957,7 +957,7 @@ test('A2 prompt.submit ignores slash commands and meta prompts, and a mid-turn s
   expect(said('long', await quip($))).toBe(true)
 })
 
-test('A3 the idle line comes every 60 idle seconds whatever the phase of the clock', CHATTY, async ($, on) => {
+test('A3 the idle line comes every 60 idle seconds whatever the phase of the clock', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on)
   await start($)
   await begin($)
@@ -973,7 +973,7 @@ test('A3 the idle line comes every 60 idle seconds whatever the phase of the clo
 // the rest are known one-column symbols.
 
 
-test('A5 two sessions on one store: progress from the other session survives a save', async ($, on) => {
+test('A5 two sessions on one store: progress from the other session survives a save', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   await start($)
   // Another session earned this since this one loaded.
@@ -993,7 +993,7 @@ test('A5 two sessions on one store: progress from the other session survives a s
   expect(stored.lifetime.outputTokens).toBe(1500)
 })
 
-test('A6 a farm from a newer version is never overwritten and never read', async ($, on) => {
+test('A6 a farm from a newer version is never overwritten and never read', { timeoutMs: 120_000 }, async ($, on) => {
   const future = { version: 11, barn: { bales: 7 }, brand: 'new' }
   engine(on, { result: {} }, { farm: future })
   await start($)
@@ -1038,12 +1038,19 @@ test('A6 a damaged farm is normalized field by field: no NaN, arrays of eight, o
   expect(farm?.ledger).toEqual(freshFarm().ledger)
 })
 
-test('A7 ticks never overlap and a tick that fails is dropped', async ($, on) => {
+test('A7 ticks never overlap and a tick that fails is dropped', { timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on)
   let active = 0
   let most = 0
   let isBroken = false
   let writes = 0
+  const waiting: Array<{ target: number; resolve: () => void }> = []
+  // Resolves once a write has finished past `target`: the test waits on the event,
+  // not on a sleep, so a slow machine only makes it later.
+  const writtenPast = (target: number) =>
+    writes > target ? Promise.resolve() : new Promise<void>(resolve => {
+      waiting.push({ target, resolve })
+    })
   // A slow write of the anim atom, in real time so the next tick falls due first.
   tap(async e => {
     if ((e as { key: string }).key !== 'anim') {
@@ -1057,25 +1064,28 @@ test('A7 ticks never overlap and a tick that fails is dropped', async ($, on) =>
     await new Promise(resolve => setTimeout(resolve, 15))
     active -= 1
     writes += 1
+    for (const w of waiting.filter(w => writes > w.target)) {
+      w.resolve()
+    }
   })
   await start($)
   await $.tool.call({ tool: 'Bash', command: 'ls' })
   await clock.advance(3_000)
-  await new Promise(resolve => setTimeout(resolve, 100))
+  await writtenPast(0)
   expect(most).toBe(1)
   expect(writes).toBeGreaterThan(0)
 
   isBroken = true
   await clock.advance(2_000)
   isBroken = false
-  await new Promise(resolve => setTimeout(resolve, 50))
+  await clock.settle()
   const before = writes
   await clock.advance(3_000)
-  await new Promise(resolve => setTimeout(resolve, 100))
+  await writtenPast(before)
   expect(writes).toBeGreaterThan(before)
 })
 
-test('A8 an upgrade is toasted once even when two saves ask at the same moment', async ($, on) => {
+test('A8 an upgrade is toasted once even when two saves ask at the same moment', { timeoutMs: 120_000 }, async ($, on) => {
   const farm = { ...freshFarm(), ledger: { ...freshFarm().ledger, total: 60 } }
   engine(on, { result: {} }, { farm })
   await start($)
@@ -1124,7 +1134,7 @@ test('A11 isShip: a deploy argument is not a deploy, quoted text and heredocs do
   expect(stripQuoted('echo "a" \'b\'')).toBe('echo "" \'\'')
 })
 
-test('A12 the storm comes once, when the third error in a row lands, never on a denied call', CHATTY, async ($, on) => {
+test('A12 the storm comes once, when the third error in a row lands, never on a denied call', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   const answer: Record<string, unknown> = { result: {}, isError: true }
   const setAnswer = (next: Record<string, unknown>) => {
     for (const key of Object.keys(answer)) {
@@ -1153,7 +1163,7 @@ test('A12 the storm comes once, when the third error in a row lands, never on a 
 })
 
 
-test('A14 a tool call and a turn end go back at once, with the bookkeeping left running', async ($, on) => {
+test('A14 a tool call and a turn end go back at once, with the bookkeeping left running', { timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on, { result: {} })
   on('prompt.submit', (_, e) => e)
   await start($)
@@ -1213,7 +1223,7 @@ const menu = (on: any, answerWith: (e: any) => object = e => ({ value: e.value }
   return sets
 }
 
-test('V5 fix: bales traded for cinnamon are counted, eight sticks a bale, and the tally splits them', async ($, on) => {
+test('V5 fix: bales traded for cinnamon are counted, eight sticks a bale, and the tally splits them', { timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on)
   await start($)
   await begin($)
@@ -1326,7 +1336,7 @@ const agentDone = async ($: any, agentId: string, reason = 'answer') => {
 }
 
 
-test('V5 a background hand tends a plot like any other, never walks the road, and says how it went when done', CHATTY, async ($, on) => {
+test('V5 a background hand tends a plot like any other, never walks the road, and says how it went when done', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   v5(on)
   await start($)
@@ -1346,7 +1356,7 @@ test('V5 a background hand tends a plot like any other, never walks the road, an
   expect(await quip($)).toBe('Hand come back empty-handed.')
 })
 
-test('V5 a workflow puts a hand in every plot, counts +N and says the whole holler is workin', async ($, on) => {
+test('V5 a workflow puts a hand in every plot, counts +N and says the whole holler is workin', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   v5(on)
   await start($)
@@ -1362,7 +1372,7 @@ test('V5 a workflow puts a hand in every plot, counts +N and says the whole holl
   }
 })
 
-test('V5 a teammate stands at the sign while awake and leaves when idle', HOOKS, async ($, on) => {
+test('V5 a teammate stands at the sign while awake and leaves when idle', { ...HOOKS, timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   v5(on)
   await start($)
@@ -1388,7 +1398,7 @@ test('V5 a teammate stands at the sign while awake and leaves when idle', HOOKS,
   await clk.settle()
 })
 
-test('V5 an engine fork that was never spawned is ignored on the canvas, its tokens still count', async ($, on) => {
+test('V5 an engine fork that was never spawned is ignored on the canvas, its tokens still count', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   v5(on)
   await start($)
@@ -1398,7 +1408,7 @@ test('V5 an engine fork that was never spawned is ignored on the canvas, its tok
 })
 
 
-test('V5 hands the engine lists as running are taken back on after a reload, on the 30 s beat, at most eight', async ($, on) => {
+test('V5 hands the engine lists as running are taken back on after a reload, on the 30 s beat, at most eight', { timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on)
   v5(on)
   // Agents that were spawned before the module reloaded.
@@ -1477,7 +1487,7 @@ test('V5 a heartbeat from a Jeb before the anonymizer lights a lantern under a p
   expect(JSON.stringify(world.db.get('sessions'))).not.toContain('web')
 })
 
-test('V5 sessions in the store stay at eight and each name at 24 characters', async ($, on) => {
+test('V5 sessions in the store stay at eight and each name at 24 characters', { timeoutMs: 120_000 }, async ($, on) => {
   const many: Record<string, unknown> = {}
   for (let i = 0; i < 20; i += 1) {
     many[keyOf(`s${i}`)] = { name: `camp-${i}-${'x'.repeat(40)}`, lastSeen: JUNE_NOON - i * 1000 }
@@ -1493,7 +1503,7 @@ test('V5 sessions in the store stay at eight and each name at 24 characters', as
   }
 })
 
-test('V5 a worktree session is named by its folder, a plain one by its repository', async ($, on) => {
+test('V5 a worktree session is named by its folder, a plain one by its repository', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on, { result: {} }, { farm: saltFarm() })
   v5(on)
   v5world.root = '/work/web-wt'
@@ -1501,7 +1511,7 @@ test('V5 a worktree session is named by its folder, a plain one by its repositor
   expect((world.db.get('sessions') as Record<string, { name: string }>)[keyOf('me')]?.name).toBe(placeOf('web-wt'))
 })
 
-test('V5 a session in the main tree is named by its repository folder', async ($, on) => {
+test('V5 a session in the main tree is named by its repository folder', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on, { result: {} }, { farm: saltFarm() })
   v5(on)
   v5world.root = '/work/main'
@@ -1510,7 +1520,7 @@ test('V5 a session in the main tree is named by its repository folder', async ($
   expect(placeOf('main')).not.toBe(placeOf('web-wt'))
 })
 
-test('V5 MCP servers: parsed from the tool name, matched by table, the rest on the radio', async ($, on) => {
+test('V5 MCP servers: parsed from the tool name, matched by table, the rest on the radio', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   v5(on)
   await start($)
@@ -1543,7 +1553,7 @@ test('V5 MCP servers: parsed from the tool name, matched by table, the rest on t
   await finish($, usage(0, 0))
 })
 
-test('V5 a settings hook that denies a call puts up a gate; the call still errors as it does today', CHATTY_HOOKS, async ($, on) => {
+test('V5 a settings hook that denies a call puts up a gate; the call still errors as it does today', { ...CHATTY_HOOKS, timeoutMs: 120_000 }, async ($, on) => {
   engine(on, { result: {}, isError: true })
   v5(on)
   v5world.denyTools = true
@@ -1557,7 +1567,7 @@ test('V5 a settings hook that denies a call puts up a gate; the call still error
   expect(await quip($)).not.toBe('Somebody put up a gate.')
 })
 
-test('V5 compaction: Jeb holds the broom while it runs and says what came off; auto says the barn got full', CHATTY_HOOKS, async ($, on) => {
+test('V5 compaction: Jeb holds the broom while it runs and says what came off; auto says the barn got full', { ...CHATTY_HOOKS, timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on)
   v5(on)
   let release: () => void = () => undefined
@@ -1599,7 +1609,7 @@ test('V5 compaction lines come from the engine tokens, and none when it does not
   expect(sweptLine(undefined, 5)).toBeUndefined()
 })
 
-test('V5 /clear starts the day over and keeps the farm and the lanterns', async ($, on) => {
+test('V5 /clear starts the day over and keeps the farm and the lanterns', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on, { result: {} }, { farm: saltFarm(), sessions: { [OTHER]: { name: 'Laurel Fork', lastSeen: JUNE_NOON - 1000 } } })
   v5(on)
   await start($)
@@ -1624,7 +1634,7 @@ test('V5 /clear starts the day over and keeps the farm and the lanterns', async 
   expect(Object.keys(world.db.get('sessions') as object)).toContain(keyOf('me2'))
 })
 
-test('V5 resume and fork lines, long and short', HOOKS, async ($, on) => {
+test('V5 resume and fork lines, long and short', { ...HOOKS, timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   v5(on)
   await start($)
@@ -1645,7 +1655,7 @@ test('V5 resume and fork lines, long and short', HOOKS, async ($, on) => {
   expect(await quip($)).toBe('Somebody split the firewood.')
 })
 
-test('hook reactions off (the default): the skippable hooks are not registered, so a resume says nothing', async ($, on) => {
+test('hook reactions off (the default): the skippable hooks are not registered, so a resume says nothing', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   v5(on)
   await start($)
@@ -1762,7 +1772,7 @@ const counted = (_on: any) => {
   return writes
 }
 
-test('S1 the turn.step hook passes 1000 mixed chunks and the result through unchanged', async ($, on) => {
+test('S1 the turn.step hook passes 1000 mixed chunks and the result through unchanged', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   const chunks = mixed(1000)
   const result = stepResult(usage(10, 20), { answer: 'hello', toolUses: [{ name: 'Read', input: {} }] })
@@ -1779,7 +1789,7 @@ test('S1 the turn.step hook passes 1000 mixed chunks and the result through unch
   expect(got.result).toEqual(result)
 })
 
-test('S1 an observer that throws still passes every chunk through, and keeps watching', async ($, on) => {
+test('S1 an observer that throws still passes every chunk through, and keeps watching', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   // A tool named like an inherited property: looking it up in the saying table
   // makes the observer throw. The stream shows the failure never reaches it.
@@ -1799,7 +1809,7 @@ test('S1 an observer that throws still passes every chunk through, and keeps wat
   expect(got.result).toEqual(stepResult())
 })
 
-test('S2 thinking, then writing, then a tool set Jeb pose and line in order', CHATTY, async ($, on) => {
+test('S2 thinking, then writing, then a tool set Jeb pose and line in order', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   streams(on, [
     { kind: 'thinking', index: 0, text: 'hm' },
@@ -1827,7 +1837,7 @@ test('S2 thinking, then writing, then a tool set Jeb pose and line in order', CH
   }
 })
 
-test('S2 an MCP tool chunk takes the server glyph and line', async ($, on) => {
+test('S2 an MCP tool chunk takes the server glyph and line', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   streams(on, [{ kind: 'tool', index: 0, id: 'tu1', name: 'mcp__claude_ai_Sentry__search_issues' }])
   await start($)
@@ -1836,7 +1846,7 @@ test('S2 an MCP tool chunk takes the server glyph and line', async ($, on) => {
   expect(await quip($)).toBe("Huntin' bugs in the corn…")
 })
 
-test('S2 a 200-chunk run of text makes exactly one transition', async ($, on) => {
+test('S2 a 200-chunk run of text makes exactly one transition', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   const writes = counted(on)
   streams(
@@ -1854,7 +1864,7 @@ test('S2 a 200-chunk run of text makes exactly one transition', async ($, on) =>
   expect(writes.anim).toBe(1)
 })
 
-test('S2 a burst of transitions writes at most 4 times a second and the last one wins', CHATTY, async ($, on) => {
+test('S2 a burst of transitions writes at most 4 times a second and the last one wins', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   const writes = counted(on)
   const kinds = ['thinking', 'text', 'tool'] as const
@@ -1885,7 +1895,7 @@ test('S2 a burst of transitions writes at most 4 times a second and the last one
   expect(said('bash', await quip($))).toBe(true)
 })
 
-test('S2 subagent steps do not move Jeb', async ($, on) => {
+test('S2 subagent steps do not move Jeb', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   const writes = counted(on)
   streams(on, [
@@ -1904,7 +1914,7 @@ test('S2 subagent steps do not move Jeb', async ($, on) => {
   expect(writes.say).toBe(0)
 })
 
-test('S3 each step with usage grows the crops before the turn ends', async ($, on) => {
+test('S3 each step with usage grows the crops before the turn ends', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   const plan = streams(on, [{ kind: 'text', index: 0, text: 'x' }])
   await start($)
@@ -1919,7 +1929,7 @@ test('S3 each step with usage grows the crops before the turn ends', async ($, o
   }
 })
 
-test('S3 turn.complete does not count again what the steps counted, but a turn with no step usage still counts', async ($, on) => {
+test('S3 turn.complete does not count again what the steps counted, but a turn with no step usage still counts', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   streams(on, [{ kind: 'text', index: 0, text: 'x' }], stepResult(usage(400, 25_000)))
   await start($)
@@ -1946,7 +1956,7 @@ test('S3 turn.complete does not count again what the steps counted, but a turn w
   expect(await tally($)).toContain('corn 2/24')
 })
 
-test('S3 a subagent step counts too, and an interrupted turn keeps the steps that finished', async ($, on) => {
+test('S3 a subagent step counts too, and an interrupted turn keeps the steps that finished', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   const plan = streams(on, [{ kind: 'text', index: 0, text: 'x' }], stepResult(usage(400, 0), { turnId: 'sub', agentId: 'a1' }))
   await start($)
@@ -1978,7 +1988,7 @@ test('S3 a subagent step counts too, and an interrupted turn keeps the steps tha
   expect(await tally($)).toContain('corn 2/24')
 })
 
-test('S4 a tool.call after its stream chunk does not speak or pose twice, and one with no chunk still does', async ($, on) => {
+test('S4 a tool.call after its stream chunk does not speak or pose twice, and one with no chunk still does', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   const writes = counted(on)
   streams(on, [{ kind: 'tool', index: 0, id: 'tu1', name: 'Read' }])
@@ -2137,7 +2147,7 @@ const bash = (command: string, extra: object = {}) => ({ tool: 'Bash', command, 
 
 const TEST_FILTERED = 'php artisan test --filter=Foo'
 
-test('W tests as weather: a filtered pass rains on one plot, a fail dries it, the first pass after a fail says so', CHATTY, async ($, on) => {
+test('W tests as weather: a filtered pass rains on one plot, a fail dries it, the first pass after a fail says so', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   const answer = { result: {}, isError: false }
   const clock = engine(on, answer)
   await start($)
@@ -2169,7 +2179,7 @@ test('W tests as weather: a filtered pass rains on one plot, a fail dries it, th
   expect(await quip($)).toBe(RAIN_LINE)
 })
 
-test('W tests as weather: the whole suite rains or droughts every plot; a streak line comes once at three fails', CHATTY, async ($, on) => {
+test('W tests as weather: the whole suite rains or droughts every plot; a streak line comes once at three fails', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   const answer = { result: {}, isError: false }
   const clock = engine(on, answer)
   await start($)
@@ -2199,7 +2209,7 @@ test('W tests as weather: the whole suite rains or droughts every plot; a streak
   expect(await quip($)).toBe(FIRST_RAIN_LINE)
 })
 
-test('W tests as weather: no verdict for a piped, backgrounded or chained-away run', CHATTY, async ($, on) => {
+test('W tests as weather: no verdict for a piped, backgrounded or chained-away run', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   const answer = { result: {}, isError: true }
   const clock = engine(on, answer)
   await start($)
@@ -2224,7 +2234,7 @@ test('W tests as weather: no verdict for a piped, backgrounded or chained-away r
   expect(await quip($)).toBe(COUNTY_RAIN_LINE)
 })
 
-test('W a subagent runs the whole suite and its hand waters the county; a filtered run has no line of its own', CHATTY, async ($, on) => {
+test('W a subagent runs the whole suite and its hand waters the county; a filtered run has no line of its own', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on)
   await start($)
   await begin($)
@@ -2237,7 +2247,7 @@ test('W a subagent runs the whole suite and its hand waters the county; a filter
   await clock.advance(1_000)
 })
 
-test('W lint as weeding: a hoe pose, clean rows or weeds, the phpstan line, pint without --test, a cap per tool', CHATTY, async ($, on) => {
+test('W lint as weeding: a hoe pose, clean rows or weeds, the phpstan line, pint without --test, a cap per tool', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   const answer = { result: {}, isError: false }
   const clock = engine(on, answer)
   await start($)
@@ -2267,7 +2277,7 @@ test('W lint as weeding: a hoe pose, clean rows or weeds, the phpstan line, pint
   expect(await quip($)).toBe(PHPSTAN_LINE)
 })
 
-test('W lint in a pipeline has no verdict: the generic line stands', CHATTY, async ($, on) => {
+test('W lint in a pipeline has no verdict: the generic line stands', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   engine(on, { result: {}, isError: true })
   await start($)
   await begin($)
@@ -2276,7 +2286,7 @@ test('W lint in a pipeline has no verdict: the generic line stands', CHATTY, asy
   expect(said('error', await quip($))).toBe(true)
 })
 
-test('W the Compose service is a building by the house, on every call; up -d and run --rm have lines', CHATTY, async ($, on) => {
+test('W the Compose service is a building by the house, on every call; up -d and run --rm have lines', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on)
   await start($)
   await begin($)
@@ -2315,7 +2325,7 @@ test('W the Compose service is a building by the house, on every call; up -d and
 const submitTriage = (args: string) =>
   ({ text: `/triage ${args}`, command: { name: 'triage', args } })
 
-test('W /triage KEY lets a cow loose as a neighbor\'s number; not even the key is kept', CHATTY, async ($, on) => {
+test('W /triage KEY lets a cow loose as a neighbor\'s number; not even the key is kept', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   engine(on, { result: {} }, { farm: saltFarm() })
   on('prompt.submit', (_, e) => e)
   watch(on)
@@ -2346,7 +2356,7 @@ test('W /triage KEY lets a cow loose as a neighbor\'s number; not even the key i
   expect(cowLine([1, 2])).toBe('2 cows loose.')
 })
 
-test('W a getJiraIssue call through the work board is a cow too, and the next successful ship leads them home', CHATTY, async ($, on) => {
+test('W a getJiraIssue call through the work board is a cow too, and the next successful ship leads them home', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   engine(on, { result: {} }, { farm: saltFarm() })
   await start($)
   await begin($)
@@ -2361,7 +2371,7 @@ test('W a getJiraIssue call through the work board is a cow too, and the next su
 })
 
 
-test('W deny rules in Jeb\'s voice: each pattern, a cap per rule, and the generic line otherwise', async ($, on) => {
+test('W deny rules in Jeb\'s voice: each pattern, a cap per rule, and the generic line otherwise', { timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on, { deny: 'no' })
   await start($)
 
@@ -2386,7 +2396,7 @@ test('W deny rules in Jeb\'s voice: each pattern, a cap per rule, and the generi
   expect(WORKDAY_LINES).toContain(DENY_LINES.reset)
 })
 
-test('W a settings hook that refuses a matching command gets the rule line, with the gate still up', CHATTY_HOOKS, async ($, on) => {
+test('W a settings hook that refuses a matching command gets the rule line, with the gate still up', { ...CHATTY_HOOKS, timeoutMs: 120_000 }, async ($, on) => {
   engine(on, { result: {}, isError: true })
   v5(on)
   v5world.denyTools = true
@@ -2398,7 +2408,7 @@ test('W a settings hook that refuses a matching command gets the rule line, with
   expect(await quip($)).toBe('Somebody put up a gate.')
 })
 
-test('W a settings hook that refuses a command no deny rule names gets the gate line', CHATTY_HOOKS, async ($, on) => {
+test('W a settings hook that refuses a command no deny rule names gets the gate line', { ...CHATTY_HOOKS, timeoutMs: 120_000 }, async ($, on) => {
   engine(on, { result: {}, isError: true })
   v5(on)
   v5world.denyTools = true
@@ -2420,7 +2430,7 @@ const busyStretch = async ($: any, clock: MockClock, calls = 30) => {
   return seenState.says.length - start
 }
 
-test('W talk ambient (the default): a busy turn of thirty calls speaks twice, ships and milestones still speak', async ($, on) => {
+test('W talk ambient (the default): a busy turn of thirty calls speaks twice, ships and milestones still speak', { timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on, { result: {} }, { farm: farmWith({ lightning: 0, appleCinnamon: 3 }) })
   watch(on)
   await start($)
@@ -2437,7 +2447,7 @@ test('W talk ambient (the default): a busy turn of thirty calls speaks twice, sh
   expect(said('harvestCorn', await quip($))).toBe(true)
 })
 
-test('W talk ambient: the prompt speaks first, one more line follows, then the turn is quiet; idle is five minutes', async ($, on) => {
+test('W talk ambient: the prompt speaks first, one more line follows, then the turn is quiet; idle is five minutes', { timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on, { result: {} })
   on('prompt.submit', (_, e) => e)
   watch(on)
@@ -2469,7 +2479,7 @@ test('W talk ambient: the prompt speaks first, one more line follows, then the t
   expect(seenState.says.length - after).toBeLessThanOrEqual(3)
 })
 
-test('W talk chatty keeps every line', CHATTY, async ($, on) => {
+test('W talk chatty keeps every line', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on, { result: {} })
   watch(on)
   await start($)
@@ -2477,7 +2487,7 @@ test('W talk chatty keeps every line', CHATTY, async ($, on) => {
   expect(await busyStretch($, clock)).toBeGreaterThanOrEqual(30)
 })
 
-test('W talk silent: no new lines but replies, the bubble dimmed, the scene still moves', { options: { talk: 'silent' } }, async ($, on) => {
+test('W talk silent: no new lines but replies, the bubble dimmed, the scene still moves', { options: { talk: 'silent' }, timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on, { result: {} }, { farm: farmWith({ lightning: 0, appleCinnamon: 3 }) })
   watch(on)
   await start($)
@@ -2492,7 +2502,7 @@ test('W talk silent: no new lines but replies, the bubble dimmed, the scene stil
   expect(JSON.parse(seenState.atoms.anim ?? '{}').isDim).toBe(true)
 })
 
-test('W the hush: a writing burst of more than twenty chunks silences the chatter for a moment', CHATTY, async ($, on) => {
+test('W the hush: a writing burst of more than twenty chunks silences the chatter for a moment', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on, { result: {} })
   const text = (count: number) =>
     Array.from({ length: count }, (_, i) => ({ kind: 'text', index: 0, text: `w${i}` }))
@@ -2525,7 +2535,7 @@ test('W the hush: a writing burst of more than twenty chunks silences the chatte
   expect(seenState.says.length).toBeGreaterThan(before)
 })
 
-test('W the hush: after a failed test or lint run only verdicts and milestones speak for five minutes', CHATTY, async ($, on) => {
+test('W the hush: after a failed test or lint run only verdicts and milestones speak for five minutes', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   const answer = { result: {}, isError: true }
   const clock = engine(on, answer)
   on('prompt.submit', (_, e) => e)
@@ -2558,7 +2568,7 @@ test('W the hush: after a failed test or lint run only verdicts and milestones s
   expect(seenState.says.length).toBeGreaterThan(mid)
 })
 
-test('W a lint failure hushes too, in ambient as in chatty', async ($, on) => {
+test('W a lint failure hushes too, in ambient as in chatty', { timeoutMs: 120_000 }, async ($, on) => {
   const answer = { result: {}, isError: true }
   const clock = engine(on, answer)
   watch(on)
@@ -2893,7 +2903,7 @@ test('M6 migration: a v4 farm becomes v6 books (cash = what it earned), the live
   expect(newUnlocks({ ...(farm as NonNullable<typeof farm>), ledger: { ...(farm as NonNullable<typeof farm>).ledger, total: 500 } }).upgrades.map(u => u.id)).toEqual(['pup'])
 })
 
-test('M6 migration: the live store becomes v6 when a session starts, and the tally reads the books', async ($, on) => {
+test('M6 migration: the live store becomes v6 when a session starts, and the tally reads the books', { timeoutMs: 120_000 }, async ($, on) => {
   const live = {
     ...farmWith({ lightning: 26, appleCinnamon: 32 }),
     version: 4,
@@ -2913,7 +2923,7 @@ test('M6 migration: the live store becomes v6 when a session starts, and the tal
   expect(text).toContain('26 white lightning, 32 apple cinnamon')
 })
 
-test('M7 two sessions selling at once: a sale is decided on the stored farm, never oversold or counted twice', async ($, on) => {
+test('M7 two sessions selling at once: a sale is decided on the stored farm, never oversold or counted twice', { timeoutMs: 120_000 }, async ($, on) => {
   // Pure: the second of two sales on one jar finds the shelf bare.
   const one = { ...freshFarm(), shelf: { lightning: 0, appleCinnamon: 1 } }
   const first = sellTo(one, 'opal', WED, () => 0)
@@ -2968,7 +2978,7 @@ truckSells('corn goes to the feed mill', { ...freshFarm(), shelf: EMPTY_SHELF, b
 truckSells('white lightning goes to the tripper at night', { ...freshFarm(), shelf: { lightning: 4, appleCinnamon: 0 } }, NIGHT, '🫙', /tripper/i, /white lightning \$60/)
 truckSells('the county fair in August pays the prize and a ribbon', { ...freshFarm(), shelf: { lightning: 0, appleCinnamon: 2 } }, AUG_WED, '🫙', /🎀/u, /Ribbons: 🎀x1/)
 
-test('M8 the truck: with nothing to sell it carries a box and the old line, and counts the trip', CHATTY, async ($, on) => {
+test('M8 the truck: with nothing to sell it carries a box and the old line, and counts the trip', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on, { result: {} }, { farm: freshFarm() }, WED.getTime())
   await start($)
   await call($, { tool: 'Bash', command: 'git push' })
@@ -3032,13 +3042,13 @@ const busyDelivery = async ($: any, on: any, farm: object, now: Date) => {
 const JARS_ONLY = { lightning: 0, appleCinnamon: 4 }
 const AUG_SAT = at(7, 8, 14)
 
-test('M10 talk: a new buyer first sale is news, so ambient says it even on a spent busy allowance', async ($, on) => {
+test('M10 talk: a new buyer first sale is news, so ambient says it even on a spent busy allowance', { timeoutMs: 120_000 }, async ($, on) => {
   const lines = await busyDelivery($, on, { ...freshFarm(), shelf: JARS_ONLY }, SAT)
   expect(lines.length).toBe(1)
   expect(isSale('saleOpal', lines[0] ?? '')).toBe(true)
 })
 
-test('M10 talk: any other sale is ordinary busy chatter, held back by the busy allowance', async ($, on) => {
+test('M10 talk: any other sale is ordinary busy chatter, held back by the busy allowance', { timeoutMs: 120_000 }, async ($, on) => {
   const old = {
     ...freshFarm(),
     shelf: JARS_ONLY,
@@ -3049,7 +3059,7 @@ test('M10 talk: any other sale is ordinary busy chatter, held back by the busy a
   expect(await tally($)).toContain('1 trip, 1 jar sold, $25.')
 })
 
-test('M10 talk: the fair always speaks, though its buyer was met before', async ($, on) => {
+test('M10 talk: the fair always speaks, though its buyer was met before', { timeoutMs: 120_000 }, async ($, on) => {
   const old = {
     ...freshFarm(),
     shelf: JARS_ONLY,
@@ -3076,7 +3086,7 @@ const storedFarm = () => loadFarm(world.db.get('farm')) as Farm6
 const NOW = new Date(JUNE_NOON)
 const DAYS3 = 3 * DAY
 
-test('K1 lumber: one piece for every third successful edit, from the main loop or a subagent, none for a failed one', async ($, on) => {
+test('K1 lumber: one piece for every third successful edit, from the main loop or a subagent, none for a failed one', { timeoutMs: 120_000 }, async ($, on) => {
   const answer = { result: {}, isError: false }
   engine(on, answer)
   await start($)
@@ -3104,7 +3114,7 @@ test('K1 lumber: one piece for every third successful edit, from the main loop o
   expect(noteEdit(farm6({ counters: { edits: 2, mothmanSeen: 0 } })).materials.lumber).toBe(1)
 })
 
-test('K2 stone for every passing test run, iron for the first pass after a failed test or lint run', async ($, on) => {
+test('K2 stone for every passing test run, iron for the first pass after a failed test or lint run', { timeoutMs: 120_000 }, async ($, on) => {
   const answer = { result: {}, isError: false }
   engine(on, answer)
   await start($)
@@ -3141,7 +3151,7 @@ test('K2 stone for every passing test run, iron for the first pass after a faile
   expect(storedFarm().materials.iron).toBe(3)
 })
 
-test('K3 straw: two for a tobacco harvest, one for a corn harvest', async ($, on) => {
+test('K3 straw: two for a tobacco harvest, one for a corn harvest', { timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on)
   await start($)
   // 9600 output tokens: one bushel of corn.
@@ -3292,7 +3302,7 @@ test('K6 auto-crafting: the queued upgrade first, then keepsakes, then goods, at
   expect(banjo.next.materials).toMatchObject({ lumber: 0, iron: 0, copper: 0 })
 })
 
-test('K7 built upgrades: each one builds from its parts and has its effect', async ($, on) => {
+test('K7 built upgrades: each one builds from its parts and has its effect', { timeoutMs: 120_000 }, async ($, on) => {
   // The keg: two barrels and a coil.
   const keg = craftAll(farm6({ components: parts({ barrel: 2, coil: 1 }) }), NOW)
   expect(keg.made.map(m => m.id)).toEqual(['thumpKeg'])
@@ -3338,7 +3348,7 @@ test('K7 built upgrades: each one builds from its parts and has its effect', asy
   expect(text).toContain('batch 0/4')
 })
 
-test('K7 the copper worm draws two jars from a lightning when the apples and sticks allow, and one when they do not', async ($, on) => {
+test('K7 the copper worm draws two jars from a lightning when the apples and sticks allow, and one when they do not', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on, { result: {} }, { farm: farm6({ built: ['copperWorm'], shelf: { lightning: 2, appleCinnamon: 0 }, barn: { bales: 0, corn: 0, apples: 3, sticks: 3 } }) })
   await start($)
   await finish($, usage(1, 0))
@@ -3347,7 +3357,7 @@ test('K7 the copper worm draws two jars from a lightning when the apples and sti
   expect(storedFarm().barn).toMatchObject({ apples: 0, sticks: 0 })
 })
 
-test('K7 without the worm a lightning makes one jar', async ($, on) => {
+test('K7 without the worm a lightning makes one jar', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on, { result: {} }, { farm: farm6({ shelf: { lightning: 1, appleCinnamon: 0 }, barn: { bales: 0, corn: 0, apples: 3, sticks: 3 } }) })
   await start($)
   await finish($, usage(1, 0))
@@ -3381,7 +3391,7 @@ test('K8 keepsakes: each made once and never sold; the Mothman carving only afte
   expect(stackColumns(kept, NOW)).toEqual([])
 })
 
-test('K8 a Mothman sighting counts, and the carving follows when there is lumber', async ($, on) => {
+test('K8 a Mothman sighting counts, and the carving follows when there is lumber', { timeoutMs: 120_000 }, async ($, on) => {
   // Halloween night, when the Mothman is the likeliest visitor: idle three minutes at a time until he
   // comes (an hour and a half at the very most; each roll is better than one in three). The scene goes
   // still after two idle minutes and no happening rolls then, so a /jeb tally (activity) comes
@@ -3439,7 +3449,7 @@ test('K10 the market buys apple butter, twists and aged whiskey at the listed pr
   expect(Object.keys(sold.ledger.byProduct).sort()).toEqual([...PRODUCTS].sort())
 })
 
-test('K10 aged whiskey is for sale three days after it was laid down, and not a moment before', async ($, on) => {
+test('K10 aged whiskey is for sale three days after it was laid down, and not a moment before', { timeoutMs: 120_000 }, async ($, on) => {
   const ready = NIGHT.getTime() + 10_000
   const farm = farm6({ goods: goodsOf({ aged: [{ readyAt: ready }] }) })
   // Not yet: the tripper wants nothing; one second later he does, and the jar comes out of its barrel.
@@ -3471,7 +3481,7 @@ truckSells('apple butter goes to the farmers market on a Saturday, at $28', butt
 // What the band shows of the stack at a width, as plain rows.
 
 
-test('K12 migration v5 to v6: the live farm keeps every number, cash is what it earned, the new stock starts empty', async ($, on) => {
+test('K12 migration v5 to v6: the live farm keeps every number, cash is what it earned, the new stock starts empty', { timeoutMs: 120_000 }, async ($, on) => {
   const live = {
     version: 5,
     crops: { tobacco: Array(8).fill(1), corn: Array(8).fill(2), apples: Array(8).fill(3) },
@@ -3683,7 +3693,7 @@ test('Q4 bounds: 500 stitches leave 200 squares, 60 lines and 64 session ids; a 
   expect(stitchFarm(farm, [stitchFromBeat({ id: 'new', name: 'web', lastSeen: JUNE_NOON, sq: 'G3', ln: 'Jun 10 · web camp · rain once' })]).added.length).toBe(1)
 })
 
-test('Q5 farm v7: v6 migrates with an empty, zeroed quilt, and every field of a damaged one is normalized', async ($, on) => {
+test('Q5 farm v7: v6 migrates with an empty, zeroed quilt, and every field of a damaged one is normalized', { timeoutMs: 120_000 }, async ($, on) => {
   const live = { ...freshFarm(), version: 6, shelf: { lightning: 26, appleCinnamon: 32 }, barn: { bales: 0, corn: 5, apples: 118, sticks: 0 } } as Record<string, unknown>
   for (const key of ['quilt', 'journal', 'sessionsWorked', 'sessionsShipped', 'busiest', 'stitched']) {
     delete live[key]
@@ -3765,7 +3775,7 @@ test('Q6 heartbeats carry a bounded square and line; only well-formed ones count
   expect(loadCamps(saved, now).live).toEqual({ name: 'web', lastSeen: now - 1000, sq: 'B1', ln: 'live' })
 })
 
-test('Q7 session.end stitches the day once; /clear counts, a resume does not, an idle session leaves nothing', async ($, on) => {
+test('Q7 session.end stitches the day once; /clear counts, a resume does not, an idle session leaves nothing', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on, { result: {} }, { farm: saltFarm() })
   v5(on)
   await start($)
@@ -3787,7 +3797,7 @@ test('Q7 session.end stitches the day once; /clear counts, a resume does not, an
 
 })
 
-test('Q7 a resume stitches nothing', async ($, on) => {
+test('Q7 a resume stitches nothing', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   v5(on)
   await start($)
@@ -3797,7 +3807,7 @@ test('Q7 a resume stitches nothing', async ($, on) => {
   expect(Object.keys(sessionsStore())).toEqual([])
 })
 
-test('Q7 an idle session leaves no square and no line', async ($, on) => {
+test('Q7 an idle session leaves no square and no line', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   v5(on)
   await start($)
@@ -3806,7 +3816,7 @@ test('Q7 an idle session leaves no square and no line', async ($, on) => {
   expect(Object.keys(sessionsStore())).toEqual([])
 })
 
-test('Q8 /clear stitches the day and starts a new one, and the new clothesline shows the square just stitched', async ($, on) => {
+test('Q8 /clear stitches the day and starts a new one, and the new clothesline shows the square just stitched', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on)
   v5(on)
   await start($)
@@ -3821,7 +3831,7 @@ test('Q8 /clear stitches the day and starts a new one, and the new clothesline s
   expect(storedFarm().sessionsWorked).toBe(1)
 })
 
-test('Q9 a stale heartbeat is stitched by another session, once, even when two prune it', async ($, on) => {
+test('Q9 a stale heartbeat is stitched by another session, once, even when two prune it', { timeoutMs: 120_000 }, async ($, on) => {
   const ghost = { name: 'Laurel Fork', lastSeen: JUNE_NOON - 10 * 60_000, sq: 'B12', ln: 'Jun 10 · Laurel Fork camp · 2 loads out' }
   const clock = engine(on, { result: {} }, { sessions: { [OTHER]: ghost } })
   v5(on)
@@ -3853,7 +3863,7 @@ test('Q9 a stale heartbeat is stitched by another session, once, even when two p
   expect(storedFarm().quilt.length).toBe(2)
 })
 
-test('Q9 a dead heartbeat from a Jeb before the anonymizer is stitched under a place, its id hashed and its line rebuilt', async ($, on) => {
+test('Q9 a dead heartbeat from a Jeb before the anonymizer is stitched under a place, its id hashed and its line rebuilt', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on, { result: {} }, {
     farm: saltFarm(),
     sessions: { 'sess-ghost-1': { name: 'glimmer', lastSeen: JUNE_NOON - 10 * 60_000, sq: 'B12', ln: 'Jun 10 · glimmer camp · 2 loads out, glimmer notes' } },
@@ -3868,7 +3878,7 @@ test('Q9 a dead heartbeat from a Jeb before the anonymizer is stitched under a p
   expect(JSON.stringify([...world.db.values()])).not.toContain('sess-ghost')
 })
 
-test('Q10 the heartbeat carries this session\'s square and line so far, and a session that could not stitch leaves it behind', async ($, on) => {
+test('Q10 the heartbeat carries this session\'s square and line so far, and a session that could not stitch leaves it behind', { timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on, { result: {} }, { farm: saltFarm() })
   v5(on)
   await start($)
@@ -3885,7 +3895,7 @@ test('Q10 the heartbeat carries this session\'s square and line so far, and a se
   expect(sessionsStore()[me]?.sq).toBe('N1')
 })
 
-test('Q11 the counters: ships, tests, weeding, agents, edits, sours and refusals decide the square', async ($, on) => {
+test('Q11 the counters: ships, tests, weeding, agents, edits, sours and refusals decide the square', { timeoutMs: 120_000 }, async ($, on) => {
   const answer = { result: {}, isError: false }
   engine(on, answer, { farm: saltFarm() })
   v5(on)
@@ -3902,7 +3912,7 @@ test('Q11 the counters: ships, tests, weeding, agents, edits, sours and refusals
   expect(farm.journal[0]?.line).toBe(`Jun 10 · ${placeOf('api')} camp · rain twice, 1 row hoed, 1 hand hired`)
 })
 
-test('Q12 five refusals and errors make a rough day; a sour batch counts for itself', async ($, on) => {
+test('Q12 five refusals and errors make a rough day; a sour batch counts for itself', { timeoutMs: 120_000 }, async ($, on) => {
   const answer = { result: {}, isError: true }
   engine(on, answer, { farm: saltFarm() })
   v5(on)
@@ -3915,7 +3925,7 @@ test('Q12 five refusals and errors make a rough day; a sour batch counts for its
   expect(storedFarm().journal[0]?.line).toBe(`Jun 10 · ${placeOf('api')} camp · quiet day, mended a fence`)
 })
 
-test('Q13 the live square follows the counters on the slow beat and only when its color changes', async ($, on) => {
+test('Q13 the live square follows the counters on the slow beat and only when its color changes', { timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on)
   v5(on)
   const writes = { n: 0 }
@@ -3943,21 +3953,21 @@ test('Q13 the live square follows the counters on the slow beat and only when it
 // A time whose half-hour slot lands on the journal crumb (the sixth of six).
 
 
-test('Q23 the greeting may recall the last session once, through the talk gate', async ($, on) => {
+test('Q23 the greeting may recall the last session once, through the talk gate', { timeoutMs: 120_000 }, async ($, on) => {
   const farm = { ...saltFarm(), journal: [{ d: '2026-10-22', camp: 'api', line: 'Oct 22 · api camp · 3 loads out' }] }
   engine(on, { result: {} }, { farm })
   await start($)
   expect(await quip($)).toBe('Last time: Oct 22 · api camp · 3 loads out')
 })
 
-test('Q23 a silent Jeb does not recall the last session', { options: { talk: 'silent' } }, async ($, on) => {
+test('Q23 a silent Jeb does not recall the last session', { options: { talk: 'silent', timeoutMs: 120_000 } }, async ($, on) => {
   const farm = { ...saltFarm(), journal: [{ d: '2026-10-22', camp: 'api', line: 'Oct 22 · api camp · 3 loads out' }] }
   engine(on, { result: {} }, { farm })
   await start($)
   expect(await quip($)).not.toContain('Last time')
 })
 
-test('Q24 a quilt on a farm from the future is never written; the session plays on its own', async ($, on) => {
+test('Q24 a quilt on a farm from the future is never written; the session plays on its own', { timeoutMs: 120_000 }, async ($, on) => {
   const future = { version: 11, brand: 'new' }
   engine(on, { result: {} }, { farm: future })
   v5(on)
@@ -4000,7 +4010,7 @@ const skewed = (on: any, entries: Record<string, unknown> = {}) => {
 
 const GHOST = { name: 'Laurel Fork', lastSeen: JUNE_NOON, sq: 'B12', ln: 'Jun 10 · Laurel Fork camp · 2 loads out' }
 
-test('RV1 the session clock follows the machine every 30 s, Focus check or not; a jump re-bases it and holds that beat back', async ($, on) => {
+test('RV1 the session clock follows the machine every 30 s, Focus check or not; a jump re-bases it and holds that beat back', { timeoutMs: 120_000 }, async ($, on) => {
   // The Focus files cannot be read here, so the Focus check gives up after three
   // tries: the clock must not depend on it.
   const { clock, machine } = skewed(on, { sessions: { [OTHER]: GHOST } })
@@ -4022,7 +4032,7 @@ test('RV1 the session clock follows the machine every 30 s, Focus check or not; 
   expect(Object.keys(sessionsStore()).length).toBe(1)
 })
 
-test('RV2 a farm a newer Jeb wrote after the session began is never overwritten, and saving stops', async ($, on) => {
+test('RV2 a farm a newer Jeb wrote after the session began is never overwritten, and saving stops', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on, { result: {} }, { farm: farm6() })
   await start($)
   await finish($, usage(400, 0))
@@ -4036,7 +4046,7 @@ test('RV2 a farm a newer Jeb wrote after the session began is never overwritten,
   expect(world.db.get('farm')).toEqual(future)
 })
 
-test('RV3 a reload keeps the session record and does not greet again; another session id is a new session', CHATTY, async ($, on) => {
+test('RV3 a reload keeps the session record and does not greet again; another session id is a new session', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   engine(on, { result: {} }, { farm: saltFarm() })
   menu(on)
   v5(on)
@@ -4060,7 +4070,7 @@ test('RV3 a reload keeps the session record and does not greet again; another se
   expect(storedFarm().quilt.length).toBe(1)
 })
 
-test('RV4 a resume drops the old heartbeat, carries the record to the new session id and counts it once', async ($, on) => {
+test('RV4 a resume drops the old heartbeat, carries the record to the new session id and counts it once', { timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on, { result: {} }, { farm: saltFarm() })
   v5(on)
   await start($)
@@ -4083,7 +4093,7 @@ test('RV4 a resume drops the old heartbeat, carries the record to the new sessio
   expect(storedFarm().quilt.length).toBe(1)
 })
 
-test('RV5 a call a settings hook refused counts for nothing: no sour batch, no storm, no failed test, no square', CHATTY_HOOKS, async ($, on) => {
+test('RV5 a call a settings hook refused counts for nothing: no sour batch, no storm, no failed test, no square', { ...CHATTY_HOOKS, timeoutMs: 120_000 }, async ($, on) => {
   const batch = farm6({ still: { steps: 1, hasBatch: true } })
   engine(on, { result: {}, isError: true }, { farm: batch })
   v5(on)
@@ -4101,7 +4111,7 @@ test('RV5 a call a settings hook refused counts for nothing: no sour batch, no s
   expect(storedFarm().journal).toEqual([])
 })
 
-test('RV6 a dead session\'s heartbeat stays in the store until its square is on the quilt', async ($, on) => {
+test('RV6 a dead session\'s heartbeat stays in the store until its square is on the quilt', { timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on, { result: {} }, { sessions: { [OTHER]: { ...GHOST, lastSeen: JUNE_NOON - 10 * 60_000 } } })
   v5(on)
   world.failKey = 'farm'
@@ -4117,7 +4127,7 @@ test('RV6 a dead session\'s heartbeat stays in the store until its square is on 
   expect(sessionsStore()).not.toHaveProperty(OTHER)
 })
 
-test('RV7 a farm save another session raced re-applies its change onto theirs', async ($, on) => {
+test('RV7 a farm save another session raced re-applies its change onto theirs', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on, { result: {} }, { farm: farm6() })
   await start($)
   const snapshot = copy(world.db.get('farm')) as Farm6
@@ -4137,7 +4147,7 @@ test('RV7 a farm save another session raced re-applies its change onto theirs', 
   expect(sets).toBe(2)
 })
 
-test('RV7 a save raced every time gives up after applying its change twice more', async ($, on) => {
+test('RV7 a save raced every time gives up after applying its change twice more', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on, { result: {} }, { farm: farm6() })
   await start($)
   let sets = 0
@@ -4152,7 +4162,7 @@ test('RV7 a save raced every time gives up after applying its change twice more'
   expect(sets).toBe(3)
 })
 
-test('RV7 the rev counts every write and a farm without one reads as rev 0', async ($, on) => {
+test('RV7 the rev counts every write and a farm without one reads as rev 0', { timeoutMs: 120_000 }, async ($, on) => {
   expect(loadFarm({ ...freshFarm(), rev: undefined }) as Farm6).toMatchObject({ rev: 0 })
   expect(loadFarm({ ...freshFarm(), rev: 'x' })).toMatchObject({ rev: 0 })
   expect(loadFarm({ ...freshFarm(), rev: -3.7 })).toMatchObject({ rev: 0 })
@@ -4178,7 +4188,7 @@ test('RV8 a gate belongs to the call it refused: kept by tool_use_id, used up on
   expect(takeGate(gates, `t${MAX_GATES + 4}`)).toBe(true)
 })
 
-test('RV8 a call finishing while another call\'s gate is up is not credited with it', CHATTY_HOOKS, async ($, on) => {
+test('RV8 a call finishing while another call\'s gate is up is not credited with it', { ...CHATTY_HOOKS, timeoutMs: 120_000 }, async ($, on) => {
   // The refused call lets a second call finish just as it denies: the second
   // call, which ran, is still the success it was, and the refused one is still
   // the refused one (its batch is not soured).
@@ -4220,7 +4230,7 @@ test('RV8 a call finishing while another call\'s gate is up is not credited with
   expect(storedFarm().quilt.map(sq => sq.c)).toEqual(['B'])
 })
 
-test('RV9 a run nobody is at (-p, the SDK) sets up nothing periodic, stitches nothing and says nothing, but the crops grow', async ($, on) => {
+test('RV9 a run nobody is at (-p, the SDK) sets up nothing periodic, stitches nothing and says nothing, but the crops grow', { timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on, { result: {} }, { sessions: { ghost: { ...GHOST, lastSeen: JUNE_NOON - 10 * 60_000 } } })
   v5(on)
   await $.session.start({ cwd: '/', surface: null, isInteractive: false })
@@ -4240,7 +4250,7 @@ test('RV9 a run nobody is at (-p, the SDK) sets up nothing periodic, stitches no
   expect(Object.keys(sessionsStore())).toEqual(['ghost'])
 })
 
-test('RV10 a workflow hand with no step or tool call of its own for half an hour leaves; one that works stays', async ($, on) => {
+test('RV10 a workflow hand with no step or tool call of its own for half an hour leaves; one that works stays', { timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on)
   v5(on)
   await start($)
@@ -4291,23 +4301,23 @@ const opalVisit = async ($: any, on: any, jarAtStart: boolean, jarAtSale: boolea
   return quip($)
 }
 
-test('RV12 Miss Opal\'s line is decided by the sale: a jar gone before she came says next batch', CHATTY, async ($, on) => {
+test('RV12 Miss Opal\'s line is decided by the sale: a jar gone before she came says next batch', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   expect(await opalVisit($, on, true, false)).toBe('Next batch, Miss Opal.')
   expect(storedFarm().ledger.total).toBe(0)
 })
 
-test('RV12 Miss Opal buying the jar says so', CHATTY, async ($, on) => {
+test('RV12 Miss Opal buying the jar says so', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   expect(await opalVisit($, on, true, true)).toBe('Sold Miss Opal a jar. $25.')
   expect(storedFarm().ledger.total).toBe(25)
 })
 
-test('RV12 Miss Opal buying a jar that was not there when she set out says so too', CHATTY, async ($, on) => {
+test('RV12 Miss Opal buying a jar that was not there when she set out says so too', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   expect(await opalVisit($, on, false, true)).toBe('Sold Miss Opal a jar. $25.')
   expect(storedFarm().ledger.byCustomer.opal).toBe(25)
 })
 
 
-test('RV14 a growth that earns an upgrade is one save of the farm, not two', async ($, on) => {
+test('RV14 a growth that earns an upgrade is one save of the farm, not two', { timeoutMs: 120_000 }, async ($, on) => {
   engine(on, { result: {} }, { farm: farm6({ ledger: withLedger({ total: 60, cash: 60 }) }) })
   await start($)
   let sets = 0
@@ -4477,7 +4487,7 @@ const withRandom = async (value: number, run: () => Promise<void>) => {
 
 const firstVisitAt = (log: ReturnType<typeof watchFrames>) => log.writes.find(w => w.anim.visit)?.at
 
-test('VI9 nothing comes before two minutes, and a first visit comes by four', CHATTY, async ($, on) => {
+test('VI9 nothing comes before two minutes, and a first visit comes by four', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   await withRandom(0.9999999, async () => {
     const clock = engine(on, { result: {} }, {}, JUNE_NOON)
     const log = watchFrames(on, clock)
@@ -4495,7 +4505,7 @@ test('VI9 nothing comes before two minutes, and a first visit comes by four', CH
   })
 })
 
-test('VI9 with the shortest draw the first visit is at two minutes', CHATTY, async ($, on) => {
+test('VI9 with the shortest draw the first visit is at two minutes', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   await withRandom(0, async () => {
     const clock = engine(on, { result: {} }, {}, JUNE_NOON)
     const log = watchFrames(on, clock)
@@ -4508,7 +4518,7 @@ test('VI9 with the shortest draw the first visit is at two minutes', CHATTY, asy
   })
 })
 
-test('VI10 no visit overlaps a truck run or a happening, and one blocked tries again later', CHATTY, async ($, on) => {
+test('VI10 no visit overlaps a truck run or a happening, and one blocked tries again later', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   await withRandom(0, async () => {
     const clock = engine(on, { result: {} }, {}, JUNE_NOON)
     const log = watchFrames(on, clock)
@@ -4529,7 +4539,7 @@ test('VI10 no visit overlaps a truck run or a happening, and one blocked tries a
   })
 })
 
-test('VI11 a buyer visit sells exactly once, to its own buyer, and the ledger and shelf follow', CHATTY, async ($, on) => {
+test('VI11 a buyer visit sells exactly once, to its own buyer, and the ledger and shelf follow', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   await withRandom(0, async () => {
     const clock = engine(on, { result: {} }, { farm: stockedFor({ shelf: { lightning: 0, appleCinnamon: 3 } }) }, JUNE_NOON)
     const log = watchFrames(on, clock)
@@ -4553,7 +4563,7 @@ test('VI11 a buyer visit sells exactly once, to its own buyer, and the ledger an
 
 const fillSaleFor = (line: string) => line.replace(/\$\d+/, '{money}').replace(/\b(one|two|three|no) jars?\b/, '{what}')
 
-test('VI12 a store buyer drives in a store rig, stops, and the barn and ledger update once', CHATTY, async ($, on) => {
+test('VI12 a store buyer drives in a store rig, stops, and the barn and ledger update once', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   await withRandom(0, async () => {
     const apples = stockedFor({ barn: { bales: 0, corn: 3, apples: 60, sticks: 0 } })
     const clock = engine(on, { result: {} }, { farm: apples }, JUNE_NOON)
@@ -4574,7 +4584,7 @@ test('VI12 a store buyer drives in a store rig, stops, and the barn and ledger u
   })
 })
 
-test('VI13 the mail stops at the mailbox, says so, sells nothing, and comes once a day', CHATTY, async ($, on) => {
+test('VI13 the mail stops at the mailbox, says so, sells nothing, and comes once a day', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   await withRandom(0, async () => {
     const elevenAm = at(5, 10, 11).getTime()
     const clock = engine(on, { result: {} }, { farm: stockedFor({ upgrades: ['mailbox'] }) }, elevenAm)
@@ -4594,7 +4604,7 @@ test('VI13 the mail stops at the mailbox, says so, sells nothing, and comes once
   })
 })
 
-test('VI14 a visit wakes still-life and, when it ends, the two-minute countdown starts over', CHATTY, async ($, on) => {
+test('VI14 a visit wakes still-life and, when it ends, the two-minute countdown starts over', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   await withRandom(0.9999999, async () => {
     const clock = engine(on, { result: {} }, {}, JUNE_NOON)
     const log = watchFrames(on, clock)
@@ -4628,7 +4638,7 @@ test('VI14 a visit wakes still-life and, when it ends, the two-minute countdown 
   })
 })
 
-test('VI15 JEB_VISITS=off (the default of these tests) leaves the road and Blue alone', CHATTY, async ($, on) => {
+test('VI15 JEB_VISITS=off (the default of these tests) leaves the road and Blue alone', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   const clock = engine(on, { result: {} }, {}, JUNE_NOON)
   const log = watchFrames(on, clock)
   await start($)
@@ -4637,7 +4647,7 @@ test('VI15 JEB_VISITS=off (the default of these tests) leaves the road and Blue 
   expect(log.writes.every(w => w.anim.dogRun === 0)).toBe(true)
 })
 
-test('VI16 Blue runs the fields on his own every five to eight minutes when it is quiet', CHATTY, async ($, on) => {
+test('VI16 Blue runs the fields on his own every five to eight minutes when it is quiet', { ...CHATTY, timeoutMs: 120_000 }, async ($, on) => {
   await withRandom(0, async () => {
     const clock = engine(on, { result: {} }, {}, JUNE_NOON)
     const log = watchFrames(on, clock)

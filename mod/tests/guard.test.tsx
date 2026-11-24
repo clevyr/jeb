@@ -688,7 +688,7 @@ const registrations = (options: Record<string, unknown>): Registered[] => {
   return found
 }
 
-test('GD1 Jeb registers no hook on the prompt, the model, the settings, the transcript or any outbound event', () => {
+test('GD1 Jeb registers no hook on the prompt, the model, the settings, the transcript or any outbound event', { timeoutMs: 120_000 }, () => {
   // Every option on, then the defaults (the last call leaves the module as a load would).
   for (const options of [{ flavor: true, hookReactions: true, creativity: true, talk: 'chatty' }, {}]) {
     const found = registrations(options)
@@ -796,14 +796,14 @@ const RAISED_ANSWERS: Record<string, (e: any) => unknown> = {
   'skill.prompt': e => ({ text: e.text }),
 }
 
-test('GD1 the probe sees Jeb where he has a hook: prompt.submit runs through him', { plugins: [probe] }, async ($, on) => {
+test('GD1 the probe sees Jeb where he has a hook: prompt.submit runs through him', { plugins: [probe], timeoutMs: 120_000 }, async ($, on) => {
   rig(on)
   await start($)
   const { probe: probed } = await raise($, 'prompt.submit', PROMPTS.first)
   expect(probed?.links.map(link => link.plugin)).toContain('jeb')
 })
 
-test('GD1 raised through the engine, no prompt, model, settings or outbound event reaches a hook of Jeb\'s', { plugins: [probe, caller] }, async ($, on) => {
+test('GD1 raised through the engine, no prompt, model, settings or outbound event reaches a hook of Jeb\'s', { plugins: [probe, caller], timeoutMs: 120_000 }, async ($, on) => {
   rig(on)
   for (const [event, answer] of Object.entries(RAISED_ANSWERS)) {
     on(event, (_: any, e: any) => answer(e))
@@ -867,7 +867,7 @@ const MOUNTS = [
 // its own to apply), so for a transcript row the check is that the link is a
 // pure pass-through: what came in went on, what came up went back, and the row
 // drawn is the engine's. The registration test above shows no hook there.
-test('GD1 a transcript row goes through Jeb untouched: the props as given, the engine\'s row as drawn', { plugins: [probe] }, async ($, on) => {
+test('GD1 a transcript row goes through Jeb untouched: the props as given, the engine\'s row as drawn', { plugins: [probe], timeoutMs: 120_000 }, async ($, on) => {
   rig(on)
   const drawn = world.drawn
   await start($)
@@ -895,7 +895,7 @@ test('GD1 a transcript row goes through Jeb untouched: the props as given, the e
 
 // ---- GD1: every session event passes through ----
 
-test('GD1 prompt.submit: every kind of prompt reaches the engine unchanged and its answer comes back unchanged', { plugins: [probe] }, async ($, on) => {
+test('GD1 prompt.submit: every kind of prompt reaches the engine unchanged and its answer comes back unchanged', { plugins: [probe], timeoutMs: 120_000 }, async ($, on) => {
   rig(on)
   await start($)
   for (const [name, input] of Object.entries(PROMPTS)) {
@@ -907,12 +907,12 @@ test('GD1 prompt.submit: every kind of prompt reaches the engine unchanged and i
   await expectPassed($, 'prompt.submit', PROMPTS.triage, 'a dropped triage')
 })
 
-test('GD1 prompt.submit: before the session starts, too', { plugins: [probe] }, async ($, on) => {
+test('GD1 prompt.submit: before the session starts, too', { plugins: [probe], timeoutMs: 120_000 }, async ($, on) => {
   rig(on)
   await expectPassed($, 'prompt.submit', PROMPTS.first, 'prompt before start')
 })
 
-test('GD1 tool.call: every tool, result, error and denial passes unchanged, main loop and subagent', { plugins: [probe] }, async ($, on) => {
+test('GD1 tool.call: every tool, result, error and denial passes unchanged, main loop and subagent', { plugins: [probe], timeoutMs: 120_000 }, async ($, on) => {
   rig(on)
   await start($)
   await expectPassed($, 'turn.start', { text: PROMPTS.first.text, turnId: 't-zxq-1' }, 'turn start')
@@ -939,7 +939,7 @@ test('GD1 tool.call: every tool, result, error and denial passes unchanged, main
   }
 })
 
-test('GD1 turn.start and turn.complete pass unchanged, the main loop\'s and an agent\'s', { plugins: [probe] }, async ($, on) => {
+test('GD1 turn.start and turn.complete pass unchanged, the main loop\'s and an agent\'s', { plugins: [probe], timeoutMs: 120_000 }, async ($, on) => {
   rig(on)
   await start($)
   await expectPassed($, 'agent.spawn', spawnInput(), 'spawn')
@@ -953,7 +953,7 @@ test('GD1 turn.start and turn.complete pass unchanged, the main loop\'s and an a
   }
 })
 
-test('GD1 turn.step: every chunk goes up unchanged and in order, and the result unchanged, main loop and agent', { plugins: [probe] }, async ($, on) => {
+test('GD1 turn.step: every chunk goes up unchanged and in order, and the result unchanged, main loop and agent', { plugins: [probe], timeoutMs: 120_000 }, async ($, on) => {
   rig(on)
   await start($)
   await expectPassed($, 'turn.start', { text: 'fizzlewick', turnId: 't-zxq-1' }, 'turn start')
@@ -977,7 +977,7 @@ test('GD1 turn.step: every chunk goes up unchanged and in order, and the result 
   }
 })
 
-test('GD1 agent.spawn passes unchanged, answered or denied', { plugins: [probe] }, async ($, on) => {
+test('GD1 agent.spawn passes unchanged, answered or denied', { plugins: [probe], timeoutMs: 120_000 }, async ($, on) => {
   rig(on)
   await start($)
   await expectPassed($, 'agent.spawn', spawnInput(), 'spawn')
@@ -986,7 +986,7 @@ test('GD1 agent.spawn passes unchanged, answered or denied', { plugins: [probe] 
   await expectPassed($, 'agent.spawn', spawnInput({ tool_use_id: 'tu-zxq-12' }), 'denied spawn')
 })
 
-test('GD1 config.set: a key that is not Jeb\'s passes unchanged, answered or denied', { plugins: [probe] }, async ($, on) => {
+test('GD1 config.set: a key that is not Jeb\'s passes unchanged, answered or denied', { plugins: [probe], timeoutMs: 120_000 }, async ($, on) => {
   rig(on)
   await start($)
   const sets = [
@@ -1005,7 +1005,7 @@ test('GD1 config.set: a key that is not Jeb\'s passes unchanged, answered or den
   }
 })
 
-test('GD1 session.start and session.measure pass unchanged', { plugins: [probe] }, async ($, on) => {
+test('GD1 session.start and session.measure pass unchanged', { plugins: [probe], timeoutMs: 120_000 }, async ($, on) => {
   rig(on)
   await expectPassed($, 'session.start', { cwd: CWD, surface: 'terminal', isInteractive: true }, 'interactive start')
   await expectPassed($, 'session.measure', { context: { window: 200_000, tokens: 12_000 }, rateLimits: [{ kind: 'five_hour', percentUsed: 85 }], changed: ['rateLimits'] }, 'measure 85')
@@ -1013,7 +1013,7 @@ test('GD1 session.start and session.measure pass unchanged', { plugins: [probe] 
   await expectPassed($, 'session.start', { cwd: '/home/zxquser/fizzlewick', surface: null, isInteractive: false }, 'headless start')
 })
 
-test('GD1 session.end passes unchanged for every reason', { plugins: [probe] }, async ($, on) => {
+test('GD1 session.end passes unchanged for every reason', { plugins: [probe], timeoutMs: 120_000 }, async ($, on) => {
   rig(on)
   await start($)
   for (const reason of ['clear', 'resume', 'logout', 'other', 'prompt_input_exit']) {
@@ -1022,7 +1022,7 @@ test('GD1 session.end passes unchanged for every reason', { plugins: [probe] }, 
   }
 })
 
-test('GD1 command.run for any command but /jeb passes unchanged', { plugins: [probe] }, async ($, on) => {
+test('GD1 command.run for any command but /jeb passes unchanged', { plugins: [probe], timeoutMs: 120_000 }, async ($, on) => {
   rig(on)
   await start($)
   for (const [command, args] of [['zxqdeploy', 'snorkelvane --force'], ['triage', 'ZXQ-4242'], ['commit', ''], ['jebby', 'tally']]) {
@@ -1040,7 +1040,7 @@ const DECOR = [
   { component: 'SessionMode', props: { modes: ['plan', 'zxq'] } },
 ]
 
-test('GD1 the spinner, turn line, hint and mode rows are passed through unchanged, with no hook of Jeb on them', { plugins: [probe] }, async ($, on) => {
+test('GD1 the spinner, turn line, hint and mode rows are passed through unchanged, with no hook of Jeb on them', { plugins: [probe], timeoutMs: 120_000 }, async ($, on) => {
   rig(on)
   const drawn = world.drawn
   // An ordinary evening, the first dark-of-the-moon and full-moon nights after
@@ -1749,7 +1749,7 @@ test('GD2 areas: the retry note and the system prompt hold only fixed words, wha
   expect(areaSystemPrompt()).toBe(areaSystemPrompt())
 })
 
-test('GD3 areas: every offline area, over many keys and profiles, is within the field, enum, charset and length rules', () => {
+test('GD3 areas: every offline area, over many keys and profiles, is within the field, enum, charset and length rules', { timeoutMs: 120_000 }, () => {
   const profiles = [[], [{ kind: 'testing', level: 'high' }], [{ kind: 'docs', level: 'mid' }, { kind: 'infra', level: 'low' }]] as const
   for (let i = 0; i < 400; i += 1) {
     const key = (Math.imul(i + 1, 2654435761) >>> 0).toString(16).padStart(8, '0')

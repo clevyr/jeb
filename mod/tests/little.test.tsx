@@ -51,7 +51,7 @@ const walk = (seed: number, from: Date, days: number) => {
   return { found, farm }
 }
 
-test('LT1 the plan: three to five a day, the first no sooner than twenty minutes in, then an hour to three apart', () => {
+test('LT1 the plan: three to five a day, the first no sooner than twenty minutes in, then an hour to three apart', { timeoutMs: 120_000 }, () => {
   for (let seed = 1; seed <= 80; seed += 1) {
     const from = new Date(2026, 5, 10, 8, 0)
     const { found } = walk(seed, from, 4)

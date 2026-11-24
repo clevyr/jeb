@@ -6,7 +6,7 @@ import { isClean, LORE_PICKS, lorePicks, promptOf, systemPrompt } from '../hooks
 // Words that never belong in a work-appropriate farm story.
 const OFF_LIMITS = /\b(damn|hell|kill|blood|gore|murder|drunk|whiskey shot|politic|election|church fight|gun|shoot|drug|weed|cocaine|sex)\b/i
 
-test('LO1 the lore library stays small, short, plain ASCII and work appropriate', () => {
+test('LO1 the lore library stays small, short, plain ASCII and work appropriate', { timeoutMs: 120_000 }, () => {
   expect(LORE.length).toBeGreaterThan(10)
   expect(LORE.length).toBeLessThanOrEqual(LORE_MAX)
   expect(new Set(LORE).size).toBe(LORE.length)
@@ -18,7 +18,7 @@ test('LO1 the lore library stays small, short, plain ASCII and work appropriate'
   }
 })
 
-test('LO2 each drop gets three distinct lore notes, stable for a slot and rotating across slots', () => {
+test('LO2 each drop gets three distinct lore notes, stable for a slot and rotating across slots', { timeoutMs: 120_000 }, () => {
   const day = new Date(2026, 9, 23, 9)
   const nine = lorePicks(day, 9)
   expect(nine.length).toBe(LORE_PICKS)

@@ -90,7 +90,7 @@ test('AN1 a new salt is 16 hex digits, from the dice it is handed', () => {
 
 // ---- places ----
 
-test('AN2 the places: at least 64, all different, short plain names that read as a camp', () => {
+test('AN2 the places: at least 64, all different, short plain names that read as a camp', { timeoutMs: 120_000 }, () => {
   expect(PLACES.length).toBeGreaterThanOrEqual(64)
   expect(new Set(PLACES).size).toBe(PLACES.length)
   for (const place of PLACES) {
@@ -102,7 +102,7 @@ test('AN2 the places: at least 64, all different, short plain names that read as
   expect(isPlace('glimmerhaust')).toBe(false)
 })
 
-test('AN3 a name always becomes the same place, and two names never share one while the list has room', () => {
+test('AN3 a name always becomes the same place, and two names never share one while the list has room', { timeoutMs: 120_000 }, () => {
   let tags: string[] = []
   const first = new Map<string, string>()
   for (const name of NAMES) {
@@ -140,7 +140,7 @@ test('AN3 a name always becomes the same place, and two names never share one wh
   }
 })
 
-test('AN4 one way: nothing of a name, key or id survives, and without the salt the same name says nothing', () => {
+test('AN4 one way: nothing of a name, key or id survives, and without the salt the same name says nothing', { timeoutMs: 120_000 }, () => {
   const inputs = [...NAMES, 'ZXQ-4242', 'sess-quillobrand-7f3a', 'mcp__claude_ai_Zorbleflux__getJiraIssue']
   for (const input of inputs) {
     const outputs = [

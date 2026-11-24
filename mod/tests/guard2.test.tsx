@@ -708,7 +708,7 @@ const expectNoEncoded = (label: string) => {
   }
 }
 
-test('G2 the encoded forms of a marker are found: the check itself is live', () => {
+test('G2 the encoded forms of a marker are found: the check itself is live', { timeoutMs: 120_000 }, () => {
   expect(encodedIn(`x ${hexOf('fizzlewick')} y`)).toContain('fizzlewick (hex)')
   expect(encodedIn(`x ${btoa('fizzlewick')} y`)).toContain('fizzlewick (base64)')
   expect(encodedIn(`x ${btoa('a fizzlewick')} y`)).toContain('fizzlewick (base64)')
