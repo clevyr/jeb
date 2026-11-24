@@ -37,8 +37,9 @@ jebctl: install, supervise and update the desktop (phase 6). Exactly one JebDesk
                           one short line per step (--verbose: every command and detail). Bootout, remove the
                           plists and the app; versions and logs stay unless --purge (removes everything in JEB_HOME);
                           also the ~/.local/bin/jebctl link (only if it points here) and the PATH lines install added.
-                          --remove-files and --purge-farm run the bundle's `uninstall` script with all the flags (it also takes
-                          the plugin out of Claude Code (jeb@jeb and the "jeb" marketplace) and deletes ~/.jeb); see ./uninstall
+                          The plugin always leaves Claude Code (jeb@jeb and the "jeb" marketplace) and its entry leaves
+                          settings.json. --purge-farm backs up, then removes, the farm store files (kept otherwise).
+                          --remove-files removes ~/.jeb, and a legacy clone too when it has no local changes.
   follow [--gates-only] [--quick] [--dry-run]
                           the newest published release (github.com/<repo>/releases/latest, a web redirect, not the API)
                           newer than the installed one (when that one was rejected, the older ones from releases.atom) is
