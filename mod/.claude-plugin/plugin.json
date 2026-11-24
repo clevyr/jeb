@@ -7,7 +7,7 @@
     "creativity": {
       "type": "boolean",
       "title": "Creative drops",
-      "description": "Three times each weekday (9:00, 12:00 and 15:00, Monday to Friday) Jeb gets a small surprise: a happening, a saying, a bit of decor or an almanac line, and over the days longer stories and pictures. Claude Haiku writes them (at most six short calls a day) from Jeb's own farm and his past surprises only, never anything from your work, prompts, code, files or tickets. Off, or with no model, Jeb writes them himself.",
+      "description": "Three times each weekday (9:00, 12:00 and 15:00, Monday to Friday) Jeb gets a small surprise: a happening, a saying, a bit of decor or an almanac line, and over the days longer stories and pictures. Claude Haiku writes them (at most six short calls a day, plus up to three to make places for your projects) from Jeb's own farm and his past surprises only, never anything from your work, prompts, code, files or tickets. With no model, or once the day's calls are used, Jeb writes them himself. Off: no surprises, no project places and no Haiku calls.",
       "default": true
     },
     "talk": {
