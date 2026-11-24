@@ -115,7 +115,7 @@ func cmdDoctor() -> Int32 {
     }
     let last = Json.load(updaterStatePath)?["last"]?["result"]?.string
     check(!["rolled-back", "rejected", "rollback-failed", "swap-failed"].contains(last ?? ""), "last update result: \(last.flatMap { $0.isEmpty ? nil : $0 } ?? "none")", "see \(updateLogPath); run: jebctl status")
-    say("ok    state folder: \(stateHome)" + (stateHome == oldPath() && (envVar("JEB_HOME") ?? "").isEmpty ? " (older location; run: jebctl migrate)" : ""))
+    say("ok    state folder: \(stateHome)" + (stateHome == oldPath() && (envVar("JEB_HOME") ?? "").isEmpty ? " (older location; the next install or update moves it)" : ""))
     if m == "release" {
         let pinned = isRegularFile(pinnedSignersPath)
         check(pinned, "release signers pinned", FIX("run: ./install --repin from a bundle or clone that ships desktop/release-signers (a newer release also replaces it on its own)"))

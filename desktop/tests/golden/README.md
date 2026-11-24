@@ -61,8 +61,6 @@ contract between the Python follow and the native `apply`; the detached `prune-v
 | `usage/jebctl-perf-bad-args.txt`, `jebctl-install-bad-mode.txt`, `jebctl-no-agents-wrong-command.txt`, `jebctl-release-from-bundle.txt` | the usage/refusal messages of `perf --days`, `install --mode bogus`, `status --no-agents`, `release` from a bundle | exact text and rc |
 | `usage/install-bad-flag.txt`, `uninstall-bad-flag.txt` | `./install --bogus`, `./uninstall --bogus` (docstring, rc 2) | exact text |
 | `usage/updater-help.txt`, `watchdog-help.txt` | `updater.py --help`, `watchdog.py --help` | exact text (argparse wording; a port may re-word, then update the golden) |
-| `plists/bundle-release.txt` | `jebctl plists` from the installed bundle (writes `JEB_HOME/launchd/*.plist`) | plist semantics: same keys and values per label |
-| `plists/clone-dev.txt`, `clone-release.txt` | `jebctl plists` with `CLONE` = this repo in dev / release mode | plist semantics |
 | `status/bundle-fresh.txt` | `jebctl status` on the fresh bundle | exact lines |
 | `status/bundle-full.txt` | `status` with telemetry CSVs (`telemetry/2026-05-28.csv`, `2026-05-27.csv`, `2026-05-23.csv`, header `epoch,stamp,pid,dt,cpu,rss,fp,sessions,class`), `updater-state.json` (last ok + two rejected stamps), `updates-paused`, `quit`, failed tags, two saved `versions/*.app` folders and a `com.jeb.desktop.plist` in LaunchAgents | exact lines |
 | `status/perf-*.txt` | `jebctl perf`, `--days 2`, `--days 7 --stamp 20260526-120000`, `--stamp nope` on the same fixtures | exact table (column widths and rounding) |
@@ -140,7 +138,7 @@ against the `.imageio` file; the Pillow file stays as the record of what Pillow 
   `release`/`patch`/`minor`/`major`, non-dry `smoke` (all need the network, a signing key or GitHub). `bundle` is captured only when both
   tarballs are already cached. The `warning: Rosetta is missing` line and the "x86_64 Mach-O files are unsigned upstream" note are
   machine/tarball facts of the capture host.
-- `jebctl emoji`, `screenshot`, `start`, `quit`, `reload-agents`, `migrate`, `convert_clone`, the live `update` wait, the non-dry
+- `jebctl emoji`, `screenshot`, `start`, `quit`, `reload-agents`, `convert_clone`, the live `update` wait, the non-dry
   `install`/`uninstall`, `follow` on a schema 1 bundle (the updater's compile/smoke/start gates need the real app and launchd).
 - `jebctl status` lines that read live processes and heartbeat ages (`running()` is patched to none).
 - `watchdog.py --sample-only` and the real `ps`/heartbeat/`kern.waketime` paths; its telemetry prune cutoff uses `datetime.date.today()`,
@@ -185,8 +183,7 @@ original capture.
 
 ### Git-clone goldens the Swift jebctl does not produce
 
-The Swift jebctl supports the bundle layout only (plan D1), so `check.sh` reports `runtime/plists/clone-{dev,release}.txt` and
-`runtime/status/clone-{dev,release}.txt` as `skipped`, not as missing (`retiredClone` in `desktop/tests/goldencheck/Scenarios.swift`).
+The Swift jebctl supports the bundle layout only (plan D1), so `check.sh` reports `runtime/status/clone-{dev,release}.txt` as `skipped`, not as missing (`retiredClone` in `desktop/tests/goldencheck/Scenarios.swift`).
 The Python compared them; the files stay as captured.
 
 The same goes for `runtime/doctor/clone-{dev,release}.txt`, every `runtime/install/clone-*.txt` and `runtime/uninstall/clone-*.txt`.

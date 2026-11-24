@@ -31,7 +31,7 @@ Run `jebctl doctor` first. Every `FIX` line tells you what to do.
 
 **An update failed.** The previous version keeps running and the failed release isn't retried. `jebctl retry-update` drops the newest failed tag and checks again. `update.log` and `release.log` say why.
 
-All the logs live in `~/Library/Application Support/Jeb/` (older installs stay at `~/.claude/jeb-desktop` until `jebctl migrate` or the next update moves them; the old path then links to the new one): `update.log` for builds and checks, `release.log` for release checks and `watchdog.log` for restarts.
+All the logs live in `~/Library/Application Support/Jeb/` (older installs stay at `~/.claude/jeb-desktop` until the next install or update moves them; the old path then links to the new one): `update.log` for builds and checks, `release.log` for release checks and `watchdog.log` for restarts.
 
 ## Where things live
 
@@ -56,3 +56,21 @@ Environment variables, mostly for tests (the install sets the paths itself):
 - `JEB_BIN_DIR`: where `./install` links `jebctl` (default `~/.local/bin`). `JEB_PROFILE`: the shell profile it adds that folder to (default `~/.zprofile`, `~/.bash_profile` or `~/.profile` by `$SHELL`).
 - `JEB_SETTINGS`, `JEB_BACKUPS`, `JEB_STORE_DIR`: the settings file, its backups and the store folder, for `./install`, `./uninstall` and `jebctl doctor`. In a sandbox, also set `CLAUDE_CONFIG_DIR` so `claude plugin ...` stays out of the real account.
 - `JEB_TEST_NOW` and `JEB_TEST_PID`: test-only. They give `jebctl` and `jebgates` a fixed clock (seconds since the epoch; a sleep advances it instead of waiting) and a fixed pid, so the test harness gets repeatable output. Never set them on a real install.
+
+## Internal commands and flags
+
+These keep working but are not in `jebctl --help`; the update agents, the watchdog and the tests call them.
+
+- `jebctl follow [--gates-only] [--quick] [--dry-run]`: what the release agent runs every 6 hours. It finds the newest release newer than the installed one, downloads it, verifies it against the pinned signers (`JEB_HOME/release-signers`), unpacks it beside the live version, runs the gates, then switches `~/.jeb/current` and removes the older folder. `--gates-only` stops after the gates. Progress goes to `JEB_HOME/update-status.json` and the log to `release.log`.
+- `jebctl apply <bundle>`: installs one verified bundle; called by `follow`.
+- `jebctl reload-agents [--wait-pid PID]`: waits for PID to exit, then boots out and bootstraps the release LaunchAgents.
+- `jebctl prune-versions [--wait-pid PID]`: once PID exits, deletes every `~/.jeb/versions` folder except the one `~/.jeb/current` points to.
+- `jebctl watchdog [--help]`: what the watchdog agent runs every 30 seconds.
+- `jebctl perf [--days N] [--stamp S]`: summarises the watchdog's telemetry (`telemetry/*.csv`) per stamp and class: samples, median and p95 CPU, max RSS and footprint, flagged OVER past the targets.
+- `jebctl screenshot --fixture NAME [--out DIR] [--hour H]`: renders a parity fixture headlessly with the installed binary, without touching the running app. `screenshot --list` prints the fixture names.
+- `jebctl install --repin`: replaces the pinned release signers (`JEB_HOME/release-signers`) by hand. Normally the pin is set on first install and followed from later releases.
+- `jebctl install --add-path`: adds `~/.local/bin` to the shell profile (zsh `~/.zprofile`, bash `~/.bash_profile`, else `~/.profile`; backup first).
+- `jebctl install --no-agents`: sandbox only; no hand-over, no LaunchAgent copy, no launchctl. Refused unless HOME differs from the account's real home. `follow`, `reload-agents` and `rollback` accept it too.
+- `--dry-run` and `--verbose` work on install, uninstall and most other commands.
+
+The environment variables are listed under [Where things live](#where-things-live); `JEB_TOOLS_DIR` (the standalone jebctl, default `~/.jeb/bin`), `JEB_RELEASE_BASE` (where releases are read; a test server), `JEB_SHOT_DIR` (the screenshot folder), `JEB_BIN` (the app binary `emoji` and `screenshot --fixture` use) and `JEB_NO_LAUNCHCTL=1` (sandbox: skip the launchctl calls) are the jebctl-only ones.

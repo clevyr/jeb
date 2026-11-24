@@ -27,18 +27,13 @@ func usage() {
 }
 
 // ======================================================================================================================
-// LaunchAgent plists
+// Retired layouts
 /// The Swift jebctl is bundle-layout only (plan D1): a git-clone golden is not produced, and is listed as skipped instead of
 /// missing.
 func retiredClone(_ rel: String) {
     SKIPPED.append("\(rel): retired; the git-clone layout is gone (plan D1: bundle layout only)")
 }
 
-func plists() {
-    let sb = bundleSB("plists-bundle")
-    write("runtime/plists/bundle-release.txt", sb.snapshot(sb.jc(["plists"])))
-    for m in ["dev", "release"] { retiredClone("runtime/plists/clone-" + m) }
-}
 
 // ======================================================================================================================
 // status, perf, doctor
@@ -94,7 +89,7 @@ func status() {
     sb = bundleSB("doctor-bundle")
     write("runtime/doctor/bundle-no-app.txt", sb.snapshot(sb.jc(["doctor"]), plists: false))
     sb = bundleSB("doctor-bundle-agents")
-    _ = sb.jc(["plists"])
+    _ = sb.jc([], probe: "write-plists")
     for n in listDir(sb.state + "/launchd") where n.hasSuffix(".plist") { copyFile(sb.state + "/launchd/" + n, sb.agents + "/" + n) }
     let app = sb.home + "/Applications/JebDesktop.app/Contents/MacOS"
     mkdirs(app)
@@ -166,7 +161,7 @@ func follow() {
     fcase("signature-retry-after-repin", sb)
     // stale LaunchAgents (older command) are healed
     sb = bundleSB("f-heal")
-    _ = sb.jc(["plists"])
+    _ = sb.jc([], probe: "write-plists")
     for n in listDir(sb.state + "/launchd") where n.hasSuffix(".plist") {
         let p = sb.state + "/launchd/" + n
         guard let data = readBytes(p), var d = (try? PropertyListSerialization.propertyList(from: data, format: nil)) as? [String: Any] else { fail("plist \(p)") }
@@ -575,7 +570,6 @@ func tools() {
 /// Every group with the golden prefixes it produces, in the capture's order.
 let GROUPS: [(name: String, prefixes: [String], run: () -> Void)] = [
     ("usage", ["runtime/usage", "release/usage"], usage),
-    ("plists", ["runtime/plists"], plists),
     ("status", ["runtime/status", "runtime/doctor"], status),
     ("follow", ["runtime/follow", "runtime/rollback", "runtime/update"], follow),
     ("installs", ["runtime/install", "runtime/uninstall"], installs),

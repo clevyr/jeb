@@ -38,7 +38,6 @@ if argv.contains("--no-agents"), let why = checkSandbox(cmd) { die("jebctl: " + 
 verbose = argv.contains("--verbose") || !["install", "uninstall"].contains(cmd)
 switch cmd {
 case "status": cmdStatus()
-case "plists": cmdPlists()
 case "perf": cmdPerf(args)
 case "pause-updates": cmdPauseUpdates()
 case "resume-updates": cmdResumeUpdates()
@@ -46,7 +45,6 @@ case "start": cmdStart()
 case "quit": cmdQuit()
 case "reload-agents": exit(cmdReloadAgents(args))
 case "prune-versions": cmdPruneVersions(args)
-case "migrate": cmdMigrate()
 case "doctor": exit(cmdDoctor())
 case "install":
     // inside a release bundle: its own install; anywhere else (the standalone jebctl, a dev build): fetch the newest release (Standalone.swift)
@@ -57,12 +55,12 @@ case "install":
 case "uninstall": exit(cmdUninstall(Array(args.dropFirst())))
 case "follow": exit(cmdFollow(Array(args.dropFirst())))
 case "rollback": rollbackBundle()
-case "update", "update-now": exit(cmdUpdate())
+case "update": exit(cmdUpdate())
 case "retry-update": exit(cmdRetryUpdate())
 case "screenshot": exit(cmdScreenshot(Array(args.dropFirst())))
 case "emoji": exit(cmdEmoji(Array(args.dropFirst())))
 default:
-    // an unknown command, --help included: the help text and exit 2, as the Python did
+    // an unknown command, --help included: the help text and exit 2
     say(helpText)
     exit(2)
 }

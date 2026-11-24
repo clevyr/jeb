@@ -14,7 +14,7 @@ description: Diagnose a Jeb install on this Mac (app, LaunchAgents, plugin regis
    - repair: run the install again, `~/.jeb/current/install` with no flags (on an install older than v1.7.0, which bundles Python, run `~/.jeb/current/python/bin/python3 -I ~/.jeb/current/install` instead) (missing app, LaunchAgents or plugin registration: `jeb@jeb` not installed in `claude plugin list`, or an old Jeb entry still in `CLAUDE_CODE_PLUGIN_DIRS`, which also loads Jeb twice). If `~/.jeb/current` itself is broken, run `~/.jeb/bin/jebctl install` (or follow the jeb-install steps) to download the newest release again;
    - `FIX GitHub releases reachable`: nothing to sign in to; check the network (a VPN, proxy or firewall must allow github.com and release-assets.githubusercontent.com) and explain it.
    Anything else: explain it in plain words and do not change it without the user's approval.
-3. If more detail is needed, read `~/Library/Application Support/Jeb/update.log`, `release.log` and `watchdog.log`. Older installs may still be at `~/.claude/jeb-desktop` until migrated (`jebctl migrate`); the doctor's "state folder" line says which is in use. Point to logs by path only.
+3. If more detail is needed, read `~/Library/Application Support/Jeb/update.log`, `release.log` and `watchdog.log`. Older installs may still be at `~/.claude/jeb-desktop` until the next install or update moves them; the doctor's "state folder" line says which is in use. Point to logs by path only.
 4. Never read or quote `~/Library/Application Support/Jeb/run.log` (or `~/.claude/jeb-desktop/run.log`) beyond lines containing "no usable art", "exited", "ROLLBACK" or "REJECTED".
 
 ## Rules

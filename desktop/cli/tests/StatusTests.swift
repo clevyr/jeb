@@ -227,12 +227,12 @@ func statusTests(_ t: Tester) {
     }
 
     t.test("the help text lists the ported command set and nothing dev mode had") {
-        for c in ["status", "doctor", "install", "uninstall", "follow", "rollback", "plists", "perf", "pause-updates", "watchdog"] {
+        for c in ["status", "doctor", "install", "uninstall", "rollback", "pause-updates", "retry-update", "screenshot", "emoji", "start", "update"] {
             t.check(helpText.contains("\n  \(c) "), "no entry for \(c)")
         }
         for gone in ["--mode", "--build-from-source", "\n  release ", "JEB_SRC", "DEVELOPER_DIR", "Python", "git-clone"] {
             t.check(!helpText.contains(gone), "still mentions \(gone)")
         }
-        t.check(helpText.hasSuffix("`current`.\n"), "ends with one newline, as the docstring did")
+        t.check(helpText.hasSuffix("docs/reference.md"), "ends with the pointer to the reference")
     }
 }

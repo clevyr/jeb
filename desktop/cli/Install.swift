@@ -26,11 +26,6 @@ func migrateHome() -> String {
     return r
 }
 
-func cmdMigrate() {
-    let r = migrateHome()
-    say(r == "n/a" ? "nothing to move: " + stateHome + " is the state folder" : r == "busy" ? "an update is running; try again shortly" : r)
-}
-
 // ---- the jebctl link and PATH ----
 
 let pathMark = "# added by Jeb's ./install"

@@ -18,6 +18,7 @@ func runProbe(_ name: String, spec: Json) -> Json? {
     case "constants": return constantsProbe()
     case "verify-manifest": return verifyManifestProbe(cases: spec["cases"] ?? .object([]))
     case "plugdirs": return plugdirsProbe(sb: sb)
+    case "write-plists": writePlists(stateHome + "/launchd"); return .object([])      // golden setup: the LaunchAgent plists
     default: return nil
     }
 }
