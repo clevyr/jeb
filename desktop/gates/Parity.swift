@@ -1,4 +1,4 @@
-// Parity: the desktop's parity fixtures (ported from desktop/src/tools/parity.py).
+// Parity: the desktop's parity fixtures.
 //
 // gen: writes each fixture as a store file for the desktop (fixtures/<name>.store.json: the farm and the live records,
 // nothing else) and the band's side as a scratch test in the mod COPY (modcopy/tests/zz-parity.test.tsx), which composes

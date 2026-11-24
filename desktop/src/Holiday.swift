@@ -1,7 +1,7 @@
 // Holiday windows for the desktop's banner, greetings and sprite variants (Art.swift looks up `<base>--<holiday>` first while a
 // holiday with costume art is active; a variant keeps its base's width and frame count and may be up to 8 rows taller, drawn
 // from the feet up). More than one holiday can be active at once, so a day answers a list, its main days first. Pure and
-// Foundation only (updater.py compiles tools/detect from this file alone).
+// Foundation only (tools/detect is compiled from this file alone).
 // Dates are local-time calendar days, inclusive. The mod's TypeScript band never uses this.
 
 import Foundation

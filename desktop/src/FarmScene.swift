@@ -640,7 +640,7 @@ final class FarmScene {
             for y in grassY..<min(h, farTop) { c.set(x, y, !isNight && y >= farTop - 2 && speckle(x, y) < 60 ? mix(far, word(255, 255, 255), 0.12) : far) }
             if winter && farTop > top + 8 { c.set(x, farTop - 1, art.colour("snowcap")) }
             // The hillside: a low rise just behind the stage, higher toward the sides of the valley,
-            // kept under the far ridge's lowest crest so the ridges read whole (tools/parity.py "ridges").
+            // kept under the far ridge's lowest crest so the ridges read whole (the parity "ridges" check).
             let edge = abs(d - Double(w) / 2) / (Double(w) / 2)
             let hillTop = road + bandHeight + 2 + rise + Int(5 * edge) + Int(2 * sin(d / 23 + 2) + sin(d / 9))
             for y in grassY..<hillTop { c.set(x, y, speck(x, y)) }

@@ -1,4 +1,4 @@
-// Gif: the animated previews (pixel.py's save_gif, which Pillow's GIF writer turned into bytes). Each sprite with two
+// Gif: the animated previews (the original Python's save_gif, which Pillow's GIF writer turned into bytes). Each sprite with two
 // or more frames becomes one GIF at 4x: an exact palette of at most 63 colours plus transparency, disposal 2 (restore to
 // background), loop forever, and identical consecutive frames merged with their durations added. What the tests compare
 // is the decoded frames (ImageIO), not the file bytes, but the writer follows Pillow's layout (a global palette from the
@@ -78,7 +78,7 @@ struct IndexedFrame {
     }
 }
 
-/// pixel.py's save_gif quantize step for one frame: the 4x enlarged frame through Pillow's median cut (63 colours, every
+/// The original Python's save_gif quantize step for one frame: the 4x enlarged frame through Pillow's median cut (63 colours, every
 /// pixel's RGB counted, transparent ones too), pixels under alpha 128 sent to the transparent index, then the writer's
 /// optimize step: only the palette entries the opaque pixels use are kept, in median-cut order, the transparent index
 /// just past them (the palette stops at the last opaque colour; every decoder reads the index past the end as transparent).
@@ -147,7 +147,7 @@ private func dataBlocks(_ data: [UInt8]) -> [UInt8] {
 func gifBytes(frames: [Raster], ms: [Int], scale: Int = 4) throws -> [UInt8]? {
     guard frames.count >= 2 else { return nil }
     let durations = ms.isEmpty ? Array(repeating: 200, count: frames.count) : ms
-    // identical consecutive frames, by pixel data (pixel.py), then again by what shows once quantized (Pillow's writer)
+    // identical consecutive frames, by pixel data (the original Python), then again by what shows once quantized (Pillow's writer)
     var kept: [(frame: Raster, ms: Int)] = []
     var previousBytes: [UInt8]?
     for (frame, d) in zip(frames, durations) {

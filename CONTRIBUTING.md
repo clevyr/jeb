@@ -1,16 +1,15 @@
 # Contributing
 
-How to set up a development install of Jeb and change it.
+How to build Jeb from a clone and change it.
 
 ## Setting up
 
-You need everything from [Requirements](docs/install-and-updates.md#requirements). Then work from a clone of `main` rather than a release, and install in dev mode:
+You need everything from [Requirements](docs/install-and-updates.md#requirements), including the developer tools. Work from a clone of `main`:
 
     git clone https://github.com/clevyr/jeb.git ~/jeb-dev
     cd ~/jeb-dev
-    ./install --dev
 
-Dev mode runs straight from your working tree and doesn't follow releases. The update agent watches `desktop/src` and, once your edits have been quiet for a minute, builds them, runs the full checks and swaps the new app in if they pass. Run `jebctl pause-updates` while you're in the middle of something and `resume-updates` when you want it shipped. A build that fails a check isn't tried again; if the failure was a fluke, `desktop/jebctl retry-update` runs every check on it once more and ships it if they all pass. If you already have a release install, run `./uninstall` in that clone first so there's only one.
+There is no separate development install: the repo's `./install` and `./uninstall` only work inside a release bundle, and a working tree never follows releases. You build the pieces you are changing and check them with the tools below. A release (see [Releasing](docs/releasing.md)) is what puts a change on a Mac.
 
 Make your changes on a branch and open a pull request against `main`.
 
@@ -19,13 +18,18 @@ Make your changes on a branch and open a pull request against `main`.
     cd desktop/src
     JEB_OUT=JebDesktop.dev ./build.sh
 
-Don't launch `JebDesktop.dev` directly: a new copy takes over from the running app. Look at your changes through the tools instead. `jebctl screenshot --fixture <name>` renders a test scene with your build (set `JEB_BIN=desktop/src/JebDesktop.dev`), and the checks below run it offscreen.
+Don't launch `JebDesktop.dev` directly: a new copy takes over from the running app. Look at your changes through `jebctl screenshot --fixture NAME` instead, which renders one of the test scenes with your build without touching the running app. Build `jebctl` with `JEB_VERSION=dev desktop/cli/build.sh`, then:
 
-To run every check the updater runs (compile, smoke, parity, a scripted day, headless start) on a snapshot of your source without installing anything:
+    JEB_SRC=desktop/src JEB_BIN=desktop/src/JebDesktop.dev desktop/cli/jebctl screenshot --fixture NAME --out shots
 
-    python3 -I desktop/updater.py --gates-only --force
+`JEB_SRC` points it at this clone's fixtures (without it, it reads the installed ones). `--list` shows the scene names, and `--hour H` fixes the hour of day.
 
-That takes about 8 minutes. To run one piece with your dev build, from `desktop/src`: `JEB_BIN=JebDesktop.dev python3 -I tools/day.py kinds` (or `day`, `limit`, `evening`, `again`, `night`, `all`). The parity check compares each fixture against `fixtures/band-out.txt`, which is the reference output: don't regenerate it.
+To run every gate a release runs (parity, a scripted day) against your build:
+
+    sh desktop/gates/build.sh
+    desktop/gates/jebgates all --bin desktop/src/JebDesktop.dev
+
+That takes several minutes. `jebgates` also runs one piece at a time: `parity`, `day [day|kinds|limit|evening|again|night|all]`, `smoke` (every fixture renders) and `start` (twenty seconds headless). The parity check compares each fixture against `desktop/src/fixtures/band-out.txt`, which is the reference output: don't regenerate it.
 
 ## The plugin
 
@@ -47,7 +51,16 @@ The sprites come from `jebart`, the Swift art tool in `art/` (it needs only the 
 
     art/build.sh && art/jebart build mod/art/out mod/hooks/pixel-art.ts
 
-That rewrites `mod/hooks/pixel-art.ts` and writes previews to `mod/art/out/` (not tracked). Rebuild the logo and the plugin icon with `art/jebart logo mod/hooks/pixel-art.ts docs mod/.claude-plugin/icon.png`.
+That rewrites `mod/hooks/pixel-art.ts` and writes previews to `mod/art/out/` (not tracked). Rebuild the logo and the plugin icon with `art/jebart logo mod/hooks/pixel-art.ts docs mod/.claude-plugin/icon.png`. Sprites live in `art/src/*.swift`, and `jebart` has more subcommands (`jebart` with no arguments lists them).
+
+## Tests
+
+Each tool has its own suite, and each runs on its own:
+
+    sh desktop/cli/tests/run.sh     # jebctl
+    sh desktop/tests/check.sh       # the golden scenarios across the Swift tools
+    sh art/tests/run.sh             # jebart
+    sh creative/tests/run.sh        # the creative builder
 
 ## Commit messages and versions
 

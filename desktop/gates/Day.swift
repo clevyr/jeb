@@ -1,4 +1,4 @@
-// Day: a scripted day for the desktop's story, on a scratch store, never the real one (ported from desktop/src/tools/day.py).
+// Day: a scripted day for the desktop's story, on a scratch store, never the real one.
 //
 // Runs the dev binary (--bin, else JEB_BIN, default JebDesktop.dev) offscreen as a bench (JEB_BENCH, JEB_BENCH_WATCH=1) on
 // a scratch store, with the story's durations cut by JEB_STORY_SCALE (30: a 15 minute home spell is 30 s), while this

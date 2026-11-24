@@ -1,4 +1,4 @@
-// The menu's update lines, from jebHome/update-status.json (written by updater.py / jebctl follow) plus what the menu
+// The menu's update lines, from jebHome/update-status.json (written by jebctl) plus what the menu
 // itself knows: whether the agent's lock is held, the pause marker, and when the user last clicked. Pure Foundation, no
 // AppKit, so a scratch harness can compile it alone. See StatusMenu.swift for the use.
 

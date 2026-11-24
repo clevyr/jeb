@@ -1,4 +1,4 @@
-// Build: what `jebart build` writes (build.py). The runtime data, mod/hooks/pixel-art.ts (write_ts): the palette, the
+// Build: what `jebart build` writes (the original Python). The runtime data, mod/hooks/pixel-art.ts (write_ts): the palette, the
 // colour names, the 3x5 font and every sprite's frames, its text byte-identical to the Python's, including json.dumps'
 // `, ` and `: ` separators and its \uXXXX escapes. Then sheets/<sprite>.png (every frame side by side, 4x, for review),
 // gifs/<sprite>.gif (animated previews, animated sprites only), the three scene mockups, and the summary line.
@@ -27,7 +27,7 @@ func pyJsonString(_ s: String) -> String {
     return out + "\""
 }
 
-/// The text of pixel-art.ts. `font` is farm.py's FONT in its own order; only single-character glyphs are exported.
+/// The text of pixel-art.ts. `font` is the original Python's FONT in its own order; only single-character glyphs are exported.
 func tsText(_ sprites: [Sprite], font: [(String, String)]) -> String {
     let colours = ["0"] + palette.map { String((Int($0.r) << 16) | (Int($0.g) << 8) | Int($0.b)) }
     let names = paletteNames.enumerated().map { "\(pyJsonString($1)): \($0)" }
@@ -80,7 +80,7 @@ func sheetPng(_ sprite: Sprite, scale: Int = 4) -> [UInt8] {
     return pngEncode(sheet.resized(sheet.width * scale, sheet.height * scale), level: 9)
 }
 
-/// build.py's main: sheets, gifs, runtime data and scenes under `outDir` (the data at `tsPath`); returns the stdout
+/// The original Python's main: sheets, gifs, runtime data and scenes under `outDir` (the data at `tsPath`); returns the stdout
 /// lines: the summary, then the scene paths.
 func buildAll(outDir: String, tsPath: String) throws -> [String] {
     let fm = FileManager.default

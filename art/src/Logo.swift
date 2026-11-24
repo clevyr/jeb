@@ -1,6 +1,6 @@
-// Logo (logo.py): the animated SVG, the still PNG and the plugin icon, built from the runtime sprite data the mod
+// Logo (the original Python): the animated SVG, the still PNG and the plugin icon, built from the runtime sprite data the mod
 // uses (mod/hooks/pixel-art.ts): Jeb playing the banjo with Blue at his side, and a pixel wordmark beside them. The SVG
-// text and both PNGs are byte-identical to what logo.py wrote (docs/logo.svg, docs/logo.png, mod/.claude-plugin/icon.png).
+// text and both PNGs are byte-identical to what the original Python wrote (docs/logo.svg, docs/logo.png, mod/.claude-plugin/icon.png).
 import Foundation
 
 typealias Colour = (r: UInt8, g: UInt8, b: UInt8)
@@ -160,7 +160,7 @@ private func svgText(_ c: Composed) -> String {
         + "<style>\(style)</style>\n" + groups.joined(separator: "\n") + "\n" + rects(c.word).joined(separator: "\n") + "\n</svg>\n"
 }
 
-/// logo.py's png(): every grid cell becomes k x k pixels; None is transparent.
+/// The original Python's png(): every grid cell becomes k x k pixels; None is transparent.
 private func logoPng(_ grid: Grid, _ k: Int) -> [UInt8] {
     let h = grid.count, w = grid[0].count
     var raw: [UInt8] = []
@@ -188,7 +188,7 @@ private func iconGrid(_ ts: String) throws -> Grid {
     return grid
 }
 
-/// logo.py's main: `<outDir>/logo.svg` and `<outDir>/logo.png`, and with `iconPath` the plugin icon.
+/// The original Python's main: `<outDir>/logo.svg` and `<outDir>/logo.png`, and with `iconPath` the plugin icon.
 func writeLogo(tsPath: String, outDir: String, iconPath: String?) throws {
     let ts = try String(contentsOfFile: tsPath, encoding: .utf8)
     try FileManager.default.createDirectory(atPath: outDir, withIntermediateDirectories: true)

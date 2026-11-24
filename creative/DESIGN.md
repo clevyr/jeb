@@ -82,12 +82,12 @@ The shipped binary must be testable without a model run and without touching the
 - `Builder`: `run(stage, prompt, outPath) -> (exitCode, output)`. `ClaudeBuilder` spawns `claude -p` (section 2). The tests use a `FakeBuilder` that applies one hostile edit to the staging folder and returns 0. The part of `build()` after the model run (`runner:831-855`) is its own function, `finishBuild(stage, buildID, paths, log)`, so a test can drive exactly the post-builder path that `hostile_gate.py` drove (`take_creative` then `check_build`) and also the swap.
 - The clock and the log sink are parameters, so tests get fixed build ids and read the run log from the temporary `root`.
 
-### 1.4 Gitignore and cutover order
+### 1.4 Gitignore and cutover order (cutover done at v1.7.0)
 
 `.gitignore` gains `creative/jeb-creative-build` and `creative/jeb-creative-tests`, and drops `creative/tools/cases/` once `tools/` is gone (plan section 6 step 5). `creative/jeb-creative-build` is a tracked file today, so:
 
-1. During E1 and E2, build with `JEB_OUT=jeb-creative-build-next` (gitignored as `creative/jeb-creative-build-next*`, the same device as `desktop/cli/next/`). The runner finds `mod/` and `brief.md` relative to wherever the binary sits, so the `-next` binary works from the same folder.
-2. At cutover: `git rm` the Python script and `creative/tools/`, then build to the default name.
+1. During E1 and E2 the build went to `JEB_OUT=jeb-creative-build-next` (gitignored as `creative/jeb-creative-build-next*`, the same device the jebctl port used with `desktop/cli/next/`). The runner finds `mod/` and `brief.md` relative to wherever the binary sits, so the `-next` binary works from the same folder.
+2. At cutover (v1.7.0): the Python script and `creative/tools/` were removed and the build went to the default name.
 
 ## 2. The `claude -p` invocation (E0 item b)
 

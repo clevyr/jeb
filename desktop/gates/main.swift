@@ -1,4 +1,4 @@
-// jebgates: the desktop's gates as one native tool (the port of desktop/src/tools/parity.py, day.py and fake.py). Not
+// jebgates: the desktop's gates as one native tool. Not
 // shipped: a development tool beside the sources, built by build.sh.
 //
 //     jebgates parity gen                  write fixtures/<name>.store.json and, in a modcopy, the band's scratch test

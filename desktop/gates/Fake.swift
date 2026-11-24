@@ -1,11 +1,11 @@
-// Fake: writes a scratch store the way the mod does (ported from desktop/src/tools/fake.py).
+// Fake: writes a scratch store the way the mod does.
 //
 // fake <store> <sessions> [busy|idle] [seconds]: a fixture farm and N made-up sessions' live records, written through a
 // temp file and a rename, changing as a session's would: idle ones turn their idle act every 12 s; busy ones change pose
 // every ~2 s, say a line every ~8 s and send the truck out now and then (t every 500 ms). Every write's wall time goes
 // to <store>.writes (for the latency check).
 //
-// Not the Python's random numbers: fake.py drew from random.Random(7) (a Mersenne Twister); this draws from a SplitMix64
+// Not the Python's random numbers: the original Python tool drew from random.Random(7) (a Mersenne Twister); this draws from a SplitMix64
 // seeded with 7, so a busy run sends its trucks and says its lines at other moments (an idle run draws nothing and is
 // the same store byte for byte).
 import Foundation
@@ -89,7 +89,7 @@ func fakeMain(_ at: Places, _ args: [String]) -> Int32 {
                     if state[i].truckAt == nil { state[i].truckAt = now }
                     if state[i].truck! >= 16 { state[i].truck = nil; state[i].truckAt = nil }
                 }
-                let roll = rnd.random()       // drawn every tick, as the Python's `rnd.random() < 0.06 and ...` did
+                let roll = rnd.random()       // drawn every tick, $&rnd.random() < 0.06 and ...` did
                 if roll < 0.06 && now - state[i].said > 8 { state[i].line = rnd.choice(lines); state[i].said = now }
             }
         }

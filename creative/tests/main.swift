@@ -1,6 +1,6 @@
 // jeb-creative-tests: the creative builder's gates and pure functions, driven with no model (creative/DESIGN.md section 6).
 //   jeb-creative-tests [--list] [--skip-slow] [--real] [-j N] [--only NAME...]     NAME is a case id (H03, N07, unit...) or its full name
-// Output per case follows hostile_gate.py: `ok  REJECT H03 symlink-to-ssh: reasons [0s]`, `BAD` on a mismatch; ends ALL AS EXPECTED
+// Output per case follows the original hostile-gate harness: `ok  REJECT H03 symlink-to-ssh: reasons [0s]`, `BAD` on a mismatch; ends ALL AS EXPECTED
 // or N UNEXPECTED (exit 1).
 // Default: fast. Every case that reaches the suite gate uses the stand-in `claude` (see hostile.swift); N12 and H30 need the real mod suite to
 // fail, so they are skipped with one line (`skipped N12, H30: need --real (the real mod suite)`). --real: H01, N12 and H30 run on the real

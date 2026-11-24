@@ -13,7 +13,7 @@
 
 import Foundation
 
-/// Must match FINISHED_NOTIFICATION in updater.py.
+/// Must match the notification name jebctl posts when an update finishes.
 private let finishedName = "com.jeb.desktop.update-finished"
 
 /// jebHome/notifications.json: {"updates":true,"holidays":true,"greeted":{"halloween":2026}}. Main thread only; unknown keys are kept.

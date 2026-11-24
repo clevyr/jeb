@@ -1,5 +1,5 @@
 // Support: what Parity, Day and Fake share: the folders a run works in, the clock (JEB_TEST_NOW pins it and a sleep then
-// advances it instead of waiting, as the golden capture's runner did for fake.py), local time through libc (mktime and
+// advances it instead of waiting, as the golden capture's runner did for the Python fake tool), local time through libc (mktime and
 // localtime_r, so TZ decides as it did for the Python), child processes, regular expressions, and the Python text shapes
 // the tools print (repr of strings, lists and tuples; %-style numbers). Foundation only. The ordered JSON value (Json)
 // is desktop/cli/Json.swift, compiled in by build.sh; the literals below only make the fixtures table readable.

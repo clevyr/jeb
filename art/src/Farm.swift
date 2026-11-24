@@ -1,11 +1,11 @@
-// Farm: the homestead at band scale (farm.py): house, still, sign, truck, crops, stack icons, quilt squares, lanterns,
+// Farm: the homestead at band scale (the original Python): house, still, sign, truck, crops, stack icons, quilt squares, lanterns,
 // sky, weather and small overlays, plus the 3x5 font and the text helper the scenes reuse. Every builder draws on a
 // Raster with Pillow's semantics, so the frames match what the Python drew.
 import Foundation
 
 private func c(_ name: String) -> RGBA { rgb(name) }
 
-/// 3x5 pixel font for the sign, labels and counts, in farm.py's order (pixel-art.ts exports the single-character ones).
+/// 3x5 pixel font for the sign, labels and counts, in the original Python's order (pixel-art.ts exports the single-character ones).
 let farmFont: [(String, String)] = [
     ("A", "010101111101101"), ("B", "110101110101110"), ("C", "011100100100011"),
     ("D", "110101101101110"), ("E", "111100110100111"), ("F", "111100110100100"),
@@ -411,7 +411,7 @@ func iconSprite(_ kind: String) -> Raster {
 let farmIcons = ["lumber", "stone", "straw", "iron", "sugar", "copper", "apple_butter",
                  "twist", "whiskey", "jar", "bale", "apples", "corn", "cash"]
 
-/// The quilt codes in farm.py's dict order.
+/// The quilt codes in the original Python's dict order.
 let farmQuilt: [(String, String)] = [("B", "denim"), ("R", "red"), ("G", "green"), ("P", "purple"), ("Y", "yellow"), ("N", "soil")]
 
 func quiltSquareSprite(_ code: String) -> Raster {

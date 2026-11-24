@@ -1,4 +1,4 @@
-// Nature: the little things around the farm (nature.py): wildlife, seasons, Jeb's daily rhythm and homestead details.
+// Nature: the little things around the farm (the original Python): wildlife, seasons, Jeb's daily rhythm and homestead details.
 // Same palette, 1px ink outline on the solid things, band scale (ground at y 39 of 48).
 import Foundation
 
@@ -289,7 +289,7 @@ func badgeSprite(_ rows: [String], _ legend: [Character: String]) -> Raster {
 }
 
 /// One 9x9-or-smaller picture per holiday (Holiday.names): firework, heart, shamrock, egg, flag, pumpkin, turkey, holly.
-/// No sacred text or figures, no animals. In nature.py's order.
+/// No sacred text or figures, no animals. In the original Python's order.
 let badgePictures: [(name: String, rows: [String], legend: [Character: String])] = [
     ("newyear", ["...y...", ".f.y.f.", "..fyf..", "yyywyyy", "..fyf..", ".f.y.f.", "...y..."], ["y": "yellow", "f": "fire", "w": "white"]),
     ("valentines", [".pp.pp.", "pwppppp", "ppppppr", ".ppppr.", "..prr..", "...r..."], ["p": "pink", "w": "white", "r": "red"]),

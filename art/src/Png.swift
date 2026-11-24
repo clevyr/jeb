@@ -1,6 +1,6 @@
 // Png: a PNG writer over the system zlib (art/CZlib), for the sheets, the scenes, the logo and the plugin icon. 8-bit
 // RGBA, every scanline filter 0, one IDAT chunk. docs/logo.png and mod/.claude-plugin/icon.png are tracked and have to
-// come out byte for byte what logo.py wrote: zlib.compress(raw, 9) over the same scanlines, which is compress2 at level 9
+// come out byte for byte what the original Python wrote: zlib.compress(raw, 9) over the same scanlines, which is compress2 at level 9
 // on the same system libz. The sheets and scenes are compared by decoded pixels, so their level only decides size.
 import CZlib
 import Foundation

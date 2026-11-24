@@ -20,7 +20,7 @@ Jeb is a little farm on your Mac's desktop that shows what your Claude Code sess
 
 ## Getting Jeb
 
-You need a Mac and Claude Code. Claude does the rest in about five minutes, with no Homebrew, Xcode, git, admin password or Terminal setup.
+You need a Mac and Claude Code. Claude does the rest in about five minutes, with no Python, Homebrew, Xcode, git, admin password or Terminal setup.
 
 **1. Ask Claude to set it up.** Open Claude Code in any folder and paste this in:
 
@@ -61,7 +61,7 @@ Jeb updates itself at login and every 6 hours. To update now, click **Check for 
 
     Update Jeb: follow ~/.jeb/current/.claude/skills/jeb-update/SKILL.md.
 
-Installed before v1.3.0 (from a git clone)? Run `jebctl install` once to convert it.
+Installed before v1.3.0 (from a git clone)? Run `~/.jeb/bin/jebctl install --replace-clone` once to replace it with a release install.
 
 ## If something looks wrong
 
@@ -80,7 +80,7 @@ Common problems:
 
 In Terminal:
 
-    ~/.local/bin/jebctl uninstall --remove-files
+    ~/.jeb/bin/jebctl uninstall --remove-files
 
 That removes the app, takes Jeb out of Claude Code and deletes the `~/.jeb` folder. Your farm is kept in case you come back; add `--purge --purge-farm` to remove everything. Installs from before the bundle layout keep a git clone in `~/.jeb/repo` (or `~/jeb`); `--remove-files` removes it too when it has no local changes, otherwise it tells you to drag it to the Trash.
 

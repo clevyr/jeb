@@ -21,7 +21,7 @@ Jeb's commands, troubleshooting steps, and where its files and settings live.
 
 Run `jebctl doctor` first. Every `FIX` line tells you what to do.
 
-**Nothing on the desktop and no menu bar item.** It was quit, or it isn't running. Run `jebctl start`. If the LaunchAgents are gone, run the `install` in `~/.jeb/current` again (`~/.jeb/current/python/bin/python3 -I ~/.jeb/current/install`).
+**Nothing on the desktop and no menu bar item.** It was quit, or it isn't running. Run `jebctl start`. If the LaunchAgents are gone, run the `install` in `~/.jeb/current` again (`~/.jeb/current/install`).
 
 **A menu bar item that says "Waiting for art".** The app can't find the plugin's art (`mod/hooks/pixel-art.ts`), usually because `~/.jeb/current` is broken or was deleted. It checks every 30 seconds and carries on once the file is back. Ask Claude to install Jeb again.
 
@@ -48,10 +48,11 @@ Environment variables, mostly for tests (the install sets the paths itself):
 - `JEB_HOME`: desktop state folder (default `~/Library/Application Support/Jeb`).
 - `JEB_HOLIDAY`: `<name>[,<name>...]` forces holidays (several can be active at once, as on the real calendar): `newyear`, `valentines`, `stpatricks`, `easter`, `july4`, `halloween`, `thanksgiving`, `christmas`; `none` turns them off. Only halloween, thanksgiving and christmas have costume sprite variants (the first active one with a costume is worn); every holiday has a banner badge, tab colour and greeting. A variant `<base>--<holiday>` must have its base's width and frame count and may be up to 8 rows taller (a costume's tall hat); it is drawn from the feet up. Holidays are always off under `JEB_BENCH` (so the checks stay deterministic) unless forced.
 - `JEB_EMOJI`: `<out.gif>` writes an animated 128 px GIF of a sprite for a Slack custom emoji and exits before the app starts (what `jebctl emoji` runs). `JEB_EMOJI_SPRITE` (default `jeb-idle`), `JEB_EMOJI_ROWS` (top rows of the base sprite kept, default 20, `0` the whole sprite; a taller holiday variant adds its extra rows on top), `JEB_EMOJI_DELAY` (seconds per frame; by default `jeb-idle` keeps the desktop's blink timing and other sprites get 0.5); `JEB_HOLIDAY` picks a variant.
-- `JEB_SRC`: app source for `jebctl` and `updater.py` (default `desktop/src`).
+- `JEB_SRC`: the app source folder `jebctl` writes into the LaunchAgent plists (default `desktop/src` in `~/.jeb/current`).
 - `JEB_MOD`: the plugin folder, used to find `hooks/pixel-art.ts`.
 - `JEB_BUNDLE_MOD`: the folder written into the bundle's `JebMod` key (default `JEB_MOD`). Release updates point it at `~/.jeb/current/mod`, which survives the old version's folder being deleted.
 - `JEB_APP_DIR`: where `JebDesktop.app` goes (default `~/Applications`).
 - `JEB_LAUNCHAGENTS`: where the LaunchAgent plists go (default `~/Library/LaunchAgents`).
 - `JEB_BIN_DIR`: where `./install` links `jebctl` (default `~/.local/bin`). `JEB_PROFILE`: the shell profile it adds that folder to (default `~/.zprofile`, `~/.bash_profile` or `~/.profile` by `$SHELL`).
 - `JEB_SETTINGS`, `JEB_BACKUPS`, `JEB_STORE_DIR`: the settings file, its backups and the store folder, for `./install`, `./uninstall` and `jebctl doctor`. In a sandbox, also set `CLAUDE_CONFIG_DIR` so `claude plugin ...` stays out of the real account.
+- `JEB_TEST_NOW` and `JEB_TEST_PID`: test-only. They give `jebctl` and `jebgates` a fixed clock (seconds since the epoch; a sleep advances it instead of waiting) and a fixed pid, so the test harness gets repeatable output. Never set them on a real install.

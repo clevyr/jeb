@@ -1,4 +1,4 @@
-// What pixel.py and build.py's write_ts produced for the inputs the tests feed the Swift port: palette indices,
+// What the original Python and its write_ts produced for the inputs the tests feed the Swift port: palette indices,
 // run-length pairs, base64 frames, outlined pixels and a small pixel-art.ts. Captured once from the Python (Pillow
 // 11.3) before it is deleted; pixels are rrggbbaa hex, row-major, and index or byte lists are plain hex.
 import Foundation

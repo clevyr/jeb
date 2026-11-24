@@ -3,10 +3,10 @@
 //   jebart diff-ts <a.ts> <b.ts> [--only <prefix>]...   compare PIXEL_SPRITES by name (size and frames); with no
 //                                              --only also the palette, colour and font lines; exit 1 on a difference
 //   jebart build <outdir> <pixel-art.ts>      write the runtime data (pixel-art.ts) from every sprite, and under <outdir>
-//                                              sheets/, gifs/ and the scene mockups; prints build.py's summary line and the
+//                                              sheets/, gifs/ and the scene mockups; prints the original Python's summary line and the
 //                                              scene paths
 //   jebart logo <pixel-art.ts> <outdir> [icon.png]   write <outdir>/logo.svg and logo.png from the runtime data, and with
-//                                              icon.png the plugin icon (logo.py's arguments)
+//                                              icon.png the plugin icon (the original Python's arguments)
 //   jebart check-frames <outdir> <expected.json>   decode every PNG and GIF under <outdir> with ImageIO and compare size,
 //                                              format, frame count, delays, pixels and loop with the JSON (decoded-frames.imageio.json)
 // art/build.sh builds it.

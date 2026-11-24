@@ -1,5 +1,5 @@
 // Sprite: a named set of frames, and the steps that turn a frame into what the mod composites at runtime: every pixel
-// mapped to its nearest palette index, run-length pairs, base64. The bytes must match what pixel.py produced, since
+// mapped to its nearest palette index, run-length pairs, base64. The bytes must match what the original Python produced, since
 // mod/hooks/pixel-art.ts is tracked and compared byte for byte.
 import Foundation
 

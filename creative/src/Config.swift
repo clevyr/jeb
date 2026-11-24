@@ -66,7 +66,7 @@ enum C {
         #"hooks/[^/]+\.tsx?"#, #"hooks/hooks\.json"#, #"tests/[^/]+\.test\.tsx"#, #"types/index\.d\.ts"#, #"art/out/.+\.(png|gif)"#,
         #"tsconfig\.json"#, #"\.claude-plugin/plugin\.json"#, #"\.claude-plugin/icon\.png"#, #"\.claude-plugin/types/.+"#,
     ]
-    /// What a build may not change at all (D7 and decision 1b: pixel-art.ts joins, build.py leaves).
+    /// What a build may not change at all (D7 and decision 1b: pixel-art.ts joins the pinned list).
     static let pinnedFiles = [
         "hooks/hooks.json", ".claude-plugin/plugin.json", ".claude-plugin/icon.png", "tsconfig.json", "hooks/signals.ts",
         "hooks/surprise.ts", "hooks/news.ts", "hooks/pixel-art.ts", "hooks/areas.ts", "tests/guard.test.tsx",

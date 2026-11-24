@@ -1,5 +1,5 @@
 // Characters: Jeb, Blue, the hired hands and the visitors, as full-body pixel sprites at band scale (feet on the
-// sprite's bottom row). A port of art/src/characters.py; every sprite has to come out pixel for pixel the same.
+// sprite's bottom row). A port of the original Python art source; every sprite has to come out pixel for pixel the same.
 import Foundation
 
 let jebW = 20, jebH = 40

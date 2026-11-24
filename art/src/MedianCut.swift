@@ -1,5 +1,5 @@
 // MedianCut: Pillow's median-cut quantizer (src/libImaging/Quant.c, `quantize` with kmeans 0 and no dither), which
-// pixel.py's save_gif calls as quantize(colors=63, method=MEDIANCUT). What matters to the GIF bytes is the palette ORDER
+// the original Python's save_gif calls as quantize(colors=63, method=MEDIANCUT). What matters to the GIF bytes is the palette ORDER
 // (Pillow only writes a whole-frame rectangle when two frames' palette bytes are equal), so this follows the C closely:
 // the colour hash table's iteration order seeds three merge-sorted lists, boxes are split off a heap by pixel count,
 // the palette is the leaves read left to right, and a pixel takes the nearest entry searched from its own box's.

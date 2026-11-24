@@ -1,4 +1,4 @@
-// Scenes (build.py's Scene and mockups): three full-band mockups at 150 columns, 3x, for review: a busy day, an evening
+// Scenes (the original Python's Scene and mockups): three full-band mockups at 150 columns, 3x, for review: a busy day, an evening
 // with the banjo, and the night. They stamp the finished sprites onto a band-sized canvas, with the 3x5 font for the
 // plot labels, so they show what the mod composites at runtime.
 import Foundation
@@ -60,7 +60,7 @@ final class Scene {
     }
 }
 
-/// build.py's mockups(): the three scene PNGs, written into `out`; returns their paths in order.
+/// The original Python's mockups(): the three scene PNGs, written into `out`; returns their paths in order.
 func writeMockups(_ sprites: [Sprite], to out: String) throws -> [String] {
     var by: [String: Sprite] = [:]
     for s in sprites { by[s.name] = s }
