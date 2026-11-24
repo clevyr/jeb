@@ -143,6 +143,21 @@ func git(_ args: [String]) -> RunResult { run([tool("git"), "-C", clone] + args)
 @discardableResult
 func git(_ args: String...) -> RunResult { git(args) }
 
+/// Run a program that may ask the user something (a passphrase, a password) and wait; its status. It stays in this
+/// process group: a Foundation Process child gets a group of its own, which the terminal treats as background, so
+/// ssh-add or ssh-keygen is stopped (SIGTTOU) before it can print its prompt and the run hangs in silence.
+func runInteractive(_ argv: [String], cwd: String? = nil) -> Int32 {
+    let argv = cwd.map { [tool("sh"), "-c", #"cd "$0" && exec "$@""#, $0] + argv } ?? argv
+    var cargv: [UnsafeMutablePointer<CChar>?] = argv.map { strdup($0) } + [nil]
+    defer { cargv.forEach { free($0) } }
+    var pid: pid_t = 0
+    guard posix_spawn(&pid, argv[0], nil, nil, &cargv, environ) == 0 else { return 127 }
+    var status: Int32 = 0
+    while waitpid(pid, &status, 0) == -1 && errno == EINTR {}
+    let sig = status & 0x7f
+    return sig == 0 ? (status >> 8) & 0xff : 128 + sig
+}
+
 func cfg(_ key: String) -> String { git("config", "--get", key).out.trimmingCharacters(in: .whitespacesAndNewlines) }
 
 /// A path inside the git dir (git rev-parse --git-path), absolute.
@@ -210,13 +225,13 @@ private func release(_ bump: String) -> Int32 {
         say("not pushed. To publish, run:\n  " + push)
         return 0
     }
-    var rc = run([tool("git"), "-C", clone, "push", "origin", base, tag], capture: false).status
+    var rc = runInteractive([tool("git"), "-C", clone, "push", "origin", base, tag])
     if rc != 0 { return rc }
     guard let gh = which("gh") else {
         say("pushed, but gh is not installed. To publish the GitHub release, run:\n  " + publish.joined(separator: " "))
         return 1
     }
-    rc = run([gh] + publish.dropFirst(), cwd: clone, capture: false).status
+    rc = runInteractive([gh] + publish.dropFirst(), cwd: clone)
     if rc != 0 {
         say("pushed, but the GitHub release was not created. Installs still follow the tag. To retry, run:\n  " + publish.joined(separator: " "))
     }

@@ -48,7 +48,7 @@ private func configure() {
         say("\(dryRun ? "would create" : "creating") the signing key \(key) (pick a passphrase and keep it, and back the key up)")
         if !dryRun {
             try? FileManager.default.createDirectory(atPath: (key as NSString).deletingLastPathComponent, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
-            if run([tool("ssh-keygen"), "-t", "ed25519", "-C", "jeb-release", "-f", key], capture: false).status != 0 {
+            if runInteractive([tool("ssh-keygen"), "-t", "ed25519", "-C", "jeb-release", "-f", key]) != 0 {
                 fail("ssh-keygen failed; nothing configured")
             }
         }
@@ -126,7 +126,7 @@ func unlockKey() {
     setEnvVar("SSH_AGENT_PID", String(pid))
     agentPid = pid
     say("unlocking the signing key \(key)")
-    if run([tool("ssh-add"), "-t", "4h", key], capture: false).status != 0 {
+    if runInteractive([tool("ssh-add"), "-t", "4h", key]) != 0 {
         lockKey()
         fail("the signing key was not unlocked; nothing was done")
     }
