@@ -63,6 +63,11 @@ func splitItems(_ text: String) -> [String] {
 func structure(_ c: Ctx, _ root: String) -> ([String: Set<String>], [String]) {
     let (code, out, err) = runSplit(c, [c.p.claude, "plugin", "validate", "--json", "."], cwd: root, timeout: 300)
     guard let report = try? Json.parse(out) else { return ([:], ["validate gave no report (exit \(code)): \(shown(strip(suffixChars(strip(err), 200))))"]) }
+    return parseReport(report, root: root)
+}
+
+/// The report's errors and its notes folded into category -> items (the part of `structure` that needs no `claude`).
+func parseReport(_ report: Json, root: String) -> ([String: Set<String>], [String]) {
     var errors = report["success"]?.bool == true ? [] : ["validate failed"], cats: [String: Set<String>] = [:]
     var parts: [Json] = []
     if let m = report["manifest"], m.truthy { parts.append(m) }

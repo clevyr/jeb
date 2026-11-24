@@ -32,10 +32,10 @@ func build(_ c: Ctx, task: String = "", builder: Builder = ClaudeBuilder()) thro
 }
 
 /// Everything after the builder: take the creative files, both gate passes, the swap, the changelog and the log record.
-func finishBuild(_ c: Ctx, stage: String, id: String) throws -> Int32 {
+func finishBuild(_ c: Ctx, stage: String, id: String, requireChange: Bool = true) throws -> Int32 {
     let p = c.p
     let (summary, hint) = takeCreative(stage)
-    let (problems, gated) = try checkBuild(c, stage: stage, dest: p.gateCopy, requireChange: true, id: id, hint: hint)
+    let (problems, gated) = try checkBuild(c, stage: stage, dest: p.gateCopy, requireChange: requireChange, id: id, hint: hint)
     rmrf(stage)
     if !problems.isEmpty {
         c.log("build \(id): rejected: " + problems.joined(separator: "; "))
