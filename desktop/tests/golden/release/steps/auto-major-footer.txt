@@ -15,7 +15,7 @@ releasing v2.0.0 (last release v1.2.0)
 release notes:
 ### Breaking changes
 
-- the store moved (c23f4bc)
+- the store moved (62b22d4)
 would tag v2.0.0 (local only; never pushed by jebctl). To publish it, run:
   git push origin main v2.0.0
 

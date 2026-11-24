@@ -1,4 +1,4 @@
-// Home: where Jeb's desktop state lives, and the one-time move from the old folder (desktop/jebhome.py).
+// Home: where Jeb's desktop state lives, and the one-time move from the old folder.
 // The state folder is ~/Library/Application Support/Jeb. Older installs keep it at ~/.claude/jeb-desktop until migrate()
 // moves it (the old path then stays behind as a symlink, so the running app, its rollback versions and the LaunchAgents'
 // log paths keep working). Also the install's shared lookups: the standard places ~/.jeb/bin (JEB_TOOLS_DIR),

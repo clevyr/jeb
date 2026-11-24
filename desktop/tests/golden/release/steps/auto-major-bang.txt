@@ -15,15 +15,15 @@ releasing v2.0.0 (last release v1.2.0)
 release notes:
 ### Breaking changes
 
-- drop the old store (908beef)
+- drop the old store (8074fbf)
 
 ### Features
 
-- drop the old store (908beef)
+- drop the old store (8074fbf)
 
 ### Fixes
 
-- tidy (65bac89)
+- tidy (ac137c0)
 would tag v2.0.0 (local only; never pushed by jebctl). To publish it, run:
   git push origin main v2.0.0
 

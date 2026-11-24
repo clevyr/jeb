@@ -1,6 +1,5 @@
-// Apply: `jebctl apply <bundle> [flags]`, the gate-and-swap child that follow and install spawn. Ported from
-// desktop/updater.py (main/update, install_bundle, restore_bundle, swap_dirs, watch_new_build, beats) for a schema 2
-// (Python-free) bundle, under the contract in the run_apply docstring of desktop/jebctl and Follow.swift's runApply.
+// Apply: `jebctl apply <bundle> [flags]`, the gate-and-swap child that follow and install spawn.
+// It works on a schema 2 bundle, under the contract in Follow.swift's runApply.
 //
 // Two wire forms:
 //   follow   <ver>/desktop/bin/jebctl apply <ver> --not-final --lock-held [--no-watch] [--gates-only] [--quick]
@@ -207,7 +206,7 @@ func restoreCurrent(_ prev: String?) {
 
 // ---- the watch ----
 
-let applyHealthySecs = 180.0, applyNoBeatSecs = 240.0, applyStaleSecs = 10.0      // updater.py's HEALTHY_SECS, NO_BEAT_SECS, STALE
+let applyHealthySecs = 180.0, applyNoBeatSecs = 240.0, applyStaleSecs = 10.0      // seconds a new build must stay healthy, may go without a beat, and a beat counts as stale
 
 /// watch_new_build: nil when the new build is healthy, else the reason to roll back. offset is run.log's size before the
 /// swap (only what the new build wrote is read). beats is injectable; JEB_TEST_NO_BEAT=1 makes it see none.
@@ -279,7 +278,7 @@ func applyStamp(_ ver: String, bundle: Json?) -> String {
     return String(cString: Array(buf[0..<n]) + [0]) + "-" + id
 }
 
-/// updater.py's main()+update() for a schema 2 bundle. Returns the exit code (see the file comment).
+/// The gate-and-swap run for a schema 2 bundle. Returns the exit code (see the file comment).
 func applyRun(_ o: ApplyOptions, hooks: ApplyHooks = .real) -> Int32 {
     let fm = FileManager.default
     updateStatus.source = "release"

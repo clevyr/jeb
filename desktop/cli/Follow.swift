@@ -1,5 +1,4 @@
-// Follow: the release follower and its siblings (desktop/jebctl cmd_follow, follow_bundle, fetch_bundle, run_update/run_apply,
-// flip_current, undo_flip, prune_now, heal_plists, ensure_plugin, rollback_bundle, cmd_rollback, cmd_update, retry-update).
+// Follow: the release follower and its siblings.
 // Bundle layout only. A schema 2 bundle is gated and swapped by its own `jebctl apply` (B5); this file downloads, verifies
 // and unpacks it, runs that, and owns release-state.json, release.log and the final status. The wire format of the
 // apply call is the contract in runApply.
@@ -11,7 +10,7 @@ var noAgents = false
 
 // ---- is the live bundle usable ----
 
-/// True when ~/.jeb/current resolves to a bundle with its jebctl and app (schema 1, the bundles before 1.6: their Python and
+/// True when ~/.jeb/current resolves to a bundle with its jebctl and app (schema 1, the bundles before 1.7: their bundled Python and
 /// Python jebctl). Follow, rollback and doctor ask the same before they trust the link.
 func liveValid() -> Bool {
     let live = currentDir()
@@ -414,7 +413,7 @@ func rollbackBundle() {
     let cur = installedTag()
     guard let prev = rollbackTarget(rs, current: cur) else { die("no earlier release is recorded to roll back to") }
     if let k = tagKey(prev), k < rollbackFloor {
-        die("\(prev) is older than v\(rollbackFloor.0).\(rollbackFloor.1).\(rollbackFloor.2), the oldest release this one can roll back to (older ones predate the key rotation and the Python-free update path); \(cur ?? "None") stays installed.")
+        die("\(prev) is older than v\(rollbackFloor.0).\(rollbackFloor.1).\(rollbackFloor.2), the oldest release this one can roll back to (older ones are the Python releases, signed by a retired key); \(cur ?? "None") stays installed.")
     }
     if dryRun {
         say("would roll back \(cur ?? "None") -> \(prev): download \(prev) again, gate it and point \(currentDir()) at it (dry run: nothing changed)")

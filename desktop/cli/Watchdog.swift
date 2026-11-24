@@ -1,4 +1,4 @@
-// Watchdog: keeps exactly one JebDesktop running (desktop/watchdog.py; LaunchAgent com.jeb.desktop.watchdog, every 30 s).
+// Watchdog: keeps exactly one JebDesktop running (LaunchAgent com.jeb.desktop.watchdog, every 30 s).
 //   - none running, no quit marker: write start-reason, `launchctl kickstart` the agent
 //   - none running, quit marker: nothing (Quit stays quit until a login or `jebctl start`)
 //   - two or more, and none waiting to take over (heartbeat "waiting"): SIGUSR1 to the newer ones

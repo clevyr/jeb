@@ -15,7 +15,7 @@ releasing v1.2.1 (last release v1.2.0)
 release notes:
 ### Fixes
 
-- leak (967d461)
+- leak (300e765)
 would tag v1.2.1 (local only; never pushed by jebctl). To publish it, run:
   git push origin main v1.2.1
 

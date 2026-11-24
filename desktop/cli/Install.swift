@@ -1,9 +1,7 @@
 // Install: `jebctl install` and `jebctl uninstall` for an unpacked release bundle (~/.jeb/versions/<tag>), with the
-// jebctl link, the PATH line of the shell profile and the state-folder move. Ported from the Python ./install and
-// ./uninstall wrappers and desktop/jebctl (install_bundle, finish_install, hand_over_from_legacy, cmd_uninstall, link_*,
-// path_step, the profile helpers, migrate_home, refresh_standalone). One command does what the wrapper and its
-// `jebctl install` child did together; the git-clone layout and dev mode are gone (plan D1). The app is never compiled:
-// the bundle's own `jebctl apply` gates the prebuilt one and swaps it in.
+// jebctl link, the PATH line of the shell profile and the state-folder move.
+// One command does the whole install and uninstall; the git-clone layout and dev mode are gone (plan D1). The app is never
+// compiled: the bundle's own `jebctl apply` gates the prebuilt one and swaps it in.
 import Foundation
 
 let installUsage = "usage: jebctl install [--repin] [--add-path] [--no-agents] [--dry-run] [--verbose]"

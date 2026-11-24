@@ -1,37 +1,22 @@
-// Scenarios.swift: every golden scenario of capture-goldens.sh's drive.py, in its order. Each group names the golden prefixes it
-// produces so --only can skip it. --impl python runs the Python files through run_jc.py exactly as the capture did; --impl swift runs
-// the ports (TODO where marked: nothing Swift is expected to pass until the ports land).
+// Scenarios.swift: every golden scenario, in the order the goldens were captured. Each group names the golden prefixes it
+// produces so --only can skip it. The goldens were captured from the Python implementation (frozen at v1.6.0); the Swift tools
+// are the subject now.
 import Foundation
-
-let repoJC: String = config.desk + "/jebctl"
 
 // ======================================================================================================================
 // usage texts
 func usage() {
     let sb = plainSB("usage")
-    write("runtime/usage/jebctl-help.txt", sb.snapshot(sb.jc(["--help"], module: repoJC), plists: false))
-    write("runtime/usage/jebctl-perf-bad-args.txt", sb.snapshot(sb.jc(["perf", "--days"], module: repoJC), plists: false))
-    if config.impl == .swift {
-        SKIPPED.append("runtime/usage/jebctl-install-bad-mode: retired for --impl swift; install has no --mode (plan 3.3)")
-    } else {
-        write("runtime/usage/jebctl-install-bad-mode.txt", sb.snapshot(sb.jc(["install", "--mode", "bogus", "--dry-run"], module: repoJC), plists: false))
-    }
-    write("runtime/usage/jebctl-no-agents-wrong-command.txt", sb.snapshot(sb.jc(["status", "--no-agents"], module: repoJC), plists: false))
-    if config.impl == .swift {
-        SKIPPED.append("runtime/usage/jebctl-release-from-bundle: retired for --impl swift; release left jebctl for dev/release (D4, plan 3.3)")
-    } else {
-        write("runtime/usage/jebctl-release-from-bundle.txt", sb.snapshot(bundleSB("usage-bundle").jc(["release", "--dry-run"]), plists: false))
-    }
-    // swift: the dev jebctl outside a bundle, which is the standalone install (Standalone.swift); python: the root scripts
-    if config.impl == .swift {
-        write("runtime/usage/install-bad-flag.txt", sb.snapshot(sb.jc(["install", "--bogus"]), plists: false))
-        write("runtime/usage/uninstall-bad-flag.txt", sb.snapshot(sb.jc(["uninstall", "--bogus"]), plists: false))
-    } else {
-        write("runtime/usage/install-bad-flag.txt", sb.snapshot(sb.script(config.root + "/install", ["--bogus"], tool: .install), plists: false))
-        write("runtime/usage/uninstall-bad-flag.txt", sb.snapshot(sb.script(config.root + "/uninstall", ["--bogus"], tool: .uninstall), plists: false))
-    }
-    write("runtime/usage/updater-help.txt", sb.snapshot(sb.script(config.desk + "/updater.py", ["--help"], tool: .updater), plists: false))
-    write("runtime/usage/watchdog-help.txt", sb.snapshot(sb.script(config.desk + "/watchdog.py", ["--help"], tool: .watchdog), plists: false))
+    write("runtime/usage/jebctl-help.txt", sb.snapshot(sb.jc(["--help"]), plists: false))
+    write("runtime/usage/jebctl-perf-bad-args.txt", sb.snapshot(sb.jc(["perf", "--days"]), plists: false))
+    SKIPPED.append("runtime/usage/jebctl-install-bad-mode: retired; install has no --mode (plan 3.3)")
+    write("runtime/usage/jebctl-no-agents-wrong-command.txt", sb.snapshot(sb.jc(["status", "--no-agents"]), plists: false))
+    SKIPPED.append("runtime/usage/jebctl-release-from-bundle: retired; release left jebctl for dev/release (D4, plan 3.3)")
+    // the dev jebctl outside a bundle is the standalone install (Standalone.swift)
+    write("runtime/usage/install-bad-flag.txt", sb.snapshot(sb.jc(["install", "--bogus"]), plists: false))
+    write("runtime/usage/uninstall-bad-flag.txt", sb.snapshot(sb.jc(["uninstall", "--bogus"]), plists: false))
+    write("runtime/usage/updater-help.txt", sb.snapshot(sb.script("", ["--help"], tool: .updater), plists: false))
+    write("runtime/usage/watchdog-help.txt", sb.snapshot(sb.script("", ["--help"], tool: .watchdog), plists: false))
     let rel = config.root + "/release"
     // no `./release` without a command: that is `release auto`, a real release (it unlocks the owner's signing key via git config)
     write("release/usage/release-bad-command.txt", sb.snapshot(sb.script(rel, ["bogus"], tool: .release), plists: false))
@@ -43,21 +28,16 @@ func usage() {
 
 // ======================================================================================================================
 // LaunchAgent plists
-/// The Swift jebctl is bundle-layout only (plan D1): a git-clone golden is not produced for it, and is listed as skipped
-/// instead of missing. True when rel (a golden path without .txt) is retired for this run.
-func retiredClone(_ rel: String) -> Bool {
-    guard config.impl == .swift else { return false }
-    SKIPPED.append("\(rel): retired for --impl swift; the git-clone layout is gone (plan D1: bundle layout only)")
-    return true
+/// The Swift jebctl is bundle-layout only (plan D1): a git-clone golden is not produced, and is listed as skipped instead of
+/// missing.
+func retiredClone(_ rel: String) {
+    SKIPPED.append("\(rel): retired; the git-clone layout is gone (plan D1: bundle layout only)")
 }
 
 func plists() {
     let sb = bundleSB("plists-bundle")
     write("runtime/plists/bundle-release.txt", sb.snapshot(sb.jc(["plists"])))
-    for m in ["dev", "release"] where !retiredClone("runtime/plists/clone-" + m) {
-        let sb = plainSB("plists-clone-" + m, m)
-        write("runtime/plists/clone-\(m).txt", sb.snapshot(sb.jc(["plists"], module: repoJC)))
-    }
+    for m in ["dev", "release"] { retiredClone("runtime/plists/clone-" + m) }
 }
 
 // ======================================================================================================================
@@ -90,19 +70,6 @@ func statusFixtures(_ sb: SB) {
     for v in ["20260527-190000.app", "20260520-010101.app", "notes.txt"] { mkdirs(sb.state + "/versions/" + v) }
 }
 
-/// The git-clone layout for `status`: a tag-free clone of the repo (so "branch main" comes out whether or not HEAD sits on a tag)
-/// with the working tree's desktop/jebctl & co. overlaid, so the files under test are still the ones in the working tree.
-/// Lazily made; `status` reads nothing that names the clone's path.
-var cloneStatusJC: String?
-func cloneStatusJebctl() -> String {
-    if let c = cloneStatusJC { return c }
-    let c = config.tmp + "/clone-status"
-    must(["/usr/bin/git", "clone", "-q", "--no-tags", "--no-hardlinks", config.root, c])
-    for f in PYFILES { copyFile(config.desk + "/" + f, c + "/desktop/" + f) }
-    cloneStatusJC = c + "/desktop/jebctl"
-    return cloneStatusJC!
-}
-
 func status() {
     var sb = bundleSB("status-fresh")
     write("runtime/status/bundle-fresh.txt", sb.snapshot(sb.jc(["status"]), plists: false))
@@ -122,10 +89,7 @@ func status() {
     write("runtime/status/perf-stamp-none.txt", sb.snapshot(sb.jc(["perf", "--stamp", "nope"]), plists: false))
     write("runtime/status/pause-updates.txt", sb.snapshot(sb.jc(["pause-updates"]), plists: false))
     write("runtime/status/resume-updates.txt", sb.snapshot(sb.jc(["resume-updates"]), plists: false))
-    for m in ["dev", "release"] where !retiredClone("runtime/status/clone-" + m) {
-        let sb = plainSB("status-clone-" + m, m)
-        write("runtime/status/clone-\(m).txt", sb.snapshot(sb.jc(["status"], module: cloneStatusJebctl()), plists: false))
-    }
+    for m in ["dev", "release"] { retiredClone("runtime/status/clone-" + m) }
     // doctor
     sb = bundleSB("doctor-bundle")
     write("runtime/doctor/bundle-no-app.txt", sb.snapshot(sb.jc(["doctor"]), plists: false))
@@ -145,10 +109,7 @@ func status() {
     sb.saveRS(obj(("failed", ["v1.5.0"]), ("checked", .int(NOW - 100)), ("last", obj(("at", .int(NOW - 100)), ("tag", "v1.5.0"), ("result", "rejected"), ("app", "prebuilt"))),
                   ("layout", "bundle"), ("installed", [obj(("tag", "v1.4.0"), ("stamp", nil), ("at", 1))])))
     write("runtime/doctor/bundle-paused-failed.txt", sb.snapshot(sb.jc(["doctor"]), plists: false))
-    for m in ["dev", "release"] where !retiredClone("runtime/doctor/clone-" + m) {
-        let sb = plainSB("doctor-clone-" + m, m)
-        write("runtime/doctor/clone-\(m).txt", sb.snapshot(sb.jc(["doctor"], module: repoJC), plists: false))
-    }
+    for m in ["dev", "release"] { retiredClone("runtime/doctor/clone-" + m) }
 }
 
 // ======================================================================================================================
@@ -217,32 +178,29 @@ func follow() {
     }
     writeText(sb.stublog, "")
     fcase("heal-plists", sb)
-    // rollback (the Python rollback runs on the installed schema 1 bundle, before any handoff; the target is a published schema 2 release
+    // rollback (runs on the installed schema 1 bundle, before any handoff; the target is a published schema 2 release
     // whose native jebctl (the stub) gates and swaps)
-    sb = bundleSB("rb-floor", tag: "v1.5.1", pin: .some(NEW3)); installedTags(sb, ["v1.4.0", "v1.5.1"])
+    sb = bundleSB("rb-floor", tag: "v1.7.1", pin: .some(NEW3)); installedTags(sb, ["v1.6.0", "v1.7.1"])
     write("runtime/rollback/floor.txt", sb.snapshot(sb.jc(["rollback"])))
-    sb = bundleSB("rb-ok", tag: "v1.5.1", pin: .some(NEW3)); sb.release("v1.5.0"); sb.latest("v1.5.1"); installedTags(sb, ["v1.5.0", "v1.5.1"])
+    sb = bundleSB("rb-ok", tag: "v1.7.1", pin: .some(NEW3)); sb.release("v1.7.0"); sb.latest("v1.7.1"); installedTags(sb, ["v1.7.0", "v1.7.1"])
     write("runtime/rollback/ok.txt", sb.snapshot(sb.jc(["rollback"])))
-    sb = bundleSB("rb-gates", tag: "v1.5.1", pin: .some(NEW3)); sb.release("v1.5.0"); sb.latest("v1.5.1"); installedTags(sb, ["v1.5.0", "v1.5.1"])
+    sb = bundleSB("rb-gates", tag: "v1.7.1", pin: .some(NEW3)); sb.release("v1.7.0"); sb.latest("v1.7.1"); installedTags(sb, ["v1.7.0", "v1.7.1"])
     write("runtime/rollback/gates-rejected.txt", sb.snapshot(sb.jc(["rollback"], extra: ["JEB_STUB_RC": "2"])))
-    sb = bundleSB("rb-dl", tag: "v1.5.1", pin: .some(NEW3)); installedTags(sb, ["v1.5.0", "v1.5.1"])
+    sb = bundleSB("rb-dl", tag: "v1.7.1", pin: .some(NEW3)); installedTags(sb, ["v1.7.0", "v1.7.1"])
     write("runtime/rollback/download-fails.txt", sb.snapshot(sb.jc(["rollback"])))
-    sb = bundleSB("rb-skip-failed", tag: "v1.5.2", pin: .some(NEW3)); sb.release("v1.5.0"); sb.latest("v1.5.2"); installedTags(sb, ["v1.5.0", "v1.5.1", "v1.5.2"])
-    sb.saveRS(sb.loadRS().setting("failed", ["v1.5.1"]))
+    sb = bundleSB("rb-skip-failed", tag: "v1.7.2", pin: .some(NEW3)); sb.release("v1.7.0"); sb.latest("v1.7.2"); installedTags(sb, ["v1.7.0", "v1.7.1", "v1.7.2"])
+    sb.saveRS(sb.loadRS().setting("failed", ["v1.7.1"]))
     write("runtime/rollback/skips-failed-tag.txt", sb.snapshot(sb.jc(["rollback"])))
     sb = bundleSB("rb-none"); installedTags(sb, [])
     write("runtime/rollback/nothing-recorded.txt", sb.snapshot(sb.jc(["rollback"])))
-    sb = bundleSB("rb-dry", tag: "v1.5.1", pin: .some(NEW3)); sb.release("v1.5.0"); sb.latest("v1.5.1"); installedTags(sb, ["v1.5.0", "v1.5.1"])
+    sb = bundleSB("rb-dry", tag: "v1.7.1", pin: .some(NEW3)); sb.release("v1.7.0"); sb.latest("v1.7.1"); installedTags(sb, ["v1.7.0", "v1.7.1"])
     write("runtime/rollback/dry-run.txt", sb.snapshot(sb.jc(["rollback", "--dry-run"])))
     // update / retry
     sb = bundleSB("u-dry")
     write("runtime/update/bundle-dry-run.txt", sb.snapshot(sb.jc(["update", "--dry-run"]), plists: false))
     writeText(sb.state + "/updates-paused", "")
     write("runtime/update/bundle-paused.txt", sb.snapshot(sb.jc(["update"]), plists: false))
-    if !retiredClone("runtime/update/clone-dev-dry-run") {
-        sb = plainSB("u-dev", "dev")
-        write("runtime/update/clone-dev-dry-run.txt", sb.snapshot(sb.jc(["update", "--dry-run"], module: repoJC), plists: false))
-    }
+    retiredClone("runtime/update/clone-dev-dry-run")
     sb = bundleSB("u-retry")
     sb.saveRS(obj(("failed", ["v1.5.0", "v1.6.0"]), ("failed_why", obj(("v1.5.0", obj(("why", "gates"), ("pin", "x"))), ("v1.6.0", obj(("why", "gates"), ("pin", "x"))))),
                   ("checked", nil), ("last", nil), ("layout", "bundle"), ("installed", [obj(("tag", "v1.4.0"), ("stamp", nil), ("at", 1))]), ("bridge_reset", 1)))
@@ -261,15 +219,9 @@ func installs() {
                           (["--dry-run", "--repin", "--add-path", "--verbose"], "bundle-dry-run-repin-add-path")] {
         write("runtime/install/\(name).txt", sb.snapshot(sb.script(v + "/install", flags, tool: .install), plists: false))
     }
-    // --impl swift: `jebctl install`/`uninstall` only work from the bundle's own desktop/bin/jebctl, so they run as the scripts do
-    let swift = config.impl == .swift
-    write("runtime/install/jebctl-bundle-dry-run-verbose.txt", sb.snapshot(swift ? sb.script(v + "/install", ["--dry-run", "--verbose", "--no-agents"], tool: .install)
-                                                                                 : sb.jc(["install", "--dry-run", "--verbose", "--no-agents"]), plists: false))
-    if swift {
-        SKIPPED.append("runtime/install/jebctl-bundle-mode-dev-refused: retired for --impl swift; install has no --mode (plan D1: release mode only)")
-    } else {
-        write("runtime/install/jebctl-bundle-mode-dev-refused.txt", sb.snapshot(sb.jc(["install", "--mode", "dev", "--dry-run"]), plists: false))
-    }
+    // `jebctl install`/`uninstall` only work from the bundle's own desktop/bin/jebctl, so they run as the scripts do
+    write("runtime/install/jebctl-bundle-dry-run-verbose.txt", sb.snapshot(sb.script(v + "/install", ["--dry-run", "--verbose", "--no-agents"], tool: .install), plists: false))
+    SKIPPED.append("runtime/install/jebctl-bundle-mode-dev-refused: retired; install has no --mode (plan D1: release mode only)")
     // a bundle unpacked somewhere else is refused
     let sb2 = SB("i-bundle-elsewhere")
     sb2.bundleTree(sb2.root + "/Downloads/v1.4.0", "v1.4.0", schema: 1, scripts: true)
@@ -284,37 +236,20 @@ func installs() {
     }
     sb = bundleSB("un-jebctl")
     v = sb.jeb + "/versions/v1.4.0"
-    write("runtime/uninstall/jebctl-bundle-dry-run-verbose.txt", sb.snapshot(swift ? sb.script(v + "/uninstall", ["--dry-run", "--verbose"], tool: .uninstall)
-                                                                                   : sb.jc(["uninstall", "--dry-run", "--verbose"]), plists: false))
-    write("runtime/uninstall/jebctl-bundle-dry-run-purge-verbose.txt", sb.snapshot(swift ? sb.script(v + "/uninstall", ["--purge", "--dry-run", "--verbose"], tool: .uninstall)
-                                                                                         : sb.jc(["uninstall", "--purge", "--dry-run", "--verbose"]), plists: false))
-    // git-clone layout: a local clone of this repo (no tags, so no release verification touches the repo's real tags)
-    let cloneGoldens = ["install/clone-dev-dry-run", "install/clone-dev-dry-run-verbose", "install/clone-release-dry-run-verbose", "install/clone-release-dry-run",
-                        "install/clone-release-dry-run-pinned-no-tags", "uninstall/clone-dry-run-verbose", "uninstall/clone-dry-run-remove-clone", "install/clone-release-dirty"]
-    if cloneGoldens.map({ retiredClone("runtime/" + $0) }).contains(true) { return }
-    let clone = repoClone()
-    sb = plainSB("i-clone-dev", "dev")
-    write("runtime/install/clone-dev-dry-run.txt", sb.snapshot(sb.script(clone + "/install", ["--dev", "--dry-run"], tool: .install), plists: false))
-    write("runtime/install/clone-dev-dry-run-verbose.txt", sb.snapshot(sb.script(clone + "/install", ["--dev", "--dry-run", "--verbose"], tool: .install), plists: false))
-    sb = plainSB("i-clone-release", "release")
-    write("runtime/install/clone-release-dry-run-verbose.txt", sb.snapshot(sb.script(clone + "/install", ["--dry-run", "--verbose"], tool: .install), plists: false))
-    write("runtime/install/clone-release-dry-run.txt", sb.snapshot(sb.script(clone + "/install", ["--dry-run"], tool: .install), plists: false))
-    sb.writePin(NEW3)
-    write("runtime/install/clone-release-dry-run-pinned-no-tags.txt", sb.snapshot(sb.script(clone + "/install", ["--dry-run", "--verbose"], tool: .install), plists: false))
-    sb = plainSB("un-clone", "dev")
-    write("runtime/uninstall/clone-dry-run-verbose.txt", sb.snapshot(sb.script(clone + "/uninstall", ["--dry-run", "--verbose"], tool: .uninstall), plists: false))
-    write("runtime/uninstall/clone-dry-run-remove-clone.txt", sb.snapshot(sb.script(clone + "/uninstall", ["--dry-run", "--remove-clone", "--verbose"], tool: .uninstall), plists: false))
-    // the clone has local changes
-    writeText(clone + "/README.md", (readText(clone + "/README.md") ?? "") + "\nlocal edit\n")
-    write("runtime/install/clone-release-dirty.txt", sb.snapshot(sb.script(clone + "/install", ["--dry-run"], tool: .install), plists: false))
+    write("runtime/uninstall/jebctl-bundle-dry-run-verbose.txt", sb.snapshot(sb.script(v + "/uninstall", ["--dry-run", "--verbose"], tool: .uninstall), plists: false))
+    write("runtime/uninstall/jebctl-bundle-dry-run-purge-verbose.txt", sb.snapshot(sb.script(v + "/uninstall", ["--purge", "--dry-run", "--verbose"], tool: .uninstall), plists: false))
+    // git-clone layout: gone
+    for g in ["install/clone-dev-dry-run", "install/clone-dev-dry-run-verbose", "install/clone-release-dry-run-verbose", "install/clone-release-dry-run",
+              "install/clone-release-dry-run-pinned-no-tags", "uninstall/clone-dry-run-verbose", "uninstall/clone-dry-run-remove-clone", "install/clone-release-dirty"] {
+        retiredClone("runtime/" + g)
+    }
 }
 
 // ======================================================================================================================
 // watchdog (dry run, fake process list)
 func watchdog() {
-    let wd = config.desk + "/watchdog.py"
     func wcase(_ name: String, _ sb: SB, _ argv: [String]) {
-        write("runtime/watchdog/\(name).txt", sb.snapshot(sb.jc(argv, module: wd, tool: .watchdog, mode: "main0", patches: [("running", false), ("notify", false)], name: "watchdog.py"), plists: false))
+        write("runtime/watchdog/\(name).txt", sb.snapshot(sb.jc(argv, tool: .watchdog, patches: [("running", false), ("notify", false)]), plists: false))
     }
     func appExe(_ sb: SB) -> String {
         let exe = sb.home + "/Applications/JebDesktop.app/Contents/MacOS/JebDesktop"
@@ -342,204 +277,12 @@ func watchdog() {
 }
 
 // ======================================================================================================================
-// in-process probes of pure functions (the Python code strings, verbatim from capture-goldens.sh; the Swift ports answer
-// `jebctl --probe <name>` with the same JSON: desktop/cli/next/Probes.swift)
-let PROBES: [String: String] = [
-    "tag-order": #"""
-
-tags = "v1.10.0 v1.2.0 v1.9.3 v2.0.0 v1.2.0-rc1 foo v1.2 v0.0.1 v01.2.3".split()
-print(json.dumps({"tag_key": {t: jc.tag_key(t) for t in tags}, "sorted": sorted((t for t in tags if jc.tag_key(t)), key=jc.tag_key)}, indent=1))
-
-"""#,
-    "release-tags-canned": #"""
-
-print(json.dumps({"release_tags": jc.release_tags(), "head_tags": jc.head_tags()}))
-
-"""#,
-    "failed-skip": #"""
-
-cases = {
- "no-failed": {"failed": []},
- "plain-list": {"failed": ["v1.5.0", "v1.6.0"]},
- "gates-same-pin": {"failed": ["v1.5.0"], "failed_why": {"v1.5.0": {"why": "gates", "pin": jc.pin_hash()}}},
- "signature-same-pin": {"failed": ["v1.5.0"], "failed_why": {"v1.5.0": {"why": "signature", "pin": jc.pin_hash()}}},
- "signature-other-pin": {"failed": ["v1.5.0"], "failed_why": {"v1.5.0": {"why": "signature", "pin": "x"}}},
- "mixed": {"failed": ["v1.5.0", "v1.6.0", "v1.7.0"], "failed_why": {"v1.5.0": {"why": "signature", "pin": "x"}, "v1.6.0": {"why": "sha", "pin": "x"}, "v1.7.0": "junk"}},
-}
-out = {k: jc.failed_skip(v) for k, v in cases.items()}
-rs = {"failed": []}
-jc.mark_failed(rs, "v1.5.0", "gates"); jc.mark_failed(rs, "v1.5.0", "sha"); jc.mark_failed(rs, "v1.6.0", "signature")
-out["mark_failed"] = rs
-jc.clear_failed(rs, "v1.5.0"); jc.clear_failed(rs, "v9.9.9")
-out["after_clear"] = rs
-out["pin_hash_is_sha256_of_pin_text"] = jc.pin_hash() == __import__("hashlib").sha256(open(jc.SIGNERS, "rb").read()).hexdigest()
-print(json.dumps(out, indent=1))
-
-"""#,
-    "signers-parse": #"""
-
-K = spec["pub"]
-lines = {
- "plain": f"jeb-release {K}",
- "ns-jeb": f'jeb-release namespaces="jeb-release" {K}',
- "ns-both": f'me@example.com namespaces="git,jeb-release" {K}',
- "ns-git-only": f'me@example.com namespaces="git" {K}',
- "other-option": f'me@example.com cert-authority namespaces="jeb-release" {K}',
- "valid-after": f'me@example.com namespaces="jeb-release",valid-after="20250101" {K}',
- "comment": "# a comment",
- "blank": "",
- "no-key": "jeb-release namespaces=\"jeb-release\"",
- "ecdsa": "me ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGQ",
- "sk": "me sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIA",
-}
-out = {"key_line": {n: jc.key_line(l) for n, l in lines.items()}}
-texts = {
- "two-good": lines["ns-jeb"] + "\n" + lines["ns-both"] + "\n",
- "comment-and-good": "# c\n\n" + lines["ns-jeb"] + "\n",
- "git-only": lines["ns-git-only"] + "\n",
- "other-option": lines["other-option"] + "\n",
- "plain-no-ns": lines["plain"] + "\n",
- "empty": "",
- "only-comments": "# c\n",
- "mixed-bad": lines["ns-jeb"] + "\n" + lines["ns-git-only"] + "\n",
-}
-out["parse_signers"] = {n: jc.parse_signers(t) for n, t in texts.items()}
-print(json.dumps(out, indent=1))
-
-"""#,
-    "new-tags": #"""
-
-out = {}
-for cur, skip in (("v1.4.0", []), ("v1.4.0", ["v1.6.0"]), ("v1.6.0", []), (None, []), ("v1.4.0", ["v1.6.0", "v1.5.0"]), ("v1.5.0", ["v1.6.0"])):
-    out[f"cur={cur} skip={','.join(skip) or '-'}"] = jc.new_tags(cur, skip)
-print(json.dumps(out, indent=1))
-
-"""#,
-    "check-sandbox": #"""
-
-out = {"status": jc.check_sandbox("status"), "install": jc.check_sandbox("install")}
-jc.APP_DIR = "/Applications"
-out["app-dir-outside"] = jc.check_sandbox("follow")
-print(json.dumps(out, indent=1))
-
-"""#,
-    "constants": #"""
-
-out = {k: getattr(jc, k) for k in ("ALL_LABELS", "INITIAL_VERSION", "MANIFEST_MAX", "ROLLBACK_FLOOR", "NOTE_GROUPS", "CPU_TARGETS", "RSS_TARGET", "FP_TARGET", "PATH") if hasattr(jc, k)}
-out["TAG_RE"] = jc.TAG_RE.pattern
-out["CC_RE"] = jc.CC_RE.pattern
-out["labels_for"] = {m: jc.labels_for(m) for m in ("dev", "release")}
-out["app_name"] = jc.app_name("v1.5.0") if hasattr(jc, "app_name") else None
-print(json.dumps(out, indent=1, default=str))
-
-"""#,
-    "release-plan": #"""
-
-out = {}
-for name, log in spec["logs"].items():
-    jc.git = lambda *a, _l=log, **kw: __import__("subprocess").CompletedProcess(a, 0, _l, "") if a[:1] == ("log",) else __import__("subprocess").CompletedProcess(a, 1, "", "")
-    level, notes = jc.release_plan("v1.2.0")
-    out[name] = {"level": level, "notes": notes}
-print(json.dumps(out, indent=1))
-
-"""#,
-    "plugdirs": #"""
-
-import importlib.machinery, importlib.util
-l = importlib.machinery.SourceFileLoader("plugdirs", os.path.join(jc.CODE, "plugdirs.py"))
-pd = importlib.util.module_from_spec(importlib.util.spec_from_loader("plugdirs", l)); l.exec_module(pd)
-mod = os.path.join(spec["sb"], "home", ".jeb", "current", "mod")
-out = {"plan": {}}
-for v in (None, "", mod, "/x/other", f"/x/other:{mod}", f"{mod}:/x/other", mod + "/", "/x/a:/x/b"):
-    for rm in (False, True):
-        out["plan"][f"value={v!r} remove={rm}"] = pd.plan(v, mod, rm)
-out["store_name"] = {p: pd.store_name(p) for p in ("jeb@jeb", "inline", "a@b@c")}
-out["store_dir"] = pd.store_dir(); out["store_path"] = pd.store_path(); out["settings_path"] = pd.settings_path(); out["backup_dir"] = pd.backup_dir()
-out["norm"] = {p: pd.norm(p) for p in ("~/x", "/a/b/../c", "rel")}
-out["info"] = pd.info()
-said = []
-for value in (None, "/x/other", mod, f"/x/other:{mod}"):
-    os.makedirs(os.path.dirname(pd.settings_path()), exist_ok=True)
-    with open(pd.settings_path(), "w") as f:
-        json.dump({"env": {"CLAUDE_CODE_PLUGIN_DIRS": value}} if value is not None else {}, f)
-    for rm in (False, True):
-        said.append(f"--- settings env value {value!r}, remove={rm}")
-        act = pd.edit(mod, rm, True, said.append)
-        said.append(f"=> {act}")
-os.unlink(pd.settings_path())
-said.append("--- no settings file, add")
-said.append("=> " + str(pd.edit(mod, False, True, said.append)))
-said.append("--- register dry")
-said.append("=> " + str(pd.register(os.path.dirname(mod), True, said.append)))
-said.append("--- register dry with an extra old entry")
-said.append("=> " + str(pd.register(os.path.dirname(mod), True, said.append, ["/x/old"])))
-said.append("--- sync dry")
-said.append("=> " + str(pd.sync(True, said.append)))
-said.append("--- unregister dry (keep farm)")
-said.append("=> " + str(pd.unregister(False, True, said.append, os.path.dirname(mod))))
-said.append("--- unregister dry (purge farm)")
-said.append("=> " + str(pd.unregister(True, True, said.append, os.path.dirname(mod))))
-out["edit_register_dry_transcript"] = said
-print(json.dumps(out, indent=1))
-
-"""#,
-    "verify-manifest": #"""
-
-out = {}
-for name, (man, sig, tag) in spec["cases"].items():
-    out[name] = jc.verify_manifest(man, sig, tag)
-print(json.dumps(out, indent=1))
-
-"""#,
-    "updater-status": #"""
-
-u = jc.load_updater()
-u.set_home(jc.HOME)
-u.STATUS_SOURCE, u.STATUS_FINAL = "release", False
-u.status("checking GitHub")
-a = json.load(open(os.path.join(jc.HOME, "update-status.json")))
-u.status("downloading v1.5.0", "step 2", step=2, steps=5)
-b = json.load(open(os.path.join(jc.HOME, "update-status.json")))
-u.STATUS_FINAL = True
-u.status("done", "updated to v1.5.0", result="updated")
-c = json.load(open(os.path.join(jc.HOME, "update-status.json")))
-mode = oct(os.stat(os.path.join(jc.HOME, "update-status.json")).st_mode & 0o777)
-print(json.dumps({"phase1": a, "phase2": b, "final": c, "mode": mode, "load_state_empty": u.load_state(), "bundle_stamp_missing": u.bundle_stamp("/nonexistent")}, indent=1))
-
-"""#,
-    "jebhome": #"""
-
-import importlib.machinery, importlib.util
-l = importlib.machinery.SourceFileLoader("jebhome", os.path.join(jc.CODE, "jebhome.py"))
-jh = importlib.util.module_from_spec(importlib.util.spec_from_loader("jebhome", l)); l.exec_module(jh)
-out = {"release_base": {r: jh.release_base(r) for r in ("clevyr/jeb", "x/y")}}
-os.environ.pop("JEB_RELEASE_BASE", None)
-out["release_base_default"] = jh.release_base("clevyr/jeb")
-os.environ["JEB_RELEASE_BASE"] = "file://" + os.path.join(spec["sb"], "rel")
-out["paths"] = {k: getattr(jh, k)() for k in ("resolve", "old_path", "new_path", "jeb_dir", "versions_dir", "current_dir", "tools_dir") if hasattr(jh, k)}
-out["find_claude"] = jh.find_claude()
-out["read_bundle"] = {"current": jh.read_bundle(jh.current_dir()), "missing": jh.read_bundle("/nonexistent")}
-out["macho_archs"] = {"stub": jh.macho_archs(spec["stub"]), "script": jh.macho_archs(os.path.join(jc.CODE, "jebctl")), "missing": jh.macho_archs("/nonexistent")}
-errs = {}
-base = jh.release_base("clevyr/jeb")
-for name, fn in (("latest_tag", lambda: jh.latest_tag(base)), ("feed_tags", lambda: jh.feed_tags(base)), ("fetch-missing", lambda: jh.fetch(base + "/nope", os.path.join(spec["sb"], "dl"), limit=10)),
-                 ("fetch-toobig", lambda: jh.fetch(base + "/latest", os.path.join(spec["sb"], "dl"), limit=2)), ("fetch-ok", lambda: jh.fetch(base + "/latest", limit=100).decode())):
-    try:
-        errs[name] = fn()
-    except jh.FetchError as e:
-        errs[name] = {"FetchError": str(e), "status": getattr(e, "status", None)}
-    except jh.TooBig as e:
-        errs[name] = {"TooBig": str(e)}
-out["fetch"] = errs
-print(json.dumps(out, indent=1, default=str))
-
-"""#,
-]
+// probes of pure functions: `jebctl --probe <name>` (desktop/cli/probes/Probes.swift)
 
 /// Probes the Swift jebctl does not answer (golden/README.md, "Probes the Swift jebctl does not answer"): reported as
-/// skipped under --impl swift, not as missing. An entry goes when its owner's chunk lands.
+/// skipped, not as missing.
 let SWIFT_PROBE_SKIPS: [String: String] = [
-    "release-tags-canned": "retired for --impl swift; the canned git runner is a unit test (desktop/cli/tests/TagsTests.swift)",
+    "release-tags-canned": "retired; the canned git runner is a unit test (desktop/cli/tests/TagsTests.swift)",
 ]
 
 func probes() {
@@ -550,14 +293,14 @@ func probes() {
               + "<entry><link href=\"https://github.com/clevyr/jeb/releases/tag/v1.6.0\"/></entry><entry><link href=\"https://github.com/clevyr/jeb/releases/tag/v1.2\"/></entry></feed>")
 
     func probe(_ name: String, extra: [(String, JSON)] = [], patches: [(String, JSON)] = [], sandbox: SB? = nil) {
-        if config.impl == .swift, let why = SWIFT_PROBE_SKIPS[name] {
+        if let why = SWIFT_PROBE_SKIPS[name] {
             SKIPPED.append("runtime/probes/\(name): \(why)")
             return
         }
         let s = sandbox ?? sb
         let fixed: [(String, JSON)] = [("sb", .string(s.root)), ("pub", .string(FAKE_KEY)), ("stub", .string(config.stub))]
-        // release-plan is the release tool's under --impl swift (dev/release), not jebctl's
-        let r = s.jc([], tool: name == "release-plan" ? .release : .jebctl, mode: "probe", code: PROBES[name]!, patches: patches, probe: name, specExtra: fixed + extra)
+        // release-plan is the release tool's (dev/release), not jebctl's
+        let r = s.jc([], tool: name == "release-plan" ? .release : .jebctl, patches: patches, probe: name, specExtra: fixed + extra)
         write("runtime/probes/\(name).txt", rcOutErr(r, s))
     }
 
@@ -594,7 +337,7 @@ func probes() {
     probe("verify-manifest", extra: [("cases", cases)], sandbox: vs)
     let vs2 = bundleSB("probe-verify-nopin", pin: nil)
     let g = vs2.release("v1.5.0")
-    let r = vs2.jc([], mode: "probe", code: PROBES["verify-manifest"]!, probe: "verify-manifest",
+    let r = vs2.jc([], probe: "verify-manifest",
                    specExtra: [("sb", .string(vs2.root)), ("pub", .string(FAKE_KEY)), ("stub", .string(config.stub)), ("cases", obj(("good-but-no-pin", strs([g.0, g.1, "v1.5.0"]))))])
     write("runtime/probes/verify-manifest-no-pin.txt", rcOutErr(r, vs2))
 }
@@ -608,7 +351,7 @@ func gitEnv(_ home: String) -> [String: String] {
     return e
 }
 
-/// A throwaway clone: desktop/jebctl & co. live in it (gitignored, so the tree stays clean and the commit ids depend only on the fixtures).
+/// A throwaway repo: the commit ids depend only on the fixtures.
 func makeRepo(_ name: String, _ commits: [(String, String)], tagAt: Int? = nil, signingkey: Bool = true, branch: String = "main") -> (String, [String: String]) {
     let d = config.tmp + "/repos/" + name
     mkdirs(d + "/desktop/cli")
@@ -619,10 +362,10 @@ func makeRepo(_ name: String, _ commits: [(String, String)], tagAt: Int? = nil, 
     g("init", "-q", "-b", branch)
     g("config", "commit.gpgsign", "false")
     if signingkey { g("config", "user.signingkey", "~/.ssh/jeb-release.pub") }
-    for f in PYFILES { copyFile(config.desk + "/" + f, d + "/desktop/" + f) }
+    // kept as captured: the file is part of the first commit, so the commit ids in the goldens depend on it
     writeText(d + "/.gitignore", "desktop/jebctl\ndesktop/*.py\n__pycache__/\n")
     writeText(d + "/desktop/release-signers", "jeb-release namespaces=\"jeb-release\" \(FAKE_KEY)\n")
-    writeText(d + "/desktop/cli/main.swift", "let signerLines = [\n    \"jeb-release namespaces=\\\"jeb-release\\\" " + FAKE_KEY + "\",\n]\n")
+    writeText(d + "/desktop/cli/Signers.swift", "let signerLines = [\n    \"jeb-release namespaces=\\\"jeb-release\\\" " + FAKE_KEY + "\",\n]\n")
     writeText(d + "/mod/.claude-plugin/plugin.json", obj(("name", "jeb"), ("version", "1.2.0")).dumps())
     g("add", "-A")
     g("commit", "-q", "-m", "chore: fixtures")
@@ -646,19 +389,13 @@ func releaseSteps() {
         mkdirs(sbEnv["JEB_HOME"]!)
         writeText(sbEnv["JEB_HOME"]! + "/install-mode", "dev\n")
         let argv = ["release", "--dry-run", "--parity"] + args
+        // the release tool's steps alone (`release steps`), told the throwaway clone
         let r: Result
-        switch config.impl {
-        case .python:
-            let spec = obj(("module", .string(repo + "/desktop/jebctl")), ("argv", strs(argv)), ("mode", "main"), ("name", "jebctl"), ("patches", obj(("running", true))))
-            r = runProcess([PY, "-I", config.runner, spec.dumps()], env: sbEnv, cwd: repo)
-        case .swift:
-            // the release tool's steps alone (`release steps`, the Python's `jebctl release`), told the throwaway clone
-            if let full = swiftArgv(.release, ["steps"] + argv.dropFirst(), scriptPath: nil) {
-                for (k, v) in swiftTestEnv(noProcs: true) { sbEnv[k] = v }
-                sbEnv["JEB_RELEASE_CLONE"] = repo
-                r = runProcess(full, env: sbEnv, cwd: repo)
-            } else { r = notBuilt(.release) }
-        }
+        if let full = swiftArgv(.release, ["steps"] + argv.dropFirst(), scriptPath: nil) {
+            for (k, v) in swiftTestEnv(noProcs: true) { sbEnv[k] = v }
+            sbEnv["JEB_RELEASE_CLONE"] = repo
+            r = runProcess(full, env: sbEnv, cwd: repo)
+        } else { r = notBuilt(.release) }
         write("release/steps/\(name).txt", rcOutErr(r))
     }
 
@@ -698,7 +435,7 @@ func releaseSteps() {
     scase("signer-constant-mismatch", d, env, [])
 }
 
-/// glob(3) under `dir`: does `pattern` match anything? (Python's glob.glob: no braces, dotfiles hidden)
+/// glob(3) under `dir`: does `pattern` match anything? (no braces, dotfiles hidden)
 func globMatches(_ dir: String, _ pattern: String) -> Bool {
     var g = glob_t()
     defer { globfree(&g) }
@@ -709,41 +446,13 @@ func globMatches(_ dir: String, _ pattern: String) -> Bool {
 func releaseTool() {
     let rel = config.root + "/release"
     let sb = plainSB("release-tool")
-    let code = """
-
-out = {k: getattr(jc, k) for k in ("PBS_TAG", "PBS_PY", "PBS", "TREE", "PRUNE", "REPO", "SMOKE_MIN", "SMOKE_TAG_RE") if hasattr(jc, k)}
-out["PBS_CACHE"] = jc.PBS_CACHE
-out["local_imports"] = jc.local_imports()
-out["rosetta_available_on_capture_host"] = jc.rosetta()
-out["host_arch"] = jc.host_arch()
-print(json.dumps(out, indent=1, default=str))
-
-"""
-    let r = sb.jc([], module: rel, tool: .release, mode: "probe", code: code, patches: nil, name: "release", modname: "jebrelease", probe: "constants")
+    let r = sb.jc([], tool: .release, patches: nil, probe: "constants")
     write("release/tool/constants.txt", rcOutErr(r, sb))
     write("release/tool/smoke-dry-run.txt", sb.snapshot(sb.script(rel, ["smoke", "--dry-run"], tool: .release), plists: false))
     write("release/tool/smoke-dry-run-tag.txt", sb.snapshot(sb.script(rel, ["smoke", "v1.5.0", "--dry-run"], tool: .release), plists: false))
-    let swift = config.impl == .swift
-    if swift {
-        SKIPPED.append("release/tool/check-notices: retired for --impl swift; schema 2 bundles ship no Python, so there is no notices line to check")
-    } else {
-        let nc = "jc.check_notices(); print('notices ok')\ntry:\n    jc.check_notices(root=spec['sb'])\nexcept SystemExit as e:\n    print('missing:', e)"
-        write("release/tool/check-notices.txt", sb.snapshot(sb.jc([], module: rel, tool: .release, mode: "probe", code: nc, patches: nil, name: "release", modname: "jebrelease",
-                                                                  probe: "check-notices", specExtra: [("sb", .string(sb.root))]), plists: false))
-    }
-    // the bundles, offline. Python: both python-build-standalone tarballs must already sit in ~/Library/Caches/jeb-release with the
-    // pinned hashes. Swift (schema 2): no Python in the bundle, so nothing is needed
+    SKIPPED.append("release/tool/check-notices: retired; schema 2 bundles ship no Python, so there is no notices line to check")
+    // the bundles, offline (schema 2: no Python in the bundle, so nothing is downloaded)
     let consts = r.rc == 0 ? ((try? JSON.parse(r.stdout)) ?? obj()) : obj()
-    let pbs = consts["PBS"]?.objectValue ?? []
-    let cache = config.realHome + "/Library/Caches/jeb-release"
-    var have = swift || !pbs.isEmpty
-    for (_, v) in pbs {
-        guard let a = v.arrayValue, a.count == 2, let n = a[0].stringValue, let h = a[1].stringValue, let d = readBytes(cache + "/" + n), sha256Hex(d) == h else { have = false; break }
-    }
-    if !have {
-        SKIPPED.append("release/bundle: the python-build-standalone tarballs are not in ~/Library/Caches/jeb-release (no network in the capture)")
-        return
-    }
     let stage = sb.root + "/stage"
     mkdirs(stage)
     for n in ["JebDesktop", "detect", "png2raw", "jebctl"] { copyFile(config.stub, stage + "/" + n) }
@@ -755,14 +464,10 @@ print(json.dumps(out, indent=1, default=str))
     for (k, v) in ["HOME": config.realHome, "PATH": "\(config.tmp)/bin:/usr/bin:/bin:/usr/sbin:/sbin", "TMPDIR": sb.root] { env[k] = v }
     let args = ["bundle", "--tag", "v9.9.9", "--out", out, "--ref", "HEAD", "--app", stage, "--key", config.keys["new"]!, "--signers", signers]
     let br: Result
-    switch config.impl {
-    case .python: br = runProcess([PY, "-I", rel] + args, env: env, cwd: sb.root)
-    case .swift:
-        if let full = swiftArgv(.release, args, scriptPath: nil) {
-            for (k, v) in swiftTestEnv(noProcs: true) { env[k] = v }
-            br = runProcess(full, env: env, cwd: sb.root)
-        } else { br = notBuilt(.release) }
-    }
+    if let full = swiftArgv(.release, args, scriptPath: nil) {
+        for (k, v) in swiftTestEnv(noProcs: true) { env[k] = v }
+        br = runProcess(full, env: env, cwd: sb.root)
+    } else { br = notBuilt(.release) }
     var text = rcOutErr(br, sb)
     let man = out + "/Jeb-v9.9.9-manifest.json"
     if let mt = readText(man), var m = try? JSON.parse(mt) {
@@ -782,45 +487,31 @@ print(json.dumps(out, indent=1, default=str))
         let ex = sb.root + "/unz-" + arch
         must(["/usr/bin/ditto", "-x", "-k", zp, ex])
         let names = walkFiles(ex)
-        let py = names.filter { $0.hasPrefix("python/") }
-        let rest = names.filter { !$0.hasPrefix("python/") }
+        let rest = names
         text += section("\(arch) bundle.json", prettyJSON(readText(ex + "/bundle.json") ?? "", sb))
         text += section("\(arch): repo files in the bundle (git archive HEAD of TREE, plus app/, desktop/bin/jebctl, bundle.json; tied to $HEAD)", rest.joined(separator: "\n"))
-        if swift {
-            let required = consts["REQUIRED"]?.arrayValue?.compactMap { $0.stringValue } ?? []
-            text += section("\(arch): required files", required.map { "\($0): \(isFile(ex + "/" + $0) || isDir(ex + "/" + $0) ? "present" : "missing")" }.joined(separator: "\n"))
-            text += section("\(arch): PRUNE globs present in the bundle?", prune.map { "\($0): \(globMatches(ex, $0) ? "present" : "absent")" }.joined(separator: "\n"))
-            continue
-        }
-        let tops = Set(py.map { String($0.split(separator: "/", omittingEmptySubsequences: false)[1]) }).sorted(by: pyLess)
-        let libs = Set(py.filter { $0.hasPrefix("python/lib/python3.") }.map { $0.split(separator: "/", omittingEmptySubsequences: false).prefix(4).joined(separator: "/") }).sorted(by: pyLess)
-        text += section("\(arch): python/ after PRUNE: \(py.count) files; top-level folders and lib/python3.*/ entries", tops.joined(separator: "\n") + "\n--\n" + libs.joined(separator: "\n"))
-        text += section("\(arch): PRUNE globs present under python/?", prune.map { "\($0): \(globMatches(ex + "/python", $0) ? "present" : "absent")" }.joined(separator: "\n"))
+        let required = consts["REQUIRED"]?.arrayValue?.compactMap { $0.stringValue } ?? []
+        text += section("\(arch): required files", required.map { "\($0): \(isFile(ex + "/" + $0) || isDir(ex + "/" + $0) ? "present" : "missing")" }.joined(separator: "\n"))
+        text += section("\(arch): PRUNE globs present in the bundle?", prune.map { "\($0): \(globMatches(ex, $0) ? "present" : "absent")" }.joined(separator: "\n"))
     }
     write("release/bundle/v9.9.9.txt", text)
 }
 
 // ======================================================================================================================
-// src/tools: parity.py gen, fake.py
+// the gates: jebgates parity gen and fake
 func tools() {
-    let toolsSrc = config.desk + "/src/tools"
+    let toolsSrc = config.desk + "/src/tools"       // the working folder of the render compare
     let p = config.tmp + "/ptools/src"
-    mkdirs(p + "/tools")
     mkdirs(p + "/fixtures")
-    copyFile(toolsSrc + "/parity.py", p + "/tools/parity.py")
-    // the tracked fixtures and band-out.txt were generated under America/New_York (parity.py's ms() uses time.mktime): the one TZ exception
+    // the tracked fixtures and band-out.txt were generated under America/New_York (the band's ms() uses mktime): the one TZ exception
     var env = BASE_ENV
     for (k, v) in ["TZ": "America/New_York", "PATH": "/usr/bin:/bin", "HOME": config.tmp + "/ptools/home", "JEB_MOD": config.root + "/mod"] { env[k] = v }
     func parityGen() -> Result {
-        switch config.impl {
-        case .python: return runProcess([PY, "-I", p + "/tools/parity.py", "gen"], env: env, cwd: config.tmp + "/ptools")
-        case .swift:
-            // jebgates parity gen, writing <scratch>/src/fixtures like the Python copy does (--src stands in for the copy's own folder)
-            guard let full = swiftArgv(.parity, ["gen", "--src", p], scriptPath: nil) else { return notBuilt(.parity) }
-            var e = env
-            for (k, v) in swiftTestEnv(noProcs: true) { e[k] = v }
-            return runProcess(full, env: e, cwd: config.tmp + "/ptools")
-        }
+        // jebgates parity gen, writing <scratch>/src/fixtures (--src stands in for the scratch copy's own folder)
+        guard let full = swiftArgv(.parity, ["gen", "--src", p], scriptPath: nil) else { return notBuilt(.parity) }
+        var e = env
+        for (k, v) in swiftTestEnv(noProcs: true) { e[k] = v }
+        return runProcess(full, env: e, cwd: config.tmp + "/ptools")
     }
     var r = parityGen()
     var text = section("invocation", "JEB_MOD=$REPO/mod TZ=America/New_York /usr/bin/python3 -I <copy of desktop/src/tools/parity.py at <scratch>/src/tools/parity.py> gen\n(writes <scratch>/src/fixtures/<name>.store.json; no modcopy, so no band test)")
@@ -849,13 +540,9 @@ func tools() {
             var e = env
             e["JEB_BIN"] = "JebDesktop"
             let argv = ["compare", config.desk + "/src/fixtures/band-out.txt"]
+            // jebgates parity compare, on the repo's desktop/src
             let cr: Result
-            switch config.impl {
-            case .python: cr = runProcess([PY, "-I", toolsSrc + "/parity.py"] + argv, env: e, cwd: toolsSrc)
-            case .swift:
-                // jebgates parity compare, on the repo's desktop/src as the Python ran there
-                if let full = swiftArgv(.parity, argv + ["--src", config.desk + "/src"], scriptPath: nil) { cr = runProcess(full, env: e, cwd: toolsSrc) } else { cr = notBuilt(.parity) }
-            }
+            if let full = swiftArgv(.parity, argv + ["--src", config.desk + "/src"], scriptPath: nil) { cr = runProcess(full, env: e, cwd: toolsSrc) } else { cr = notBuilt(.parity) }
             write("release/parity/compare.txt", rcOutErr(cr))
         } else {
             SKIPPED.append("release/parity/compare: --render asked but desktop/src/JebDesktop is not built")
@@ -869,18 +556,12 @@ func tools() {
         var fe = BASE_ENV
         fe["PATH"] = "/usr/bin:/bin"
         fe["HOME"] = d
+        // jebgates fake <store> 3 <mode> 6 with JEB_TEST_NOW (sleeps advance the pinned clock by 0.5 s)
         let fr: Result
-        switch config.impl {
-        case .python:
-            let spec = obj(("module", .string(toolsSrc + "/fake.py")), ("argv", strs([store, "3", mode, "6"])), ("mode", "load"), ("name", "fake.py"), ("modname", "fakestore"))
-            fr = runProcess([PY, "-I", config.runner, spec.dumps()], env: fe, cwd: d)
-        case .swift:
-            // jebgates fake <store> 3 <mode> 6 with JEB_TEST_NOW (sleeps advance the pinned clock by 0.5 s)
-            if let full = swiftArgv(.fake, [store, "3", mode, "6"], scriptPath: nil) {
-                for (k, v) in swiftTestEnv(noProcs: true) { fe[k] = v }
-                fr = runProcess(full, env: fe, cwd: d)
-            } else { fr = notBuilt(.fake) }
-        }
+        if let full = swiftArgv(.fake, [store, "3", mode, "6"], scriptPath: nil) {
+            for (k, v) in swiftTestEnv(noProcs: true) { fe[k] = v }
+            fr = runProcess(full, env: fe, cwd: d)
+        } else { fr = notBuilt(.fake) }
         var text = section("invocation", "fake.py <store> 3 \(mode) 6  (clock pinned at \(NOW), advancing 0.5 s per sleep; random.seed(7); the module's own random.Random(7))")
         text += rcOutErr(fr)
         if let s = readText(store) { text += section("final store.json", prettyJSON(s)) }
@@ -889,8 +570,7 @@ func tools() {
     }
 }
 
-// TODO(Phase D): art (mod/art/src build.py + logo.py through the Pillow venv; exact bytes and decoded-frame hashes) lives in Art.swift,
-// made by another chunk; until it lands the checker skips art/ in the comparison.
+// art (exact bytes and decoded-frame hashes) lives in Art.swift.
 
 /// Every group with the golden prefixes it produces, in the capture's order.
 let GROUPS: [(name: String, prefixes: [String], run: () -> Void)] = [

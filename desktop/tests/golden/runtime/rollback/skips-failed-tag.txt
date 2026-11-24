@@ -2,10 +2,10 @@
 0
 
 ## stdout
-rolling back v1.5.2 -> v1.5.0: downloading v1.5.0 again
-bundle: Jeb-v1.5.0-macos-$ARCH.zip matches the signed manifest; unpacked into $SB/home/.jeb/versions/v1.5.0
-versions: v1.5.2 is this process's own folder; it goes once this run exits
-rolled back v1.5.2 -> v1.5.0; the running app hands over within a few seconds
+rolling back v1.7.2 -> v1.7.0: downloading v1.7.0 again
+bundle: Jeb-v1.7.0-macos-$ARCH.zip matches the signed manifest; unpacked into $SB/home/.jeb/versions/v1.7.0
+versions: v1.7.2 is this process's own folder; it goes once this run exits
+rolled back v1.7.2 -> v1.7.0; the running app hands over within a few seconds
 
 ## stderr
 (empty)
@@ -15,11 +15,11 @@ rolled back v1.5.2 -> v1.5.0; the running app hands over within a few seconds
  "bridge_reset": 1,
  "checked": null,
  "failed": [
-  "v1.5.1",
-  "v1.5.2"
+  "v1.7.1",
+  "v1.7.2"
  ],
  "failed_why": {
-  "v1.5.2": {
+  "v1.7.2": {
    "pin": "$SHA256",
    "why": "rolled-back"
   }
@@ -28,36 +28,36 @@ rolled back v1.5.2 -> v1.5.0; the running app hands over within a few seconds
   {
    "at": 1,
    "stamp": null,
-   "tag": "v1.5.0"
+   "tag": "v1.7.0"
   },
   {
    "at": 2,
    "stamp": null,
-   "tag": "v1.5.1"
+   "tag": "v1.7.1"
   },
   {
    "at": 3,
    "stamp": null,
-   "tag": "v1.5.2"
+   "tag": "v1.7.2"
   },
   {
    "at": 1780000000,
    "stamp": null,
-   "tag": "v1.5.0"
+   "tag": "v1.7.0"
   }
  ],
  "last": {
   "app": "prebuilt",
   "at": 1780000000,
   "result": "rolled-back-manually",
-  "tag": "v1.5.0"
+  "tag": "v1.7.0"
  },
  "layout": "bundle"
 }
 
 ## stub.log (argv of every native binary the run executed; detached prune-versions/reload-agents calls filtered)
-$SB/home/.jeb/versions/v1.5.0/desktop/bin/jebctl apply $SB/home/.jeb/versions/v1.5.0 --not-final --lock-held
+$SB/home/.jeb/versions/v1.7.0/desktop/bin/jebctl apply $SB/home/.jeb/versions/v1.7.0 --not-final --lock-held
 
 ## ~/.jeb/current
-versions/v1.5.0
+versions/v1.7.0
 

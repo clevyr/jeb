@@ -1,5 +1,4 @@
-// Tags: release tags and what release-state.json remembers about them (desktop/jebctl tag_key, release_tags/head_tags,
-// new_tags, failed_skip/mark_failed/clear_failed, ROLLBACK_FLOOR, installed_tag/record_installed). A release tag is
+// Tags: release tags and what release-state.json remembers about them. A release tag is
 // SemVer with a v (v1.2.0); pre-release tags are never followed. Tags rejected for their signature get another look
 // once the pin changes; every other rejection sticks until retry-update clears it.
 import Foundation
@@ -7,8 +6,8 @@ import Foundation
 /// SemVer releases; pre-release tags are never followed (TAG_RE; the anchored form is Fetch.swift's isReleaseTag).
 let tagPattern = #"v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)"#
 
-/// Under this a rollback is refused: older releases cannot apply the current bundle layout. (1, 6, 0) at the cutover.
-let rollbackFloor = (1, 5, 0)
+/// Under this a rollback is refused: older releases are the Python-era ones, signed by a retired key.
+let rollbackFloor = (1, 7, 0)
 
 typealias TagKey = (Int, Int, Int)
 

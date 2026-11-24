@@ -13,6 +13,10 @@ func tagsTests(_ t: Tester) {
             t.eq(key(bad), "null", String(reflecting: bad))
         }
     }
+    t.test("rollbackFloor: the Python releases (1.6.x and older) are under it, 1.7.0 is not") {
+        t.check(tagKey("v1.6.9")! < rollbackFloor, "1.6.x is refused")
+        t.check(!(tagKey("v1.7.0")! < rollbackFloor), "1.7.0 is allowed")
+    }
     t.test("sortedTags: by number, oldest first, anything else dropped") {
         t.eq(sortedTags(["v1.10.0", "v1.2.0", "foo", "v1.9.3", "v2.0.0", "v1.2", "v0.0.1", "v1.2.0-rc1"]), ["v0.0.1", "v1.2.0", "v1.9.3", "v1.10.0", "v2.0.0"])
         t.eq(sortedTags(["v1.0.10", "v1.0.9", "v1.0.9", "v0.99.99"]), ["v0.99.99", "v1.0.9", "v1.0.9", "v1.0.10"])

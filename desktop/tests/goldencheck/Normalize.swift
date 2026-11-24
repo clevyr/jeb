@@ -149,7 +149,6 @@ func norm(_ text: String, _ sb: SB? = nil) -> String {
     var subs = pathSubs(roots)
     for k in pubOrder { subs.append((c.pub[k]!, "$PUB_\(k)")) }
     for k in pubOrder { subs.append((c.pub[k]!.split(separator: " ")[1].description, "$PUBBLOB_\(k)")) }
-    if !c.pyReal.isEmpty && c.pyReal != PY { subs.append((c.pyReal, "$PYTHON3")) }
     var s = text
     for (a, b) in subs { s = s.replacingOccurrences(of: a, with: b) }
     if let h = c.headRule { s = h.apply(s) }

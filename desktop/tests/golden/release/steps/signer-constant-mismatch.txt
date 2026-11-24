@@ -6,5 +6,5 @@ bump: minor (from the commits since v1.2.0)
 releasing v1.3.0 (last release v1.2.0)
 
 ## stderr
-the signers in desktop/cli/main.swift (signerLines) are not the jeb-release lines of desktop/release-signers; fix one of them, no tag
+the signers in desktop/cli/Signers.swift (signerLines) are not the jeb-release lines of desktop/release-signers; fix one of them, no tag
 

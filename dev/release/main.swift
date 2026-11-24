@@ -1,6 +1,5 @@
 // release: cut a Jeb release from this clone (owner side, local, no CI), build its bundles, or smoke-test a published
-// one. The port of the Python ./release and of jebctl's release steps. Not shipped: a development tool, built by
-// build.sh.
+// one. Not shipped: a development tool, built by build.sh.
 //
 // The clone is JEB_RELEASE_CLONE when set (tests: a throwaway repo), else the folder three levels above this binary
 // (<clone>/dev/release/release).
@@ -101,7 +100,7 @@ func fail(_ msg: String) -> Never {
     die("release: " + msg + failAdvice)
 }
 
-/// A release step's refusal (jebctl's SystemExit in the Python: no prefix).
+/// A release step's refusal (printed as is, with no prefix).
 func stop(_ msg: String) -> Never {
     cleanUp()
     die(msg)
@@ -229,7 +228,7 @@ private func main(_ argv: [String]) -> Int32 {
     case "bundle": return bundleCmd(Array(rest.dropFirst()))
     case "smoke" where rest.count <= 2: return smoke(rest.count == 2 ? rest[1] : nil)
     case "steps":
-        // the steps alone (the Python's `jebctl release`): what desktop/tests/check.sh drives in a throwaway repo
+        // the steps alone (the release steps on their own): what desktop/tests/check.sh drives in a throwaway repo
         stage = 1
         _ = releaseSteps(Array(rest.dropFirst()), wrapped: false)
         return 0

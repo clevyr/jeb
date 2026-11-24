@@ -1,4 +1,4 @@
-// Constants: the module-level values of desktop/jebctl that several commands share and the constants probe prints.
+// Constants: the module-level values that several commands share and the constants probe prints.
 // The LaunchAgent labels (ALL_LABELS/labels_for) are in Agents.swift and the perf targets (CPU_TARGETS/RSS_TARGET/
 // FP_TARGET) in Status.swift; NOTE_GROUPS and app_name belong to the release tool once it leaves jebctl.
 import Foundation

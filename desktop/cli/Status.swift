@@ -1,5 +1,4 @@
-// Status: `jebctl status` and `jebctl perf`. Ported from desktop/jebctl (perf_rows, percentile, perf_stats,
-// perf_over, cmd_perf, perf_line, cmd_status, release_line). The numbers print as the Python's f-strings did:
+// Status: `jebctl status` and `jebctl perf`. The numbers print as the Python's f-strings did:
 // "%.2f" and "%.0f" round the stored double half-to-even on a tie, which is what C's printf does too.
 import Foundation
 

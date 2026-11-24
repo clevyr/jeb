@@ -1,5 +1,4 @@
-// Plan: the bump and the release notes from the Conventional Commits since the last tag (desktop/jebctl CC_RE,
-// NOTE_GROUPS, release_plan), as release-please reads them: a `!` or a BREAKING CHANGE footer is major, feat is minor,
+// Plan: the bump and the release notes from the Conventional Commits since the last tag, as release-please reads them: a `!` or a BREAKING CHANGE footer is major, feat is minor,
 // fix/perf/revert are patch, anything else releases nothing.
 import Foundation
 

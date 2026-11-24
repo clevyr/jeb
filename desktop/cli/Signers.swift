@@ -1,18 +1,23 @@
-// Signers: the pinned release signers (JEB_HOME/release-signers, ssh allowed_signers format) and the manifest check
-// (desktop/jebctl key_line, parse_signers, pin_signers, widen_signers, pin_hash, adopt_signers, verify_manifest).
+// Signers: the pinned release signers (JEB_HOME/release-signers, ssh allowed_signers format) and the manifest check.
 // Trust on first install: the shipped desktop/release-signers is copied to the state folder and follow trusts no other
 // key; the pin then moves with the signed releases (adopt). Signature checks shell out to ssh-keygen -Y, as the Python
-// did; nothing here parses a key. The signerLines constant the standalone launcher pins stays in main.swift until the
-// release tool (which checks it) moves to Swift.
+// did; nothing here parses a key. signerLines is what a standalone jebctl trusts for its first install.
 import CryptoKit
 import Foundation
+
+/// The signers a standalone install trusts (nothing is pinned yet). Must equal the jeb-release lines of desktop/release-signers;
+/// ./release checks it. One line per key: a signature verifies when any of them (by principal) accepts it.
+let signerLines = [
+    "jeb-release namespaces=\"jeb-release\" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAZiJAyq6wAxoupWQTH3aPh366GNiH6jVR5SCWM4dLWt",
+    "jeb-release-backup namespaces=\"jeb-release\" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPRwzakT+4f3XdKWVkZZOQT9E2DVcdOvH4MbeIeiewY7",
+]
 
 let manifestMax = 64 << 10                  // the most a manifest or its signature may be (a manifest is under 1 KB)
 
 /// The shipped desktop/release-signers beside this jebctl (REPO_SIGNERS): <bundle>/desktop/release-signers.
 func repoSignersPath() -> String { codeDir() + "/release-signers" }
 
-/// The desktop/ folder this jebctl runs from (the Python's CODE: realpath, since jebctl may run through a link).
+/// The desktop/ folder this jebctl runs from (its realpath, since jebctl may run through a link).
 func codeDir() -> String {
     let exe = pyRealpath(CommandLine.arguments[0].contains("/") ? CommandLine.arguments[0] : (which(CommandLine.arguments[0]) ?? CommandLine.arguments[0]))
     return ((exe as NSString).deletingLastPathComponent as NSString).deletingLastPathComponent

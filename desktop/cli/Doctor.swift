@@ -1,4 +1,4 @@
-// Doctor: `jebctl doctor`, the read-only health check (desktop/jebctl's cmd_doctor, bundle layout). One line per check,
+// Doctor: `jebctl doctor`, the read-only health check (bundle layout). One line per check,
 // `ok` or `FIX` with what to do, `note`/`skip` for what is not a fault, then the count; exit 1 when anything needs a fix.
 // The bundle ships no Python, so that check is gone (deviation #4 in the goldens README).
 import Foundation

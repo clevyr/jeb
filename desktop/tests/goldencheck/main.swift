@@ -1,19 +1,19 @@
-// goldencheck: run the golden scenarios against an implementation and diff the produced files with desktop/tests/golden.
+// goldencheck: run the golden scenarios against the Swift tools and diff the produced files with desktop/tests/golden.
 // Driven by desktop/tests/check.sh (which builds this, sets the environment and makes the temp folder):
-//   goldencheck --root <repo> --tmp <T> --arch <arch> --impl swift|python --only <prefix> --update 0|1 --render 0|1 --home <real home>
+//   goldencheck --root <repo> --tmp <T> --arch <arch> --only <prefix> --update 0|1 --render 0|1 --home <real home>
 import Foundation
 
 func parseArgs() -> Config {
     var a: [String: String] = [:]
     var it = CommandLine.arguments.dropFirst().makeIterator()
     while let k = it.next() {
-        guard k.hasPrefix("--"), let v = it.next() else { fail("usage: goldencheck --root R --tmp T --arch A --impl I --only P --update 0|1 --render 0|1 --home H") }
+        guard k.hasPrefix("--"), let v = it.next() else { fail("usage: goldencheck --root R --tmp T --arch A --only P --update 0|1 --render 0|1 --home H") }
         a[String(k.dropFirst(2))] = v
     }
-    guard let root = a["root"], let tmp = a["tmp"], let arch = a["arch"], let implName = a["impl"], let impl = Impl(rawValue: implName), let home = a["home"] else {
-        fail("missing --root/--tmp/--arch/--impl/--home")
+    guard let root = a["root"], let tmp = a["tmp"], let arch = a["arch"], let home = a["home"] else {
+        fail("missing --root/--tmp/--arch/--home")
     }
-    return Config(root: root, tmp: tmp, arch: arch, out: tmp + "/out", gold: root + "/desktop/tests/golden", impl: impl, only: a["only"] ?? "",
+    return Config(root: root, tmp: tmp, arch: arch, out: tmp + "/out", gold: root + "/desktop/tests/golden", only: a["only"] ?? "",
                   update: a["update"] == "1", render: a["render"] == "1", realHome: home)
 }
 
@@ -21,7 +21,7 @@ func parseArgs() -> Config {
 func comparable(_ rel: String) -> Bool {
     if rel == "README.md" { return false }
     // art/: only what the art group produces (the Swift tool is the subject); the other files there are inputs of `jebart raster-check`
-    if rel.hasPrefix("art/") && !(["art/generators.txt", "art/decoded-frames.imageio.json"].contains(rel) && config.impl == .swift) { return false }
+    if rel.hasPrefix("art/") && !(["art/generators.txt", "art/decoded-frames.imageio.json"].contains(rel)) { return false }
     if rel == "release/parity/compare.txt" && !config.render { return false }
     if !config.only.isEmpty && !rel.hasPrefix(config.only) { return false }
     return true
@@ -53,10 +53,10 @@ func compare() -> Int32 {
     for rel in extra { print("extra: \(rel) (produced, not in the goldens)") }
     let n = differ.count + missing.count + extra.count
     if n == 0 {
-        print("check: goldens match (\(expected.count) files, --impl \(config.impl.rawValue))")
+        print("check: goldens match (\(expected.count) files)")
         return 0
     }
-    print("check: \(n) golden(s) DIFFER (\(differ.count) changed, \(missing.count) missing, \(extra.count) extra; \(expected.count) compared, --impl \(config.impl.rawValue))")
+    print("check: \(n) golden(s) DIFFER (\(differ.count) changed, \(missing.count) missing, \(extra.count) extra; \(expected.count) compared)")
     return 1
 }
 

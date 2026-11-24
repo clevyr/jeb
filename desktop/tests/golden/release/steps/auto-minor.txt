@@ -15,11 +15,11 @@ releasing v1.3.0 (last release v1.2.0)
 release notes:
 ### Features
 
-- add the still (da26185)
+- add the still (35f7b55)
 
 ### Fixes
 
-- no more leaks (4ee265d)
+- no more leaks (d5a3e65)
 would tag v1.3.0 (local only; never pushed by jebctl). To publish it, run:
   git push origin main v1.3.0
 

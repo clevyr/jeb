@@ -5,7 +5,7 @@
 (empty)
 
 ## stderr
-v1.4.0 is older than v1.5.0, the oldest release this one can roll back to (older ones predate the key rotation and the Python-free update path); v1.5.1 stays installed.
+v1.6.0 is older than v1.7.0, the oldest release this one can roll back to (older ones are the Python releases, signed by a retired key); v1.7.1 stays installed.
 
 ## release-state.json
 {
@@ -16,12 +16,12 @@ v1.4.0 is older than v1.5.0, the oldest release this one can roll back to (older
   {
    "at": 1,
    "stamp": null,
-   "tag": "v1.4.0"
+   "tag": "v1.6.0"
   },
   {
    "at": 2,
    "stamp": null,
-   "tag": "v1.5.1"
+   "tag": "v1.7.1"
   }
  ],
  "last": null,
@@ -29,5 +29,5 @@ v1.4.0 is older than v1.5.0, the oldest release this one can roll back to (older
 }
 
 ## ~/.jeb/current
-versions/v1.5.1
+versions/v1.7.1
 

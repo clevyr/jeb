@@ -1,7 +1,7 @@
 // Env: the process environment, the clock, the output helpers and the child-process runner shared by every jebctl
-// command. Ported from the top of desktop/jebctl (say/detail/lead/fin/line, sh) with one clock type (plan D8):
+// command. One clock type (plan D8):
 // JEB_TEST_NOW pins time, JEB_TEST_PID the pid, and Clock.sleep advances the pinned clock instead of waiting,
-// as the golden capture's run_jc.py did. Foundation only; nothing here touches AppKit.
+// as the golden capture did. Foundation only; nothing here touches AppKit.
 import Foundation
 
 /// The environment at call time (libc getenv), so a test may change a variable between calls.
@@ -30,7 +30,7 @@ let sysPath = "/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin"
 // ---- clock ----
 
 /// Wall-clock seconds and the pid, pinned by JEB_TEST_NOW / JEB_TEST_PID for the goldens. The pinned clock only moves when
-/// something sleeps, so step timings stay at 0 s while a fake.py-style loop still ends.
+/// something sleeps, so step timings stay at 0 s while a fake-store loop still ends.
 enum Clock {
     private static var pinned: Double? = envVar("JEB_TEST_NOW").flatMap(Double.init)
     static var now: Double { pinned ?? Date().timeIntervalSince1970 }

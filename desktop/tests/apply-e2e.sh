@@ -16,7 +16,7 @@ FAILS=0
 
 echo "building JebDesktop and the dev jebctl in $T"
 JEB_OUT="$T/build/JebDesktop" sh -c 'mkdir -p "$(dirname "$JEB_OUT")" && sh "$0/desktop/src/build.sh"' "$REPO" >"$T/build.log" 2>&1 || { cat "$T/build.log"; echo "FAIL build JebDesktop"; exit 1; }
-JEB_OUT="$T/build/jebctl" sh "$REPO/desktop/cli/next/build.sh" >>"$T/build.log" 2>&1 || { cat "$T/build.log"; echo "FAIL build jebctl"; exit 1; }
+JEB_PROBES=1 JEB_OUT="$T/build/jebctl" sh "$REPO/desktop/cli/build.sh" >>"$T/build.log" 2>&1 || { cat "$T/build.log"; echo "FAIL build jebctl"; exit 1; }
 
 # the bundle template: schema 2, the full smoke manifest and its fixtures, the art the gates read
 B="$T/template/v9.9.9"
@@ -47,7 +47,7 @@ japply() {
     "$T/build/jebctl" apply "$@" >"$T/out" 2>&1
 }
 cur() { readlink "$W/home/.jeb/current"; }
-status() { python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d.get(sys.argv[2],""))' "$W/jeb/update-status.json" "$1" 2>/dev/null; }
+status() { plutil -extract "$1" raw -o - "$W/jeb/update-status.json" 2>/dev/null; }
 mode() { stat -f %Lp "$W/jeb/update-status.json" 2>/dev/null; }
 app_same() { diff -r "$T/before/JebDesktop.app" "$W/apps/JebDesktop.app" >/dev/null 2>&1; }
 verdict() {

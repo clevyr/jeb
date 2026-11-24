@@ -1,18 +1,9 @@
 // Standalone: `jebctl install` for a jebctl that is not inside a release bundle (the copy the README's curl line fetches into
-// ~/.jeb/bin, or the dev build). It is main.swift's install path, made schema-2 aware: the newest release (the releases/latest
-// redirect, no API or sign-in), its manifest signature against the signers built into jebctl (nothing is pinned yet), its hashes,
+// ~/.jeb/bin, or the dev build). It is the schema-2 install path: the newest release (the releases/latest
+// redirect, no API or sign-in), its manifest signature against signerLines (nothing is pinned yet), its hashes,
 // the unpack into ~/.jeb/versions/<tag> with fetchBundle's safety checks, then `exec <ver>/desktop/bin/jebctl install ...` so the
 // bundle's own jebctl does the install. An installed Jeb updates instead; an old git clone is only replaced on request (Q3).
-// The shipped launcher (main.swift) is untouched until the cutover, when the dev dispatch (next/main.swift) replaces it.
 import Foundation
-
-/// The signers a standalone install trusts. Must equal signerLines in main.swift, which ./release checks against
-/// desktop/release-signers (StandaloneTests compares the two); Phase F moves the constant to Signers.swift and drops this copy.
-let standaloneSigners = [
-    "anthony@clevyr.com namespaces=\"jeb-release\" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGrfSJyAm3dy3vkC1jKbk2YIxJk9BvoThi605ul1gMZC",
-    "jeb-release namespaces=\"jeb-release\" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAZiJAyq6wAxoupWQTH3aPh366GNiH6jVR5SCWM4dLWt",
-    "jeb-release-backup namespaces=\"jeb-release\" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPRwzakT+4f3XdKWVkZZOQT9E2DVcdOvH4MbeIeiewY7",
-]
 
 let standaloneUsage = "usage: jebctl install [--repin] [--add-path] [--replace-clone] [--no-agents] [--dry-run] [--verbose]"
 
@@ -117,7 +108,7 @@ func replaceOldClone(_ clone: String, _ f: StandaloneFlags) -> Int32? {
 
 /// `jebctl install` outside a bundle. flags: what follows `install`. signers: the trusted lines (tests pass their own key).
 /// handOff: runs the unpacked bundle's `desktop/bin/jebctl install` (default: exec). The exit code.
-func standaloneInstall(_ flags: [String], signers: [String] = standaloneSigners,
+func standaloneInstall(_ flags: [String], signers: [String] = signerLines,
                        handOff: (String, [String]) -> Int32 = execBundleInstall) -> Int32 {
     let f = parseStandaloneFlags(flags)
     if let bad = f.bad {

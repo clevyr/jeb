@@ -1,5 +1,5 @@
-// The in-process probes capture-goldens.sh ran against the Python (its PROBES["jebhome"] and ["updater-status"]),
-// redone with the Swift port so tests/run.sh can diff their output against desktop/tests/golden/runtime/probes/.
+// The in-process probes the golden checker runs (jebhome and updater-status),
+// so tests/run.sh can diff their output against desktop/tests/golden/runtime/probes/.
 // The same keys in the same order; Python sets print as str(set) (pySet).
 import Foundation
 

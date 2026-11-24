@@ -1,4 +1,4 @@
-// Plugin: how Jeb's mod is registered with Claude Code, for install, uninstall and doctor. Ported from desktop/plugdirs.py.
+// Plugin: how Jeb's mod is registered with Claude Code, for install, uninstall and doctor.
 // The mod goes through Claude Code's own plugin system (`claude plugin ...`): a local marketplace named "jeb" (the
 // bundle's .claude-plugin/marketplace.json) and the plugin jeb@jeb. The only write to ~/.claude/settings.json is removing
 // Jeb's own legacy CLAUDE_CODE_PLUGIN_DIRS entry (backup first); nothing here ever adds one (that was the git clone's

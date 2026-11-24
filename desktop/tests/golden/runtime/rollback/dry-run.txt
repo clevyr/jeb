@@ -2,7 +2,7 @@
 0
 
 ## stdout
-would roll back v1.5.1 -> v1.5.0: download v1.5.0 again, gate it and point $SB/home/.jeb/current at it (dry run: nothing changed)
+would roll back v1.7.1 -> v1.7.0: download v1.7.0 again, gate it and point $SB/home/.jeb/current at it (dry run: nothing changed)
 
 ## stderr
 (empty)
@@ -16,12 +16,12 @@ would roll back v1.5.1 -> v1.5.0: download v1.5.0 again, gate it and point $SB/h
   {
    "at": 1,
    "stamp": null,
-   "tag": "v1.5.0"
+   "tag": "v1.7.0"
   },
   {
    "at": 2,
    "stamp": null,
-   "tag": "v1.5.1"
+   "tag": "v1.7.1"
   }
  ],
  "last": null,
@@ -29,5 +29,5 @@ would roll back v1.5.1 -> v1.5.0: download v1.5.0 again, gate it and point $SB/h
 }
 
 ## ~/.jeb/current
-versions/v1.5.1
+versions/v1.7.1
 

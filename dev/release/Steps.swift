@@ -1,5 +1,4 @@
-// Steps: what a release does in the clone, in order (desktop/jebctl release_steps, step, check_signer_const,
-// base_branch, app_name; desktop/updater.py build_universal_tools, snapshot, build_tools, gate_parity): the checks, the
+// Steps: what a release does in the clone, in order: the checks, the
 // version, the mod checks, the universal build, the parity and day gates (desktop/gates/jebgates on a snapshot), the
 // release commit, the app zip, the universal jebctl and the signed tag. Nothing is written before every check passed,
 // and nothing is ever pushed here.
@@ -50,13 +49,8 @@ func baseBranch() -> String {
     return String(head[head.index(after: i)...])
 }
 
-/// The file that holds jebctl's pinned signers (`let signerLines = [`): desktop/cli/Signers.swift once the constant
-/// lives there, else desktop/cli/main.swift. The name is relative to the clone.
-func signerConstFile() -> String {
-    let moved = "desktop/cli/Signers.swift"
-    if let t = readText(clone + "/" + moved), reMatch(#"(?m)^let signerLines = \["#, t) != nil { return moved }
-    return "desktop/cli/main.swift"
-}
+/// The file that holds jebctl's pinned signers (`let signerLines = [`), relative to the clone.
+func signerConstFile() -> String { "desktop/cli/Signers.swift" }
 
 /// The signers the native jebctl pins (signerLines) must be exactly the (principal, key type, key) of the
 /// desktop/release-signers lines that cover jeb-release, and each must carry namespaces="jeb-release" and nothing else.

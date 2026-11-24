@@ -1,5 +1,5 @@
-// The in-process probes capture-goldens.sh ran against the Python (PROBES in desktop/tests/goldencheck/Scenarios.swift),
-// redone with the Swift port so `jebctl --probe <name>` prints the same JSON as desktop/tests/golden/runtime/probes/.
+// The in-process probes the golden checker runs (PROBES in desktop/tests/goldencheck/Scenarios.swift),
+// so `jebctl --probe <name>` prints the same JSON as desktop/tests/golden/runtime/probes/.
 // The same keys in the same order; Python sets print as str(set) (pySet). spec is $JEB_PROBE_SPEC: the checker's
 // sb (the sandbox root), pub (the throwaway public key), stub (a Mach-O file) and the probe's own inputs.
 import Foundation

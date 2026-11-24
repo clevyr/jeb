@@ -150,15 +150,11 @@ func artDecodeMain(buildDir: String, outPath: String) throws -> (Int, Int) {
     return (images.count, images.reduce(0) { $0 + $1.1.frames.count })
 }
 
-/// The art golden group (--impl swift): runs jebart as build.py and logo.py were run, then writes
+/// The art golden group: runs jebart as the Python build.py and logo.py were run (the headings below keep the golden's names), then writes
 /// art/generators.txt and art/decoded-frames.imageio.json under the output folder. File bytes of the GIFs and sheets
 /// are not compared (the golden's file_bytes and file_sha256 come from Pillow's encoder), so those two fields are
 /// taken from the golden itself; the decoded frames, sizes, delays and loop counts are the produced ones.
 func artScenario() {
-    if config.impl != .swift {
-        print("  art: skipped (--impl python; build.py and logo.py are the reference, not a subject)")
-        return
-    }
     let jebart = ProcessInfo.processInfo.environment["JEB_CHECK_JEBART"] ?? config.root + "/art/jebart"
     let work = config.tmp + "/art-work"
     removeAll(work)

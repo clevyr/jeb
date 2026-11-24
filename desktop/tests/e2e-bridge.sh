@@ -1,7 +1,7 @@
 #!/bin/sh
-# End-to-end check of the bridge: an installed v1.5.x (the old Python `follow`) updates itself to a schema 2 bundle whose own Swift
+# End-to-end check of the bridge: an installed v1.6.x (the old Python `follow`) updates itself to a schema 2 bundle whose own Swift
 # `apply` runs the gates, with the real JebDesktop and the dev jebctl.
-#   sh desktop/tests/e2e-bridge.sh                 BRIDGE_TAG=v1.5.0 (the default) is the installed release
+#   sh desktop/tests/e2e-bridge.sh                 BRIDGE_TAG=v1.6.0 (the default) is the installed release
 # The installed release is `git archive` of $BRIDGE_TAG; the new one is built by dev/release (bundle --from-tree) with a
 # throwaway ed25519 key that is also the pinned signer, into a file:// release tree (JEB_RELEASE_BASE). Everything lives in a
 # fresh mktemp -d: HOME, JEB_HOME, JEB_APP_DIR, JEB_LAUNCHAGENTS, JEB_BIN_DIR, JEB_TOOLS_DIR, JEB_STORE_DIR, JEB_NO_LAUNCHCTL=1;
@@ -10,7 +10,7 @@
 # apply-e2e.sh). Exit 0 when every assertion passes, 1 otherwise.
 set -u
 REPO=$(cd "$(dirname "$0")/../.." && pwd)
-BRIDGE_TAG=${BRIDGE_TAG:-v1.5.0}
+BRIDGE_TAG=${BRIDGE_TAG:-v1.6.0}
 NEW_TAG=v9.9.9
 T=$(mktemp -d "${TMPDIR:-/tmp}/jeb-e2e-bridge.XXXXXX")
 trap 'rm -rf "$T"' EXIT INT TERM
@@ -26,7 +26,7 @@ ARCH=$(uname -m)
 echo "building JebDesktop, the dev jebctl and the release tool in $T"
 mkdir -p "$T/build" "$T/stage"
 JEB_OUT="$T/build/JebDesktop" sh "$REPO/desktop/src/build.sh" >"$T/build.log" 2>&1 || { cat "$T/build.log"; die "build JebDesktop"; }
-JEB_OUT="$T/build/jebctl" sh "$REPO/desktop/cli/next/build.sh" >>"$T/build.log" 2>&1 || { cat "$T/build.log"; die "build jebctl"; }
+JEB_PROBES=1 JEB_OUT="$T/build/jebctl" sh "$REPO/desktop/cli/build.sh" >>"$T/build.log" 2>&1 || { cat "$T/build.log"; die "build jebctl"; }
 JEB_OUT="$T/build/release" sh "$REPO/dev/release/build.sh" >>"$T/build.log" 2>&1 || { cat "$T/build.log"; die "build the release tool"; }
 cp "$T/build/JebDesktop" "$T/build/jebctl" "$REPO/desktop/src/tools/detect" "$REPO/desktop/src/tools/png2raw" "$T/stage/"
 /usr/bin/codesign -s - -f "$T/stage/jebctl" >>"$T/build.log" 2>&1 || die "codesign the staged jebctl"

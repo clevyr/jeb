@@ -1,5 +1,5 @@
-// Gates: the two gates a release bundle's app passes before it is swapped in (`jebctl apply`, Apply.swift), ported from
-// desktop/updater.py: gate_smoke (every parity fixture renders offscreen) and gate_start/_gate_start (twenty seconds
+// Gates: the two gates a release bundle's app passes before it is swapped in (`jebctl apply`, Apply.swift):
+// gate_smoke (every parity fixture renders offscreen) and gate_start (twenty seconds
 // headless with the store watch on). Parity and the scripted day are release-time gates (the release tool runs them
 // before it publishes), so a user's Mac never runs them (plan D2); --quick is therefore a no-op.
 //
@@ -7,7 +7,7 @@
 // exposes them as `jebgates smoke|start`. Every name here starts with "gate" because jebgates has its own helpers
 // (isDir, fail, ...) that must not collide.
 //
-// Isolation (stronger than the Python's clean_env, which kept HOME): a gate's app instance runs with HOME, JEB_HOME,
+// Isolation: a gate's app instance runs with HOME, JEB_HOME,
 // JEB_LAUNCHAGENTS, JEB_APP_DIR and TMPDIR inside the gate's scratch folder, JEB_NO_LAUNCHCTL=1, and every other JEB_*
 // variable dropped, so it can reach neither the owner's running Jeb (heartbeat folder, quit marker, LaunchAgents) nor the
 // real ~/.jeb. The only things it reads from outside are the bundle's own files and, for the start gate, a scratch COPY of
@@ -23,7 +23,7 @@ struct GateResult: Equatable {
     var why: String
 }
 
-/// Seconds the start gate runs the app headless (updater.py's JEB_BENCH="20").
+/// Seconds the start gate runs the app headless (JEB_BENCH="20").
 let gateStartSeconds = 20
 
 private func gateEnvVar(_ name: String) -> String? {
@@ -31,7 +31,7 @@ private func gateEnvVar(_ name: String) -> String? {
     return String(cString: v)
 }
 
-/// The last n non-empty lines of a program's output, as one line (updater.py tail()).
+/// The last n non-empty lines of a program's output, as one line.
 func gateTail(_ text: String, _ n: Int = 3) -> String {
     let lines = text.split(separator: "\n", omittingEmptySubsequences: true).map { $0.trimmingCharacters(in: .whitespaces) }
     return lines.suffix(n).joined(separator: " | ")

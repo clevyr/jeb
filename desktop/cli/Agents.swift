@@ -1,5 +1,4 @@
-// Agents: the LaunchAgents of an install. Ported from desktop/jebctl (labels_for, mode, plists, write_plists,
-// scrubbed_env, spawn_reload, cmd_reload_agents). Bundle layout only (plan D1): every path a plist names is under
+// Agents: the LaunchAgents of an install. Bundle layout only (plan D1): every path a plist names is under
 // ~/.jeb/current, the watchdog and release agents run the native jebctl there, and the dev-mode update agent is gone
 // (its label stays in allLabels so uninstall and doctor still find a leftover one).
 import Foundation

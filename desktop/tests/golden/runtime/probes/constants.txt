@@ -12,7 +12,7 @@
  "MANIFEST_MAX": 65536,
  "ROLLBACK_FLOOR": [
   1,
-  5,
+  7,
   0
  ],
  "NOTE_GROUPS": [

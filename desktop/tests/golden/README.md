@@ -1,15 +1,18 @@
 # Golden files for the Python-to-Swift port
 
 These files freeze what the Python parts of Jeb do today, so each Swift (or sh) port can be checked against the same inputs.
-They were produced by `sh desktop/tests/capture-goldens.sh`, which regenerates all of them deterministically;
-`sh desktop/tests/capture-goldens.sh --check` regenerates into a temp dir and diffs against this folder (exit 1 on a difference).
-The capture script embeds its own Python helpers and goes away together with the Python it captures; the goldens stay.
+They were produced by `sh desktop/tests/capture-goldens.sh` (since removed; see Frozen below), which regenerated all of them deterministically.
+
+**Frozen.** The goldens were captured from the Python implementation up to v1.6.0. The Python has been gone from the tree since v1.7.0,
+so the goldens are now the Swift contract: `sh desktop/tests/check.sh` runs the Swift tools against them. To re-capture a Python
+reference, check out v1.6.0 in a separate worktree (`git worktree add /tmp/jeb-py v1.6.0`) and run its
+`desktop/tests/capture-goldens.sh` there.
 
 Nothing here touches the real install: every scenario runs in a throwaway HOME under one temp dir, with `JEB_HOME`, `JEB_APP_DIR`,
 `JEB_LAUNCHAGENTS`, `JEB_BIN_DIR`, `JEB_PROFILE`, `JEB_SETTINGS`, `JEB_BACKUPS`, `JEB_STORE_DIR`, `JEB_TOOLS_DIR`, `CLAUDE_CONFIG_DIR`,
 `JEB_RELEASE_BASE=file://<sandbox>/rel` (a release tree laid out like GitHub's `releases/latest`, `releases.atom` and
 `releases/download/<tag>/...`) and `JEB_NO_LAUNCHCTL=1`; `claude`, `gh`, `launchctl` and `curl` on PATH are fakes (`curl` exits 7).
-The layout is the one of `desktop/tests/bridge-sandbox.sh` (same stub, same sandbox class, same bundle tree and release signer).
+The layout was the one of `desktop/tests/bridge-sandbox.sh` (removed in v1.7.0; same stub, same sandbox class, same bundle tree and release signer).
 
 ## Fixed inputs
 
@@ -90,7 +93,7 @@ contract between the Python follow and the native `apply`; the detached `prune-v
 | Golden | Produced by | Match |
 |---|---|---|
 | `usage/*.txt` | `./release` with a bad command, `bundle --tag 1.2`, `bundle` with a missing app folder, `smoke 1.2.3 --dry-run`, `smoke v1.4.0 --dry-run` (under `SMOKE_MIN`) | exact text and rc |
-| `steps/*.txt` | `jebctl release --dry-run --parity [--bump X]` (under `--impl swift`: `release steps --dry-run --parity [--bump X]` with `JEB_RELEASE_CLONE` = the repo) in throwaway git repos (`git init -b main`, fixed author/committer `Golden <golden@example.com>` at `2026-05-01T12:00:00Z`, so commit ids are stable; `commit.gpgsign=false`, `user.signingkey` set; a synthetic `desktop/release-signers` and `desktop/cli/main.swift` `signerLines` that agree; `plugin.json` version 1.2.0; tag `v1.2.0` on the fixture commit, then the Conventional Commits of the case). Cases: auto minor / patch / major (`!` and footer), forced patch/major, bad `--bump`, nothing to release (and forced patch over it), mixed groups (perf, revert, scoped `fix!`, a `chore(release)` commit), first release (no tags, and forced minor), HEAD already tagged, no signing key, wrong branch, dirty tree, signer constant mismatch | exact text: the bump line, step lines, release notes, the push hint; rc |
+| `steps/*.txt` | `jebctl release --dry-run --parity [--bump X]` (now run as `release steps --dry-run --parity [--bump X]` with `JEB_RELEASE_CLONE` = the repo) in throwaway git repos (`git init -b main`, fixed author/committer `Golden <golden@example.com>` at `2026-05-01T12:00:00Z`, so commit ids are stable; `commit.gpgsign=false`, `user.signingkey` set; a synthetic `desktop/release-signers` and `desktop/cli/Signers.swift` `signerLines` that agree; `plugin.json` version 1.2.0; tag `v1.2.0` on the fixture commit, then the Conventional Commits of the case). Cases: auto minor / patch / major (`!` and footer), forced patch/major, bad `--bump`, nothing to release (and forced patch over it), mixed groups (perf, revert, scoped `fix!`, a `chore(release)` commit), first release (no tags, and forced minor), HEAD already tagged, no signing key, wrong branch, dirty tree, signer constant mismatch | exact text: the bump line, step lines, release notes, the push hint; rc |
 | `tool/constants.txt` | the module constants of `./release`: `PBS_TAG`, `PBS_PY`, `PBS` (names + sha256), `TREE`, `PRUNE`, `REPO`, `SMOKE_MIN`, `SMOKE_TAG_RE`, `local_imports()`, `rosetta()`, `host_arch()` | values (`rosetta_available_on_capture_host` is this machine's) |
 | `tool/smoke-dry-run*.txt` | `./release smoke --dry-run` and `smoke v1.5.0 --dry-run` (no network: the base comes from `git remote get-url origin`) | exact text |
 | `tool/check-notices.txt` | `check_notices()` on this repo and on a folder without `THIRD-PARTY-NOTICES.md` | exact text |
@@ -109,7 +112,7 @@ contract between the Python follow and the native `apply`; the detached `prune-v
 
 #### Fixtures for the Swift art port (captured once, by hand, while the Pillow generator still exists)
 
-These three files are not produced by `capture-goldens.sh`; they were captured from the same Pillow interpreter (11.3.0, Python 3.9.6)
+These three files were not produced by `capture-goldens.sh`; they were captured from the same Pillow interpreter (11.3.0, Python 3.9.6)
 on 2026-11-18 by throwaway scripts run from the session scratchpad, against `mod/art/src` as built above (the four tracked outputs
 matched byte for byte at capture time). They are what the Swift art generator is checked against before any sprite is compared.
 
@@ -177,27 +180,29 @@ original capture.
 | 22 | `runtime/usage/uninstall-bad-flag.txt`: the whole `## stdout` | the `./uninstall` usage block, rc 2 | two lines: `jebctl uninstall: unknown option --bogus` and the `usage: jebctl uninstall [--purge] [--purge-farm] [--remove-files] [--dry-run] [--verbose]` line, rc 2, empty stderr | `./uninstall` is a shim for `jebctl uninstall` (B7); the long help text stays only in the Python script. `--impl python` still runs `./uninstall --bogus` and so no longer matches this golden. |
 | 23 | `release/tool/constants.txt`: two lines in `REQUIRED` | `REQUIRED` listed the files a bundle must hold, without the smoke manifest or the art hook | `REQUIRED` also holds `desktop/src/fixtures/smoke.json` and `mod/hooks/pixel-art.ts`, after `desktop/release-signers` and `mod` | `jebctl apply`'s smoke gate reads `smoke.json` and the gates read the art, so a bundle without them fails on a Mac instead of at release time (B7, `dev/release/Bundles.swift`). |
 | 24 | `release/bundle/v9.9.9.txt`: `smoke.json` in each arch's file list, and two `present` lines in each `required files` section | the file list and the required-files list without them | `desktop/src/fixtures/smoke.json` in the repo files, and `desktop/src/fixtures/smoke.json: present` and `mod/hooks/pixel-art.ts: present` | follows #23. The scenario archives `HEAD`, so it matches only once `desktop/src/fixtures/smoke.json` is committed (it is untracked until then: `release: the $ARCH bundle lacks desktop/src/fixtures/smoke.json`). |
+| 25 | `runtime/rollback/*.txt` (all but `nothing-recorded`): the tags in the scenarios, and in `floor.txt` the whole `## stderr`; `runtime/probes/constants.txt`: `ROLLBACK_FLOOR` | tags `v1.4.0`/`v1.5.x` and `v1.4.0 is older than v1.5.0, the oldest release this one can roll back to (older ones predate the key rotation and the Python-free update path); v1.5.1 stays installed.` | tags `v1.6.0`/`v1.7.x` and `v1.6.0 is older than v1.7.0, the oldest release this one can roll back to (older ones are the Python releases, signed by a retired key); v1.7.1 stays installed.` | The rollback floor (`rollbackFloor`, `desktop/cli/Tags.swift`) is raised to 1.7.0 and the message reworded at the Swift-only cutover: every release before it is a Python one, signed by a retired key. The scenarios now roll back between 1.7.x releases so they stay above the floor. |
+| 26 | `release/steps/signer-constant-mismatch.txt`: the file named in the one `## stdout` line | `the signers in desktop/cli/main.swift (signerLines) ...` | `the signers in desktop/cli/Signers.swift (signerLines) ...` | `signerLines` moved to `desktop/cli/Signers.swift` at the cutover; the release tool reads only that file, and the scenario's fixture repo writes it there. |
 
 ### Git-clone goldens the Swift jebctl does not produce
 
-The Swift jebctl supports the bundle layout only (plan D1), so `--impl swift` reports `runtime/plists/clone-{dev,release}.txt` and
+The Swift jebctl supports the bundle layout only (plan D1), so `check.sh` reports `runtime/plists/clone-{dev,release}.txt` and
 `runtime/status/clone-{dev,release}.txt` as `skipped`, not as missing (`retiredClone` in `desktop/tests/goldencheck/Scenarios.swift`).
-`--impl python` still compares them, and the files stay as captured until the Python goes (Phase F).
+The Python compared them; the files stay as captured.
 
 The same goes for `runtime/doctor/clone-{dev,release}.txt`, every `runtime/install/clone-*.txt` and `runtime/uninstall/clone-*.txt`.
-Two more are retired for `--impl swift` because install has no `--mode` any more (release mode only), and are skipped with that
+Two more are retired because install has no `--mode` any more (release mode only), and are skipped with that
 reason: `runtime/install/jebctl-bundle-mode-dev-refused.txt` and `runtime/usage/jebctl-install-bad-mode.txt`.
 
 ### Probes the Swift jebctl does not answer
 
-`sh desktop/tests/check.sh --impl swift` reports these as `skipped`, not as missing (`SWIFT_PROBE_SKIPS` in
-`desktop/tests/goldencheck/Scenarios.swift`); `--impl python` still compares all of them. The golden files stay as captured.
+`sh desktop/tests/check.sh` reports these as `skipped`, not as missing (`SWIFT_PROBE_SKIPS` in
+`desktop/tests/goldencheck/Scenarios.swift`). The Python compared all of them. The golden files stay as captured.
 
-| Golden | Status under `--impl swift` | Where it is checked instead |
+| Golden | Status | Where it is checked instead |
 |---|---|---|
 | `runtime/probes/release-tags-canned.txt` | retired: the Python probe patched `git()` with canned output, and the Swift `releaseTags`/`headTags` take the git runner as an argument (dev loop only) | the unit test "releaseTags and headTags with a canned git runner" in `desktop/cli/tests/TagsTests.swift` feeds the same canned output and compares with this golden's stdout |
 | `runtime/probes/release-plan.txt` | checked, but answered by the release tool (`release --probe release-plan`, `dev/release/Plan.swift`), not by jebctl | the same golden; `probe()` in `Scenarios.swift` routes this one name to the release tool |
-| `release/tool/check-notices.txt` | retired: schema 2 bundles ship no Python, so there is no `THIRD-PARTY-NOTICES.md` line to check and no `check_notices` in the Swift tool | nothing; the golden stays for `--impl python` |
+| `release/tool/check-notices.txt` | retired: schema 2 bundles ship no Python, so there is no `THIRD-PARTY-NOTICES.md` line to check and no `check_notices` in the Swift tool | nothing; the golden stays as captured |
 
 ## Suspected bugs seen while capturing (not fixed)
 

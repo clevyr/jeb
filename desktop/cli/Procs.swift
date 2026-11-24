@@ -1,6 +1,5 @@
 // Procs: the running JebDesktop processes, their heartbeat files, the quit marker, and the detached helpers that
-// outlive a jebctl run. Ported from desktop/jebctl (ours, running, terminate_all, beat_files, write_quit_marker,
-// wait_pid, prune_versions, cmd_prune_versions). JEB_TEST_NO_PROCS=1 answers "none running" without asking ps, as
+// outlive a jebctl run. JEB_TEST_NO_PROCS=1 answers "none running" without asking ps, as
 // the golden capture patched running() (plan 3.1).
 import Foundation
 

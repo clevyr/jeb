@@ -2,11 +2,11 @@
 1
 
 ## stdout
-rolling back v1.5.1 -> v1.5.0: downloading v1.5.0 again
-bundle: Jeb-v1.5.0-macos-$ARCH.zip matches the signed manifest; unpacked into $SB/home/.jeb/versions/v1.5.0
+rolling back v1.7.1 -> v1.7.0: downloading v1.7.0 again
+bundle: Jeb-v1.7.0-macos-$ARCH.zip matches the signed manifest; unpacked into $SB/home/.jeb/versions/v1.7.0
 
 ## stderr
-v1.5.0 failed (updater exit 2); v1.5.1 is still installed. See $SB/home/Library/Application Support/Jeb/update.log
+v1.7.0 failed (updater exit 2); v1.7.1 is still installed. See $SB/home/Library/Application Support/Jeb/update.log
 
 ## release-state.json
 {
@@ -17,12 +17,12 @@ v1.5.0 failed (updater exit 2); v1.5.1 is still installed. See $SB/home/Library/
   {
    "at": 1,
    "stamp": null,
-   "tag": "v1.5.0"
+   "tag": "v1.7.0"
   },
   {
    "at": 2,
    "stamp": null,
-   "tag": "v1.5.1"
+   "tag": "v1.7.1"
   }
  ],
  "last": null,
@@ -30,8 +30,8 @@ v1.5.0 failed (updater exit 2); v1.5.1 is still installed. See $SB/home/Library/
 }
 
 ## stub.log (argv of every native binary the run executed; detached prune-versions/reload-agents calls filtered)
-$SB/home/.jeb/versions/v1.5.0/desktop/bin/jebctl apply $SB/home/.jeb/versions/v1.5.0 --not-final --lock-held
+$SB/home/.jeb/versions/v1.7.0/desktop/bin/jebctl apply $SB/home/.jeb/versions/v1.7.0 --not-final --lock-held
 
 ## ~/.jeb/current
-versions/v1.5.1
+versions/v1.7.1
 

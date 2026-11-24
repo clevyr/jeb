@@ -51,16 +51,21 @@ func standaloneTests(_ t: Tester) {
         }
     }
 
-    t.test("standalone: the built-in signers are the launcher's") {
-        let src = readFile(NSString(string: envVar("JEB_REPO") ?? ".").expandingTildeInPath + "/desktop/cli/main.swift") ?? ""
-        guard let open = src.range(of: "let signerLines = ["), let close = src.range(of: "\n]", range: open.upperBound..<src.endIndex) else {
-            t.fail("signerLines not found in main.swift")
-            return
+    t.test("standalone: the built-in signers are the jeb-release lines of desktop/release-signers") {
+        let file = readFile(NSString(string: envVar("JEB_REPO") ?? ".").expandingTildeInPath + "/desktop/release-signers") ?? ""
+        // (principal, key type, key) of the lines whose namespaces include jeb-release
+        var want: [[String]] = []
+        for line in file.split(separator: "\n") {
+            let f = fields(String(line))
+            guard f.count >= 4, f[1].hasPrefix("namespaces=\""), f[1].dropFirst(12).dropLast().split(separator: ",").contains("jeb-release") else { continue }
+            want.append([f[0], f[2], f[3]])
         }
-        let lines = src[open.upperBound..<close.lowerBound].split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { $0.hasPrefix("\"") }.map { String($0.dropFirst().dropLast(src.contains("\",\n") ? 2 : 1)) }
-            .map { $0.replacingOccurrences(of: "\\\"", with: "\"").trimmingCharacters(in: CharacterSet(charactersIn: ",\"")) }
-        t.eq(lines, standaloneSigners, "same three keys as signerLines")
+        t.check(!want.isEmpty, "release-signers has jeb-release lines")
+        t.eq(signerLines.map { l -> [String] in let f = fields(l); return [f[0], f[2], f[3]] }, want, "same keys as release-signers")
+        for l in signerLines {
+            t.eq(fields(l)[1], "namespaces=\"jeb-release\"", "only the jeb-release namespace")
+            t.check(!l.contains("clevyr.com"), "no personal key")
+        }
     }
 
     t.test("standalone: a bundle root is bundle.json with desktop/bin/jebctl") {

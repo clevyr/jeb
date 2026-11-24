@@ -1,6 +1,6 @@
 #!/bin/sh
-# run.sh: build and run the unit tests for the runtime core (desktop/cli/*.swift except main.swift, the shipped
-# launcher, which build.sh compiles on its own), then diff the jebhome and updater-status probes against the goldens
+# run.sh: build and run the unit tests for the runtime core (desktop/cli/*.swift except main.swift, the dispatch,
+# which has no unit tests; the tests bring their own main.swift), then diff the jebhome and updater-status probes against the goldens
 # capture-goldens.sh froze from the Python. Nothing here touches ~/.jeb, ~/Library or the LaunchAgents: HOME, TMPDIR
 # and every JEB_* path point into a throwaway folder (under $JEBCTL_TESTS_TMP when set, else TMPDIR).
 set -eu

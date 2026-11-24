@@ -1,4 +1,4 @@
-// Fetch: releases over plain HTTPS, no API or sign-in (desktop/jebhome.py's release_base, fetch, latest_tag, feed_tags).
+// Fetch: releases over plain HTTPS, no API or sign-in.
 // GET with redirects followed but never downgraded from https, bodies refused past a cap (a bundle: its signed size),
 // streamed downloads through dest.part. A file:// base (the tests' release tree laid out like GitHub) is read straight
 // from disk: its errors name the path, where the Python named an empty host (deviation #1 in the goldens README).

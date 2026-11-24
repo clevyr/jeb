@@ -15,23 +15,23 @@ releasing v2.0.0 (last release v1.2.0)
 release notes:
 ### Breaking changes
 
-- hooks (781cf48)
+- hooks (ff55632)
 
 ### Features
 
-- night sky (684b9fa)
+- night sky (f1eb739)
 
 ### Fixes
 
-- hooks (781cf48)
+- hooks (ff55632)
 
 ### Performance
 
-- fewer layers (2bca5e7)
+- fewer layers (384a392)
 
 ### Reverts
 
-- feat: add the still (6389518)
+- feat: add the still (a5f48c7)
 would tag v2.0.0 (local only; never pushed by jebctl). To publish it, run:
   git push origin main v2.0.0
 

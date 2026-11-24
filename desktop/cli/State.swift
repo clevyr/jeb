@@ -1,5 +1,4 @@
-// State: the files in the state folder that jebctl and the updater share (desktop/jebctl load_rstate/save_rstate/rlog,
-// desktop/updater.py log/status/load_state/save_state/record/notify_finished/bundle_stamp). Every write is tmp+rename
+// State: the files in the state folder that jebctl and the updater share. Every write is tmp+rename
 // at mode 0600; the logs rotate once at 256 KB. The folder is set once from resolveHome() and re-pointed by setHome()
 // after a migration, as the Python's set_home did.
 import Foundation
