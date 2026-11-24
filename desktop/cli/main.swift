@@ -45,7 +45,7 @@ case "start": cmdStart()
 case "quit": cmdQuit()
 case "reload-agents": exit(cmdReloadAgents(args))
 case "prune-versions": cmdPruneVersions(args)
-case "doctor": exit(cmdDoctor())
+case "doctor": exit(cmdDoctor(Array(args.dropFirst())))
 case "install":
     // inside a release bundle: its own install; anywhere else (the standalone jebctl, a dev build): fetch the newest release (Standalone.swift)
     if isBundleRoot(bundleRoot()) { exit(cmdInstall(Array(args.dropFirst()))) }

@@ -7,7 +7,7 @@ jebctl: install, supervise and update the Jeb desktop.
   install                 install or repair Jeb
   update                  check for a new version now and wait for the result
   status                  is Jeb running, which version, last update
-  doctor                  health check: one ok or FIX line per check
+  doctor [--fix]          health check; --fix runs the safe repair steps, then checks again
   start | quit            start or stop the desktop
   screenshot              save what Jeb draws to ~/Pictures/Jeb and print the paths
   emoji [--holiday NAME] [--sprite NAME] [-o FILE]

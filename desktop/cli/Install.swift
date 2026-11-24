@@ -426,7 +426,7 @@ func cmdInstall(_ flags: [String]) -> Int32 {
     }
     if !noAgents {      // a sandbox has no agents loaded; ./release smoke runs the doctor itself
         say("Health check (jebctl doctor):")
-        _ = cmdDoctor()     // its result does not fail the install
+        _ = printDoctor()   // its result does not fail the install
     }
     say("Done. Start a new Claude Code session to load Jeb; the desktop fills in once a session has run.")
     return 0

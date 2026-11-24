@@ -27,4 +27,22 @@ func doctorTests(_ t: Tester) {
     t.test("doctorSummary uses the singular for one problem") {
         t.eq(doctorSummary(steps: [.retry], problems: 1), ["1 problem. To fix it, in order:", "  1. jebctl retry-update  runs the last failed update again"])
     }
+    t.test("nextFixStep picks runnable steps in priority order") {
+        let steps: [FixStep] = [.update, .newSession, .start, .reinstall]
+        t.eq(nextFixStep(steps, tried: []), .reinstall)
+        t.eq(nextFixStep(steps, tried: [.reinstall]), .start)
+    }
+    t.test("nextFixStep skips steps already tried and ones it cannot run") {
+        let steps: [FixStep] = [.addPath("jebctl"), .newSession, .network, .start, .update]
+        t.eq(nextFixStep(steps, tried: [.start]), .update)
+    }
+    t.test("nextFixStep leaves update and retry-update alone while updates are paused") {
+        t.eq(nextFixStep([.resume, .retry, .update, .start], tried: []), .start)
+        t.eq(nextFixStep([.resume, .retry, .update], tried: []), nil)
+    }
+    t.test("nextFixStep is nil when nothing runnable is left") {
+        t.eq(nextFixStep([.resume, .newSession, .addPath("jebctl")], tried: []), nil)
+        t.eq(nextFixStep([.start, .update], tried: [.start, .update]), nil)
+        t.eq(nextFixStep([], tried: []), nil)
+    }
 }

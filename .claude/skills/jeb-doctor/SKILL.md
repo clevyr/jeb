@@ -5,13 +5,13 @@ description: Diagnose a Jeb install on this Mac (app, LaunchAgents, plugin regis
 
 # Jeb doctor
 
-1. Run `~/.local/bin/jebctl doctor`, or `~/.jeb/bin/jebctl doctor` if that link is missing (both run the installed Jeb's own doctor; an old git-clone install has none: replace it with `~/.jeb/bin/jebctl install --replace-clone`). It is read-only. Checks are grouped (Install, Desktop app, Background agents, Claude Code, Updates); each line starts with `ok`, `FIX`, `skip` or `note`. It ends with `All good.`, or the problem count and a numbered "To fix them, in order" list, each step once. Work down that list.
-2. Apply these steps yourself, without asking the user to run anything, and tell them in one plain line each what was wrong and what you did:
+1. Run `~/.local/bin/jebctl doctor --fix`, or `~/.jeb/bin/jebctl doctor --fix` if that link is missing (both run the installed Jeb's own doctor; an old git-clone install has none: replace it with `~/.jeb/bin/jebctl install --replace-clone`). `--fix` runs the safe repair steps itself (install, start, quit then start, retry-update, update), each at most once and re-checking between them, then prints the full report; plain `doctor` without `--fix` is read-only. Checks are grouped (Install, Desktop app, Background agents, Claude Code, Updates); each line starts with `ok`, `FIX`, `skip` or `note`. It ends with `All good.`, or the problem count and a numbered "To fix them, in order" list, each step once. What the final report still lists was not fixed automatically. Work down it.
+2. Handle what is left, and tell the user in one plain line each what was wrong and what you did. The steps `--fix` already ran need no repeat; if one failed, read the log named below and say why:
    - `~/.jeb/bin/jebctl install` (current is not a valid bundle): downloads the release again;
    - `~/.local/bin/jebctl install` (missing app, LaunchAgents, plugin or install record, or a signing key that is not pinned): reinstalls the app, background agents and plugin;
    - `~/.local/bin/jebctl quit`, then `~/.local/bin/jebctl start` (more than one Jeb running);
    - `~/.local/bin/jebctl start` (Jeb is not running, has stopped responding, or was quit from the menu);
-   - `~/.local/bin/jebctl resume-updates` (updates are paused; someone paused them on purpose, so ask first);
+   - `~/.local/bin/jebctl resume-updates` (updates are paused; `--fix` never runs it because someone paused them on purpose, so ask the user first);
    - `~/.local/bin/jebctl retry-update` (the last update was rejected or rolled back; read `update.log` first and say why);
    - `~/.local/bin/jebctl update` (the plugin version differs from the mod, or more than one version is on disk; it also removes the older folders). Updates that look stuck, or the user asks to update: follow the jeb-update skill (`~/.jeb/current/.claude/skills/jeb-update/SKILL.md`);
    - the PATH step (jebctl not on PATH, or another jebctl first): tell the user what to do; do not edit the shell profile yourself;

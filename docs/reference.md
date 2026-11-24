@@ -5,7 +5,7 @@ Jeb's commands, troubleshooting steps, and where its files and settings live.
 ## Commands
 
     jebctl status            # app, heartbeat, mode, last update, LaunchAgents
-    jebctl doctor            # health check: grouped ok/FIX lines, then the steps to fix them
+    jebctl doctor [--fix]    # health check: grouped ok/FIX lines, then the steps to fix them; --fix runs the safe ones
     jebctl start             # start it again after Quit
     jebctl quit              # same as Quit in the menu
     jebctl pause-updates     # stop following releases
@@ -19,7 +19,7 @@ Jeb's commands, troubleshooting steps, and where its files and settings live.
 
 ## Troubleshooting
 
-Run `jebctl doctor` first. It ends with the steps that fix every `FIX` line, in order.
+Run `jebctl doctor` first. It ends with the steps that fix every `FIX` line, in order. `jebctl doctor --fix` runs the safe steps for you (each once, re-checking between them) and then prints the full report; it leaves resume-updates, the PATH steps and the new-session step to you.
 
 **Nothing on the desktop and no menu bar item.** It was quit, or it isn't running. Run `jebctl start`. If the LaunchAgents are gone, run `jebctl install`.
 

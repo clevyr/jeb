@@ -87,7 +87,7 @@ Installed before v1.3.0 (from a git clone)? Run `~/.jeb/bin/jebctl install --rep
 
 ## If something looks wrong
 
-Run `jebctl doctor`; it ends with the steps that fix every `FIX` line. Easier still, paste this into Claude Code and it finds and fixes the problem itself:
+Run `jebctl doctor`; it ends with the steps that fix every `FIX` line, and `jebctl doctor --fix` runs the safe ones for you and then checks again. Easier still, paste this into Claude Code and it finds and fixes the problem itself:
 
     Check my Jeb install: follow ~/.jeb/current/.claude/skills/jeb-doctor/SKILL.md and fix what it finds.
 

@@ -104,6 +104,7 @@ func status() {
     sb.saveRS(obj(("failed", ["v1.5.0"]), ("checked", .int(NOW - 100)), ("last", obj(("at", .int(NOW - 100)), ("tag", "v1.5.0"), ("result", "rejected"), ("app", "prebuilt"))),
                   ("layout", "bundle"), ("installed", [obj(("tag", "v1.4.0"), ("stamp", nil), ("at", 1))])))
     write("runtime/doctor/bundle-paused-failed.txt", sb.snapshot(sb.jc(["doctor"]), plists: false))
+    write("runtime/doctor/bundle-paused-failed-fix-dry-run.txt", sb.snapshot(sb.jc(["doctor", "--fix", "--dry-run"]), plists: false))
     for m in ["dev", "release"] { retiredClone("runtime/doctor/clone-" + m) }
 }
 
