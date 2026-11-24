@@ -20,18 +20,20 @@ Jeb is a little farm on your Mac's desktop that shows what your Claude Code sess
 
 ## Getting Jeb
 
-You need a Mac running macOS 12 or later (Apple Silicon or Intel) and Claude Code, signed in with your own account. Claude does the rest in about five minutes, with no Python, Homebrew, Xcode, git, admin password or Terminal setup.
+You need a Mac running macOS 12 or later (Apple Silicon or Intel) and Claude Code, signed in with your own account. There's no Python, Homebrew, Xcode, git or admin password involved.
 
-**1. Ask Claude to set it up.** Open Claude Code in any folder and paste this in:
+**1. Run the installer.** In Terminal:
+
+    curl -fsSL https://github.com/clevyr/jeb/releases/latest/download/install.sh | sh
+
+It takes a minute or two and ends with a health check. The release's signature is checked before anything runs, so a tampered download is refused. The same command installs Jeb, or updates it if it is already there, including from an older version, so run it again any time to update or repair Jeb. After that, everything is a `jebctl` command (`update`, `doctor`, `status`, `uninstall`); if `jebctl` isn't found, `~/.jeb/bin/jebctl` always works. To check the download yourself first, see [Installing by hand](docs/install-and-updates.md#installing-by-hand).
+
+Rather have Claude do it? Open Claude Code in any folder and paste this in:
 
     Install or update Jeb for me. Run:
     curl -fsSL https://github.com/clevyr/jeb/releases/latest/download/install.sh | sh
     Then follow ~/.jeb/current/.claude/skills/jeb-install/SKILL.md to finish, and fix anything it
     reports yourself. Never ask me for a password or sudo, and never compile anything.
-
-Claude runs the install and tells you when everything's healthy. The release's signature is checked before anything runs, so a tampered download is refused. The same command installs Jeb, or updates it if it is already there, including from an older version (it checks for a newer release until it is current). Paste the prompt again any time to update or repair Jeb. After that, everything is a `jebctl` command (`update`, `doctor`, `status`, `uninstall`); if `jebctl` isn't found, `~/.jeb/bin/jebctl` always works.
-
-Prefer Terminal to pasting a prompt? The same line works there: `curl -fsSL https://github.com/clevyr/jeb/releases/latest/download/install.sh | sh`. To check the download yourself first, see [Installing by hand](docs/install-and-updates.md#installing-by-hand).
 
 **2. Start a new Claude Code session.** Jeb only joins sessions started after the install. The farm looks pretty empty at first and fills in as you work.
 
@@ -85,26 +87,26 @@ Installed before v1.3.0 (from a git clone)? Run `~/.jeb/bin/jebctl install --rep
 
 ## If something looks wrong
 
-Run `jebctl doctor`; it ends with the steps that fix every `FIX` line, and `jebctl doctor --fix` runs the safe ones for you and then checks again. Easier still, paste this into Claude Code and it finds and fixes the problem itself:
+Run `jebctl doctor --fix`. It runs the safe repairs, checks again and lists the steps for anything left; `jebctl doctor` on its own only checks. To have Claude find and fix the problem instead, paste this into Claude Code:
 
     Check my Jeb install: follow ~/.jeb/current/.claude/skills/jeb-doctor/SKILL.md and fix what it finds.
 
 Common problems:
 
-- **Nothing on the desktop and no menu bar item.** Jeb was quit or isn't running. Log out and back in, or ask Claude to check your Jeb install.
-- **The menu bar says "Waiting for art".** Jeb can't find its files, usually because the `~/.jeb` folder was moved or deleted. Ask Claude to install Jeb again.
+- **Nothing on the desktop and no menu bar item.** Jeb was quit or isn't running. Run `jebctl doctor --fix`, or log out and back in.
+- **The menu bar says "Waiting for art".** Jeb can't find its files, usually because the `~/.jeb` folder was moved or deleted. Run the installer again.
 - **The desktop is empty.** Start a new Claude Code session; Jeb only joins sessions started after the install.
 - **Check for Updates says it couldn't start, or is taking too long.** Jeb restarts a stopped update agent when you click it and when it starts. If the menu still says it couldn't start, run `jebctl doctor` or `jebctl status`.
 
 ## Removing Jeb
 
-To have Claude do it, paste this into Claude Code:
-
-    Remove Jeb from this Mac: follow ~/.jeb/current/.claude/skills/jeb-install/SKILL.md.
-
-Or in Terminal:
+In Terminal:
 
     ~/.jeb/bin/jebctl uninstall --remove-files
+
+Or have Claude do it by pasting this into Claude Code:
+
+    Remove Jeb from this Mac: follow ~/.jeb/current/.claude/skills/jeb-install/SKILL.md.
 
 That removes the app, takes Jeb out of Claude Code and deletes the `~/.jeb` folder. Your farm is kept in case you come back; add `--purge --purge-farm` to delete it and the rest of Jeb's state too (a backup copy of the farm stays in `~/.claude/backups/jeb`). Installs from before the bundle layout keep a git clone in `~/.jeb/repo` (or `~/jeb`); `--remove-files` removes it too when it has no local changes, otherwise it tells you to drag it to the Trash.
 
