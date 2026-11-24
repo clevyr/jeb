@@ -31,7 +31,12 @@ func step(_ label: String, _ cmd: [String], cwd: String? = nil, env: [String: St
     }
     if tty { say("  \(label) ...") } else { print("  \(label) ...", terminator: " "); fflush(stdout) }
     let t = Clock.now
-    let r = run(absolute(cmd, cwd: cwd), cwd: cwd, env: env, capture: !tty)
+    // A captured step reads nothing: its stdin is /dev/null, since a child on the terminal is in a background process
+    // group (see runInteractive) and one that touches the terminal, like claude, is stopped and the run hangs.
+    // A tty step talks to the user in this process group (and takes this process's environment).
+    let r = tty
+        ? RunResult(status: runInteractive(absolute(cmd, cwd: cwd), cwd: cwd), out: "", err: "")
+        : run(absolute(cmd, cwd: cwd), cwd: cwd, env: env, stdin: "/dev/null")
     if r.status != 0 {
         if !tty {
             say("failed")
