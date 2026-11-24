@@ -54,7 +54,7 @@ creative/
     Build.swift            build, dry run, backup, in-place sync, rollback, status
     Probe.swift            --probe legit|hostile
   tests/
-    main.swift             test harness entry: --list, --only NAME..., --skip-slow
+    main.swift             test harness entry: --list, --only NAME..., --skip-slow, --real, -j N
     hostile.swift          the hostile case table (section 6.2)
     unit.swift             pure-function tests (section 6.4)
     run.sh                 builds and runs the test binary
@@ -486,9 +486,9 @@ Compatibility the port must keep (E1 acceptance checks):
 
 ### 6.1 Harness
 
-`creative/tests/run.sh` builds `creative/jeb-creative-tests` from `creative/src/*.swift` (except `main.swift`), `desktop/cli/Json.swift` and `creative/tests/*.swift`, with `-warnings-as-errors` (same pattern as `art/tests/run.sh` and `desktop/cli/tests/run.sh`), then runs it. It uses temporary folders for `mod`, `root`, `cache` and `backups`; it never writes to `mod/`, `~/.claude/jeb-creative`, `~/Library/Caches/jeb-creative` or `~/.claude/backups`. It reads the live `mod/` as the base of every case, and uses the real `claude`, node and the pinned TypeScript (read-only). It runs no model and needs no network. It stops at once with a clear message if the pinned TypeScript is not installed (it does not install it); run `jeb-creative-build --dry-run` once first.
+`creative/tests/run.sh` builds `creative/jeb-creative-tests` from `creative/src/*.swift` (except `main.swift`), `desktop/cli/Json.swift` and `creative/tests/*.swift`, with `-warnings-as-errors` (same pattern as `art/tests/run.sh` and `desktop/cli/tests/run.sh`), then runs it. It uses temporary folders for `mod`, `root`, `cache` and `backups`; it never writes to `mod/`, `~/.claude/jeb-creative`, `~/Library/Caches/jeb-creative` or `~/.claude/backups`. It reads the live `mod/` as the base of every case, and uses the real `claude`, node and the pinned TypeScript (read-only). The last gate runs the mod's suite twice (1 to 9 minutes a case), so only H01, N12 and H30 run the real suite; the other cases that reach it use a test-only stand-in `claude` in the sandbox HOME, which answers `plugin test` with a passing line for every locked test and a clean summary and passes every other call (`plugin validate`) to the real one. N15 checks the gate still rejects when the stand-in omits a locked test. The builder itself is unchanged and always runs the real suite. It runs no model and needs no network. It stops at once with a clear message if the pinned TypeScript is not installed (it does not install it); run `jeb-creative-build --dry-run` once first.
 
-`main.swift` options: `--list`, `--only NAME...`, `--skip-slow` (skips cases marked slow in the tables). Output per case follows `hostile_gate.py` (`ok  REJECT name: reasons [12s]`, `BAD` on a mismatch) and ends `ALL AS EXPECTED` or `N UNEXPECTED`; exit 1 on any mismatch. Cases run one after another.
+`main.swift` options: `--list`, `--only NAME...`, `--skip-slow` (skips cases marked slow in the tables), `--real` (H01, N12 and H30 run on the real `claude plugin test`, minutes each; without it H01 uses the stand-in and N12 and H30, which need the real kit to fail, are skipped with one line, `skipped N12, H30: need --real (the real mod suite)`), `-j N` (workers, default min(6, active CPUs)). Output per case follows `hostile_gate.py` (`ok  REJECT name: reasons [12s]`, `BAD` on a mismatch) and ends `ALL AS EXPECTED` or `N UNEXPECTED`; exit 1 on any mismatch. Cases run concurrently on the workers, each in its own folder with its own HOME (handed to children through `toolEnv`, which sets `HOME` from the run's `Paths.home`); output is printed in case order. With `--real` the real-suite cases run one at a time after the others, since the real kit is load sensitive.
 
 ### 6.2 Hostile cases (`creative/tests/hostile.swift`)
 

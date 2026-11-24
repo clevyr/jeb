@@ -2,6 +2,11 @@
 // the D7 cutover, a symlink to the real pinned TypeScript and the real `claude`), lets a FakeBuilder apply one hostile edit to staging,
 // and drives the runner's own post-builder path, finishBuild. REJECT: code 2, one new runs.log line, mod and backups untouched.
 // PASS: code 0, swapped in, changelog, backup, mod equal to the gated staging. Verdicts and texts are compared with hostile-python.txt.
+// The last gate runs the mod's own suite twice through `claude plugin test`, 1 to 9 minutes a case. Only H01, N12 and H30 (the control,
+// a real failure and the neutered safety test) need the real suite, and only with --real: N12 and H30 are then `real: true` (skipped
+// without --real), H01 runs on the stand-in unless --real. Every other case that reaches that gate runs against a stand-in `claude`
+// (World fakeSuite); the real-suite cases run alone after the concurrent ones. A case's HOME reaches its children through toolEnv: `plugin test` prints a passing line for every locked test and a clean summary,
+// anything else (`plugin validate`) goes to the real one. N15 proves the gate still rejects when the stand-in leaves a locked test out.
 import Foundation
 
 struct FakeBuilder: Builder {
@@ -11,14 +16,34 @@ struct FakeBuilder: Builder {
     }
 }
 
+/// A sandbox `.local` whose bin/claude is a stand-in: `plugin test` prints `(pass) <name>` for every top-level test of the locked
+/// files (as suiteProblems reads them from the base mod, which every case starts from) and a clean summary; any other call execs the
+/// real `claude`. Everything else in the real ~/.local and its bin is linked in, so the real one still finds what it needs.
+func fakeClaude(_ home: String, mod: String, omit: String?) {
+    let real = Env.realHome + "/.local", local = home + "/.local", bin = local + "/bin"
+    mkdirp(bin)
+    for e in (try? FileManager.default.contentsOfDirectory(atPath: real)) ?? [] where e != "bin" { symlink(real + "/" + e, local + "/" + e) }
+    for e in (try? FileManager.default.contentsOfDirectory(atPath: real + "/bin")) ?? [] where e != "claude" { symlink(real + "/bin/" + e, bin + "/" + e) }
+    var names: [String] = []
+    for f in C.lockedTests { for b in testBlocks(readText(mod + "/tests/" + f) ?? "") { if let n = testName(b), !n.contains("${"), n != omit { names.append(n) } } }
+    let passes = names.map { "(pass) \($0) [0.1ms]" }.joined(separator: "\n") + "\n\n \(names.count) pass\n 0 fail\n"
+    try? Data(passes.utf8).write(to: URL(fileURLWithPath: local + "/fake-suite.txt"))
+    let script = "#!/bin/sh\nif [ \"$1\" = plugin ] && [ \"$2\" = test ]; then cat '\(local)/fake-suite.txt'; exit 0; fi\nexec '\(real)/bin/claude' \"$@\"\n"
+    try? Data(script.utf8).write(to: URL(fileURLWithPath: bin + "/claude"))
+    chmod(bin + "/claude", 0o755)
+}
+
 final class World {
     let dir: String, p: Paths, c: Ctx, clock = Date(timeIntervalSince1970: 1_800_000_000)
-    init(_ name: String) {
+    /// `fakeSuite`: the sandbox `claude` answers `plugin test` itself (see fakeClaude) and passes everything else to the real one.
+    /// `omit`: a locked test name the stand-in leaves out of its output.
+    init(_ name: String, fakeSuite: Bool = false, omit: String? = nil) {
         dir = Env.tmp + "/" + name
         rmrf(dir)
         let home = dir + "/home", cache = home + "/Library/Caches/jeb-creative"
         for d in [cache, home + "/.claude/jeb-creative", dir + "/bin"] { mkdirp(d) }
-        symlink(Env.realHome + "/.local", home + "/.local"); symlink(Env.realHome + "/.nvm", home + "/.nvm")
+        if fakeSuite { fakeClaude(home, mod: Env.base, omit: omit) } else { symlink(Env.realHome + "/.local", home + "/.local") }
+        symlink(Env.realHome + "/.nvm", home + "/.nvm")
         symlink(Env.realTools, cache + "/tools")  // read only: the pinned TypeScript; its digest is path independent
         try? FileManager.default.copyItem(atPath: Env.realSha, toPath: home + "/.claude/jeb-creative/tools.sha256")
         try? FileManager.default.copyItem(atPath: Env.creative + "/brief.md", toPath: dir + "/bin/brief.md")
@@ -26,9 +51,8 @@ final class World {
         p = Paths(home: home, exeDir: dir + "/bin")
         let at = clock
         c = Ctx(p, clock: { at }, echo: { _ in })
-        setenv("HOME", home, 1)
     }
-    func close() { rmrf(dir); setenv("HOME", Env.tmp + "/home0", 1) }
+    func close() { rmrf(dir) }
     /// runs.log lines without their timestamp.
     var lines: [String] { (readText(p.log) ?? "").split(separator: "\n").map { String($0.dropFirst(20)) } }
 }
@@ -86,9 +110,9 @@ enum Golden {
 /// One hostile case. `first`: the first problem must start so; `exact`: the whole joined text; `py`: the Python case whose text must
 /// match (and the Swift text must equal). Where D7 or a test seam changes the outcome there is no `py`, and `exact` says what D7 gives.
 func H(_ id: String, _ name: String, _ first: String = "", py: String? = nil, exact: String? = nil, pass: Bool = false, rc: Bool = false,
-       slow: Bool = false, after: ((World, T) throws -> Void)? = nil, _ change: @escaping (String) throws -> Void) -> Case {
-    Case(name: "\(id) \(name)", slow: slow) { t in try retryFlake(t) { t in
-        let w = World(id.lowercased()); defer { w.close() }
+       slow: Bool = false, fake: Bool = false, real: Bool = false, after: ((World, T) throws -> Void)? = nil, _ change: @escaping (String) throws -> Void) -> Case {
+    Case(name: "\(id) \(name)", slow: slow, real: real) { t in try retryFlake(t) { t in
+        let w = World(id.lowercased(), fakeSuite: fake); defer { w.close() }
         let before = try manifest(w.p.mod), stage = w.p.stage
         try copyMod(w.c, to: stage)
         let (bc, bout) = FakeBuilder(edit: change).run(w.c, stage: stage, prompt: "", outPath: "")
@@ -140,8 +164,8 @@ func retryFlake(_ t: T, _ one: (T) throws -> (String, String)) throws -> (String
 func hostileCases() -> [Case] {
     let util = "hooks/util.ts"
     return [
-        H("H01", "control-untouched", py: "control-untouched", pass: true, slow: true) { _ in },
-        H("H02", "realistic-build", py: "realistic-build", pass: true, rc: true, slow: true, after: { w, t in
+        H("H01", "control-untouched", py: "control-untouched", pass: true, slow: true, fake: !realSuite, real: realSuite) { _ in },
+        H("H02", "realistic-build", py: "realistic-build", pass: true, rc: true, slow: true, fake: true, after: { w, t in
             let tail = (readText(w.p.changelog) ?? "").components(separatedBy: "\n## harness\n").last ?? ""
             t.check(tail.unicodeScalars.count <= 2001 && tail.unicodeScalars.allSatisfy { $0 == "\n" || ($0.value >= 32 && $0.value < 127) }, "summary not neutralised")
             t.check((readText(w.p.mod + "/tests/fixes.test.tsx") ?? "").contains("HARNESS a new top-level test"), "the new test is not in the mod")
@@ -177,15 +201,15 @@ func hostileCases() -> [Case] {
         H("H24", "ui-render-back", py: "ui-render-back") { s in try hook(s, "  on('ui.render', { component: 'Spinner' }, async ($, e, next) => next(e))") },
         H("H25", "jeb-command-back", py: "jeb-command-back") { s in
             try viaFn(s, "async function zc(api: EngineInterface) {\n  await api.command.register({ name: 'jeb', description: 'x', run: async () => {} })\n}", "detach(zc($))") },
-        H("H26", "loosen-types-tsconfig", py: "loosen-types-tsconfig", pass: true, slow: true, after: { w, t in
+        H("H26", "loosen-types-tsconfig", py: "loosen-types-tsconfig", pass: true, slow: true, fake: true, after: { w, t in
             t.check(!(readText(w.p.mod + "/.claude-plugin/types/tsconfig.json") ?? "").contains("loosened"), "the loosened types reached the mod")
         }) { s in try edit(s, ".claude-plugin/types/tsconfig.json", "{", "{\n  \"//\": \"loosened\",") },
-        H("H27", "story-test-emptied", py: "story-test-emptied", pass: true, slow: true) { s in try emptyFirstTest(s, "little.test.tsx") },
-        H("H28", "story-test-file-removed", py: "story-test-file-removed", pass: true, slow: true, after: { w, t in
+        H("H27", "story-test-emptied", py: "story-test-emptied", pass: true, slow: true, fake: true) { s in try emptyFirstTest(s, "little.test.tsx") },
+        H("H28", "story-test-file-removed", py: "story-test-file-removed", pass: true, slow: true, fake: true, after: { w, t in
             t.check(!lexists(w.p.mod + "/tests/fixes.test.tsx"), "fixes.test.tsx is still in the mod")
         }) { s in unlink(s + "/tests/fixes.test.tsx") },
         H("H29", "safety-test-emptied", py: "safety-test-emptied") { s in try emptyFirstTest(s, "drops.test.tsx") },
-        H("H30", "safety-test-neutered", py: "safety-test-neutered", slow: true) { s in
+        H("H30", "safety-test-neutered", py: "safety-test-neutered", slow: true, real: true) { s in
             try edit(s, "tests/perf.test.tsx", testImport, "import { expect, mock, test as realTest } from 'claude-code/testing'\nconst test = (name: string, _f: unknown) => realTest(name + ' (quiet)', () => {})\n") },
         H("H31", "safety-file-removed", py: "safety-file-removed") { s in unlink(s + "/tests/perf.test.tsx") },
         H("H32", "guard-removed", py: "guard-removed") { s in unlink(s + "/tests/guard.test.tsx") },
@@ -217,13 +241,23 @@ func hostileCases() -> [Case] {
             mkdirp(s + "/art/out"); try Data(count: 50_000_001).write(to: URL(fileURLWithPath: s + "/art/out/big.png")) },
         H("N10", "nothing-changed", exact: "nothing changed", rc: true, slow: true) { _ in },
         H("N11", "tsc-error", "tsc failed: ", slow: true) { s in try app(s, util, "\nexport const zzn: number = 'x'\n") },
-        H("N12", "failing-new-test", "tests run 1 failed (1 fail)", slow: true) { s in try newTest(s, "expect(1 + 1).toBe(3)") },
+        H("N12", "failing-new-test", "tests run 1 failed (1 fail)", slow: true, real: true) { s in try newTest(s, "expect(1 + 1).toBe(3)") },
+        // The stand-in suite leaves one locked test out: the gate still sees it missing (the first locked test of drops.test.tsx).
+        Case(name: "N15 fake-suite-missing-locked-test", slow: false) { t in
+            let name = testBlocks(readText(Env.base + "/tests/drops.test.tsx") ?? "").compactMap(testName).first ?? ""
+            t.check(!name.isEmpty, "no locked test name to omit")
+            let w = World("n15", fakeSuite: true, omit: name); defer { w.close() }
+            try copyMod(w.c, to: w.p.stage)
+            let problems = suiteProblems(w.c, w.p.stage)
+            t.check(problems.count == 1 && problems[0].contains("tests run 1: 1 existing test(s) did not pass"), "problems: \(problems)")
+            return ("REJECT", problems.first ?? "")
+        },
         // The gate copy deletes a planted tsconfig.gate.json (G2) and the gate writes its own (G12).
-        H("N13", "planted-tsconfig-gate", pass: true, slow: true, after: { w, t in
+        H("N13", "planted-tsconfig-gate", pass: true, slow: true, fake: true, after: { w, t in
             t.check(!lexists(w.p.mod + "/tsconfig.gate.json"), "the planted tsconfig.gate.json reached the mod")
         }) { s in try put(s, "tsconfig.gate.json", "{\"extends\": \"./tsconfig.json\", \"include\": []}") },
         Case(name: "N14 swap-and-rollback", slow: true) { t in try retryFlake(t) { t in
-            let w = World("n14"); defer { w.close() }
+            let w = World("n14", fakeSuite: true); defer { w.close() }
             let c = w.c, p = w.p, original = try manifest(p.mod), isMine = { (k: String) in !isTypes(k) }
             t.eq(try rollback(c), 1, "rollback with no backups"); t.eq(w.lines, ["rollback: no backups"], "log")
             // A real build through the Builder seam: swap in, then roll back to the exact old bytes.

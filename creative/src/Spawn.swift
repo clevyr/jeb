@@ -6,6 +6,7 @@ import Foundation
 /// No CLAUDE_* from a calling session (it would load the user's mods into the builder), and PATH with no empty entry.
 func toolEnv(_ c: Ctx) -> [String: String] {
     var env = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("CLAUDE") }
+    env["HOME"] = c.p.home  // the run's own home (the caller's HOME in production); lets concurrent test cases each have theirs
     let base = c.p.home + "/.local/bin:/opt/homebrew/bin:/usr/local/bin"
     env["PATH"] = (ProcessInfo.processInfo.environment["PATH"]).flatMap { $0.isEmpty ? nil : base + ":" + $0 } ?? base
     return env
