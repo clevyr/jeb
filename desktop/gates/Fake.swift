@@ -89,7 +89,7 @@ func fakeMain(_ at: Places, _ args: [String]) -> Int32 {
                     if state[i].truckAt == nil { state[i].truckAt = now }
                     if state[i].truck! >= 16 { state[i].truck = nil; state[i].truckAt = nil }
                 }
-                let roll = rnd.random()       // drawn every tick, $&rnd.random() < 0.06 and ...` did
+                let roll = rnd.random()       // drawn every tick, before the cooldown check, so the random stream (and the goldens) never depend on it
                 if roll < 0.06 && now - state[i].said > 8 { state[i].line = rnd.choice(lines); state[i].said = now }
             }
         }

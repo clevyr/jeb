@@ -106,6 +106,18 @@ func replaceOldClone(_ clone: String, _ f: StandaloneFlags) -> Int32? {
     return nil
 }
 
+/// Fetch release `tag` with the pinned signers, staging in a private folder under `tmpRoot` that is removed before this returns
+/// (the caller then exits or execs, which would skip a defer of its own).
+func standaloneFetch(_ tag: String, signers: [String] = signerLines, tmpRoot: String = NSTemporaryDirectory()) -> (path: String?, err: BundleError?) {
+    let tmp = (tmpRoot.hasSuffix("/") ? tmpRoot : tmpRoot + "/") + "jebctl-" + UUID().uuidString
+    try? FileManager.default.createDirectory(atPath: tmp, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+    defer { try? FileManager.default.removeItem(atPath: tmp) }
+    let pin = tmp + "/signers"
+    do { try writePrivate(signers.joined(separator: "\n") + "\n", to: pin) }
+    catch { return (nil, BundleError(why: "\(error)", permanent: false, kind: nil)) }
+    return fetchBundle(tag, log: { standaloneStep($0) }, pin: pin, staging: tmp)
+}
+
 /// `jebctl install` outside a bundle. flags: what follows `install`. signers: the trusted lines (tests pass their own key).
 /// handOff: runs the unpacked bundle's `desktop/bin/jebctl install` (default: exec). The exit code.
 func standaloneInstall(_ flags: [String], signers: [String] = signerLines,
@@ -152,12 +164,7 @@ func standaloneInstall(_ flags: [String], signers: [String] = signerLines,
         say("Dry run only; nothing was changed.")
         return 0
     }
-    let tmp = NSTemporaryDirectory() + "jebctl-" + UUID().uuidString
-    try? FileManager.default.createDirectory(atPath: tmp, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
-    defer { try? FileManager.default.removeItem(atPath: tmp) }
-    let pin = tmp + "/signers"
-    do { try writePrivate(signers.joined(separator: "\n") + "\n", to: pin) } catch { die("jebctl: \(error)") }
-    let got = fetchBundle(newest, log: { standaloneStep($0) }, pin: pin, staging: tmp)
+    let got = standaloneFetch(newest, signers: signers)
     guard let ver = got.path else {
         let e = got.err
         die("jebctl: " + (e?.permanent == true ? "refusing release \(newest): " : "could not fetch \(newest): ") + (e?.why ?? "unknown error"))

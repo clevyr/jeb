@@ -1,7 +1,7 @@
 #!/bin/sh
 # run.sh: build and run the unit tests for the runtime core (desktop/cli/*.swift except main.swift, the dispatch,
-# which has no unit tests; the tests bring their own main.swift), then diff the jebhome and updater-status probes against the goldens
-# capture-goldens.sh froze from the Python. Nothing here touches ~/.jeb, ~/Library or the LaunchAgents: HOME, TMPDIR
+# which has no unit tests; the tests bring their own main.swift), then diff the jebhome and updater-status probes against the frozen
+# goldens. Nothing here touches ~/.jeb, ~/Library or the LaunchAgents: HOME, TMPDIR
 # and every JEB_* path point into a throwaway folder (under $JEBCTL_TESTS_TMP when set, else TMPDIR).
 set -eu
 cd "$(dirname "$0")/../../.."
@@ -30,7 +30,7 @@ export PATH=/usr/bin:/bin:/usr/sbin:/sbin
 rc=0
 "$BIN" || rc=1
 
-# ---- the probes, in a sandbox laid out like capture-goldens.sh's bundle_sb("probe") ----
+# ---- the probes, in a sandbox holding a stub claude, an installed v1.4.0 bundle (current points at it) and a release tree ----
 SB=$W/sb
 mkdir -p "$SB/home/.local/bin" "$SB/home/.jeb/versions/v1.4.0" "$SB/home/Library/Application Support/Jeb" "$SB/rel"
 printf '#!/bin/sh\n' > "$SB/home/.local/bin/claude"; chmod 755 "$SB/home/.local/bin/claude"

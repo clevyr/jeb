@@ -1,4 +1,4 @@
-// Normalize.swift: the golden text rules of capture-goldens.sh's drive.py (norm, path_subs, section, pretty_json) and a JSON
+// Normalize.swift: the golden text rules (norm, path_subs, section, pretty_json) the goldens were frozen with and a JSON
 // value that re-serializes the way Python's json.dumps does (sort_keys, indent=1, ", "/": " separators, ensure_ascii).
 import CryptoKit
 import Foundation

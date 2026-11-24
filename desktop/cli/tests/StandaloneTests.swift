@@ -157,4 +157,16 @@ func standaloneTests(_ t: Tester) {
             t.check(isRegularFile(clone + "/desktop/jebctl"), "and leaves the clone")
         }
     }
+
+    t.test("standalone: a failed fetch leaves no jebctl- folder behind") {
+        sandbox("fetch-clean") { _ in
+            let root = t.scratch("tmproot")
+            var got: (path: String?, err: BundleError?) = (nil, nil)
+            _ = printed { got = standaloneFetch("v9.9.9", tmpRoot: root) }
+            t.eq(got.path, nil, "nothing was fetched")
+            t.check(got.err != nil, "and it says why")
+            let left = ((try? FileManager.default.contentsOfDirectory(atPath: root)) ?? []).filter { $0.hasPrefix("jebctl-") }
+            t.eq(left, [], "the temp folder is gone")
+        }
+    }
 }
