@@ -1,0 +1,13 @@
+## rc
+1
+
+## stdout
+(empty)
+
+## stderr
+curl: (37) Couldn't open file $SB/install-tree/latest/download/jebctl-macos
+Could not download jebctl from file://$SB/install-tree/latest/download/jebctl-macos; check the network.
+
+## ~/.jeb/bin afterwards
+(empty)
+

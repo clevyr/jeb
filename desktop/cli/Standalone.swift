@@ -118,10 +118,27 @@ func standaloneFetch(_ tag: String, signers: [String] = signerLines, tmpRoot: St
     return fetchBundle(tag, log: { standaloneStep($0) }, pin: pin, staging: tmp)
 }
 
+/// Run `update` until it stops changing the installed tag (at most `passes` times); the last update's exit code. An install
+/// that pins only older signers reaches the newest release in two updates (the first adopts the newer signers), so one is not enough.
+func standaloneUpdateLoop(passes: Int = 3, update: () -> Int32 = { run([liveJebctl, "update"], capture: false).status },
+                          readTag: () -> String? = installedTag) -> Int32 {
+    var rc: Int32 = 0
+    for pass in 1...passes {
+        let before = readTag()
+        rc = update()
+        let after = readTag()
+        if rc != 0 || after == before || pass == passes { break }
+        standaloneStep("updated to \(after ?? "a newer release"); checking for a newer release")
+    }
+    return rc
+}
+
 /// `jebctl install` outside a bundle. flags: what follows `install`. signers: the trusted lines (tests pass their own key).
 /// handOff: runs the unpacked bundle's `desktop/bin/jebctl install` (default: exec). The exit code.
 func standaloneInstall(_ flags: [String], signers: [String] = signerLines,
-                       handOff: (String, [String]) -> Int32 = execBundleInstall) -> Int32 {
+                       handOff: (String, [String]) -> Int32 = execBundleInstall,
+                       update: () -> Int32 = { run([liveJebctl, "update"], capture: false).status },
+                       readTag: () -> String? = installedTag) -> Int32 {
     let f = parseStandaloneFlags(flags)
     if let bad = f.bad {
         say("jebctl install: unknown option \(bad)\n" + standaloneUsage)
@@ -134,10 +151,10 @@ func standaloneInstall(_ flags: [String], signers: [String] = signerLines,
     if liveValid() {
         say("Jeb is installed: updating it\(tag)")
         if f.dry {
-            standaloneStep("would run jebctl update, then jebctl doctor")
+            standaloneStep("would run jebctl update (again while it installs a newer release), then jebctl doctor")
             return 0
         }
-        let rc = run([liveJebctl, "update"], capture: false).status
+        let rc = standaloneUpdateLoop(update: update, readTag: readTag)
         _ = run([liveJebctl, "doctor"], capture: false)
         return rc
     }
@@ -152,12 +169,18 @@ func standaloneInstall(_ flags: [String], signers: [String] = signerLines,
     let arch = hostArch(), base = releaseBase(releaseRepo())
     standaloneStep("architecture: \(arch)")
     let newest: String
-    do { newest = try latestTag(base) }
-    catch let e as FetchError {
-        if e.status == 404 { die("jebctl: \(base) has no published release (HTTP 404; is the repository public?)") }
-        die("jebctl: could not reach GitHub (\(e)); check the network and run jebctl install again")
-    } catch { die("jebctl: could not reach GitHub (\(error)); check the network and run jebctl install again") }
-    standaloneStep("newest release: \(newest)")
+    if let pinned = envVar("JEB_RELEASE_TAG") {
+        // a named release instead of the newest (./release smoke <tag>); it is verified like any other
+        guard tagKey(pinned) != nil else { die("jebctl: JEB_RELEASE_TAG=\(pinned) is not a release tag (vX.Y.Z)") }
+        newest = pinned
+    } else {
+        do { newest = try latestTag(base) }
+        catch let e as FetchError {
+            if e.status == 404 { die("jebctl: \(base) has no published release (HTTP 404; is the repository public?)") }
+            die("jebctl: could not reach GitHub (\(e)); check the network and run jebctl install again")
+        } catch { die("jebctl: could not reach GitHub (\(error)); check the network and run jebctl install again") }
+    }
+    standaloneStep((envVar("JEB_RELEASE_TAG") == nil ? "newest release: " : "release (JEB_RELEASE_TAG): ") + newest)
     if f.dry {
         standaloneStep("would download its manifest, signature and \(arch) zip from \(base)/download/\(newest)/,")
         standaloneStep("verify the signature and hashes, unpack into \(versionsDir())/<tag> and run the bundle's own install")

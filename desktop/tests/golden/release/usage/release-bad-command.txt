@@ -33,8 +33,10 @@
                           Jeb-<tag>-manifest.json and its .sig (signed with the tag's key in the `jeb-release`
                           namespace), jebctl-macos (the universal native jebctl, also inside every bundle as
                           desktop/bin/jebctl; its name, size and SHA-256 are in the manifest under "jebctl"; a
-                          new user's first copy is a curl of
-                          github.com/clevyr/jeb/releases/latest/download/jebctl-macos), and
+                          new user's first copy comes from
+                          install.sh), install.sh (the one-line installer, not in the manifest: it downloads
+                          jebctl-macos to ~/.jeb/bin/jebctl and runs `jebctl install`; users run
+                          curl -fsSL github.com/clevyr/jeb/releases/latest/download/install.sh | sh), and
                           JebDesktop-<tag>-macos.zip (JebDesktop plus the universal detect and png2raw; its
                           SHA-256 is in the signed tag). Without a terminal they print those commands instead.
   ./release bundle --tag vX.Y.Z --out DIR [--ref REF] [--from-tree] [--app DIR] [--key K] [--signers F]
@@ -51,7 +53,8 @@
                           and the release's jebctl-macos over HTTPS (JEB_RELEASE_BASE overrides where releases are
                           read; it is passed into the sandbox), verifies them against desktop/release-signers,
                           checks jebctl-macos against the manifest and that `--version` names the tag, and runs
-                          that `jebctl-macos install --no-agents`, which downloads this Mac's zip, unpacks it
+                          the release's install.sh --no-agents (a release without one: `jebctl-macos install
+                          --no-agents`), which runs `jebctl install` to download this Mac's zip, unpack it
                           into <home>/.jeb/versions/<TAG> and runs the bundle's own install (no LaunchAgent,
                           launchctl or PATH change anywhere; a tag older than v1.5.0 is refused: its
                           jebctl-macos installs with gh). It checks the prebuilt app was used, codesign, that

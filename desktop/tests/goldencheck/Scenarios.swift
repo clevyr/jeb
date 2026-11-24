@@ -439,6 +439,27 @@ func globMatches(_ dir: String, _ pattern: String) -> Bool {
     return rc == 0 && g.gl_matchc > 0
 }
 
+/// dev/release/install.sh against a file:// release tree whose jebctl-macos is a stub: the arguments reach `jebctl install`, the
+/// stub's exit code is the script's, jebctl is left at ~/.jeb/bin/jebctl with no jebctl.new beside it; and a missing
+/// jebctl-macos is a plain message and 1, leaving nothing behind.
+func installShCases(_ sb: SB) {
+    let script = config.root + "/dev/release/install.sh"
+    let tree = sb.root + "/install-tree"
+    mkdirs(tree + "/latest/download")
+    writeText(tree + "/latest/download/jebctl-macos", "#!/bin/sh\necho \"stub jebctl: $*\"\nexit 3\n")
+    func go(_ home: String, _ args: [String]) -> String {
+        var env = BASE_ENV
+        env["JEB_TOOLS_DIR"] = nil
+        for (k, v) in ["HOME": sb.root + "/" + home, "PATH": "/usr/bin:/bin:/usr/sbin:/sbin", "JEB_RELEASE_BASE": "file://" + tree] { env[k] = v }
+        mkdirs(sb.root + "/" + home)
+        return rcOutErr(runProcess(["/bin/sh", script] + args, env: env, cwd: sb.root), sb)
+            + section("~/.jeb/bin afterwards", listDir(sb.root + "/" + home + "/.jeb/bin").joined(separator: "\n"))
+    }
+    write("release/tool/install-sh-passes-args.txt", go("home-ok", ["--no-agents", "--dry-run"]))
+    unlink(tree + "/latest/download/jebctl-macos")
+    write("release/tool/install-sh-download-fails.txt", go("home-fail", []))
+}
+
 func releaseTool() {
     let rel = config.root + "/release"
     let sb = plainSB("release-tool")
@@ -446,6 +467,7 @@ func releaseTool() {
     write("release/tool/constants.txt", rcOutErr(r, sb))
     write("release/tool/smoke-dry-run.txt", sb.snapshot(sb.script(rel, ["smoke", "--dry-run"], tool: .release), plists: false))
     write("release/tool/smoke-dry-run-tag.txt", sb.snapshot(sb.script(rel, ["smoke", "v1.5.0", "--dry-run"], tool: .release), plists: false))
+    installShCases(sb)
     SKIPPED.append("release/tool/check-notices: retired; schema 2 bundles ship no Python, so there is no notices line to check")
     // the bundles, offline (schema 2: no Python in the bundle, so nothing is downloaded)
     let consts = r.rc == 0 ? ((try? JSON.parse(r.stdout)) ?? obj()) : obj()

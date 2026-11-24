@@ -24,16 +24,14 @@ You need a Mac running macOS 12 or later (Apple Silicon or Intel) and Claude Cod
 
 **1. Ask Claude to set it up.** Open Claude Code in any folder and paste this in:
 
-    Set up or update Jeb for me from github.com/clevyr/jeb. Do every step yourself, without asking me
-    to run anything. Never ask me for an administrator password or sudo, to edit my shell profile or
-    PATH, to install Homebrew, or to accept the Xcode license, and never compile anything. Run:
-    mkdir -p ~/.jeb/bin && curl -fsSL https://github.com/clevyr/jeb/releases/latest/download/jebctl-macos -o ~/.jeb/bin/jebctl.new && chmod +x ~/.jeb/bin/jebctl.new && mv -f ~/.jeb/bin/jebctl.new ~/.jeb/bin/jebctl && ~/.jeb/bin/jebctl install
-    It installs Jeb or updates it. Read what it prints and fix any FIX line it reports, following
-    https://raw.githubusercontent.com/clevyr/jeb/main/.claude/skills/jeb-install/SKILL.md.
+    Install or update Jeb for me. Run:
+    curl -fsSL https://github.com/clevyr/jeb/releases/latest/download/install.sh | sh
+    Then follow ~/.jeb/current/.claude/skills/jeb-install/SKILL.md to finish, and fix anything it
+    reports yourself. Never ask me for a password or sudo, and never compile anything.
 
-Claude runs the install and tells you when everything's healthy. The release's signature is checked before anything runs, so a tampered download is refused. Paste the same prompt again any time to update or repair Jeb. After that, everything is a `jebctl` command (`update`, `doctor`, `status`, `uninstall`); if `jebctl` isn't found, `~/.jeb/bin/jebctl` always works.
+Claude runs the install and tells you when everything's healthy. The release's signature is checked before anything runs, so a tampered download is refused. The same command installs Jeb, or updates it if it is already there, including from an older version (it checks for a newer release until it is current). Paste the prompt again any time to update or repair Jeb. After that, everything is a `jebctl` command (`update`, `doctor`, `status`, `uninstall`); if `jebctl` isn't found, `~/.jeb/bin/jebctl` always works.
 
-Prefer Terminal to pasting a prompt? See [Installing by hand](docs/install-and-updates.md#installing-by-hand).
+Prefer Terminal to pasting a prompt? The same line works there: `curl -fsSL https://github.com/clevyr/jeb/releases/latest/download/install.sh | sh`. To check the download yourself first, see [Installing by hand](docs/install-and-updates.md#installing-by-hand).
 
 **2. Start a new Claude Code session.** Jeb only joins sessions started after the install. The farm looks pretty empty at first and fills in as you work.
 

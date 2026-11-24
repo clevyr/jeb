@@ -1,0 +1,12 @@
+## rc
+3
+
+## stdout
+stub jebctl: install --no-agents --dry-run
+
+## stderr
+(empty)
+
+## ~/.jeb/bin afterwards
+jebctl
+

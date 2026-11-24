@@ -71,8 +71,9 @@ private func writeDoc(_ doc: Json, _ path: String) {
     if (try? (doc.dumps(indent: 2) + "\n").write(toFile: path, atomically: false, encoding: .utf8)) == nil { fail("could not write \(path)") }
 }
 
-/// Build Jeb-<tag>-macos-{arm64,x86_64}.zip plus the signed manifest and jebctl-macos in out; returns the paths to
-/// upload (manifest, signature, zips, jebctl). appDir holds JebDesktop, detect, png2raw and the universal jebctl, which
+/// Build Jeb-<tag>-macos-{arm64,x86_64}.zip plus the signed manifest, jebctl-macos and install.sh in out; returns the
+/// paths to upload (manifest, signature, zips, jebctl, install.sh). install.sh (the one-line installer, from the clone's
+/// dev/release; a release requires a clean tree) is not in the manifest: it only fetches jebctl, which verifies everything. appDir holds JebDesktop, detect, png2raw and the universal jebctl, which
 /// each bundle carries as desktop/bin/jebctl. signers overrides the bundle's desktop/release-signers (tests: a
 /// throwaway key). Self-verifies the signature against the bundle's own release-signers, the file an install pins.
 func makeBundles(tag: String, ref: String, appDir: String, out: String, key: String, signers: String? = nil, fromTree: Bool = false) -> [String] {
@@ -122,6 +123,10 @@ func makeBundles(tag: String, ref: String, appDir: String, out: String, key: Str
     if run([tool("codesign"), "--verify", ctl]).status != 0 { fail("the staged jebctl fails codesign --verify") }
     let ctlSum = sha256(of: ctl), ctlBytes = size(of: ctl)
     say("  jebctl-macos: \(ctlBytes / 1024) KB, sha256 \(ctlSum.prefix(16))")
+    let installer = out + "/install.sh"
+    try? fm.removeItem(atPath: installer)
+    if (try? fm.copyItem(atPath: clone + "/dev/release/install.sh", toPath: installer)) == nil { fail("could not copy dev/release/install.sh to \(installer)") }
+    chmod(installer, 0o755)
     let man = out + "/Jeb-\(tag)-manifest.json"
     writeDoc(.object([("schema", .int(1)), ("repo", .string(repo)), ("tag", .string(tag)), ("version", .string(version)), ("commit", .string(commit)), ("created", .string(utcStamp())),
                       ("bundles", .object(bundles)), ("jebctl", .object([("name", .string("jebctl-macos")), ("sha256", .string(ctlSum)), ("size", .int(ctlBytes))]))]), man)
@@ -133,7 +138,7 @@ func makeBundles(tag: String, ref: String, appDir: String, out: String, key: Str
              + "is the signing key listed there with namespaces including jeb-release? (./release setup shows it)")
     }
     say("manifest signed and verified against the bundle's release-signers: \(man)")
-    return [man, sig] + zips + [ctl]
+    return [man, sig] + zips + [ctl, installer]
 }
 
 /// ./release bundle --tag vX.Y.Z --out DIR [--ref REF] [--from-tree] [--app DIR] [--key K] [--signers F]

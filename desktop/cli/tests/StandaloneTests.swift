@@ -51,6 +51,29 @@ func standaloneTests(_ t: Tester) {
         }
     }
 
+    t.test("standalone: update repeats while the installed tag changes, up to three passes, and stops on failure") {
+        /// Runs the loop with a scripted update: each call returns the next (rc, tag after) pair.
+        func loop(_ steps: [(Int32, String)], start: String = "v1.4.0") -> (rc: Int32, calls: Int, out: String) {
+            var tag = start, calls = 0
+            var rc: Int32 = 0
+            let out = printed { rc = standaloneUpdateLoop(update: { let s = steps[min(calls, steps.count - 1)]; calls += 1; tag = s.1; return s.0 }, readTag: { tag }) }
+            return (rc, calls, out)
+        }
+        var r = loop([(0, "v1.4.0")])
+        t.eq(r.calls, 1, "one pass when the tag does not change")
+        t.eq(r.out, "", "and nothing extra is said")
+        r = loop([(0, "v1.6.0"), (0, "v1.7.0"), (0, "v1.7.0")])
+        t.eq(r.calls, 3, "a change twice then none is three passes")
+        r = loop([(0, "v1.6.0"), (0, "v1.6.0")])
+        t.eq(r.calls, 2, "two passes when the tag changes once")
+        t.check(r.out.contains("updated to v1.6.0; checking for a newer release"), "the extra pass is announced")
+        r = loop([(0, "v1.5.0"), (0, "v1.6.0"), (0, "v1.7.0"), (0, "v1.8.0")])
+        t.eq(r.calls, 3, "it stops at three passes")
+        r = loop([(0, "v1.6.0"), (1, "v1.6.0"), (0, "v1.7.0")])
+        t.eq(r.calls, 2, "it stops on a failing update")
+        t.eq(r.rc, 1, "and returns that exit code")
+    }
+
     t.test("standalone: the built-in signers are the jeb-release lines of desktop/release-signers") {
         let file = readFile(NSString(string: envVar("JEB_REPO") ?? ".").expandingTildeInPath + "/desktop/release-signers") ?? ""
         // (principal, key type, key) of the lines whose namespaces include jeb-release
@@ -118,6 +141,20 @@ func standaloneTests(_ t: Tester) {
             t.eq(oldCloneInstall(), home + "/jeb", "a clone at ~/jeb is found too")
         }
         sandbox("noclone") { _ in t.eq(oldCloneInstall(), nil, "none, none") }
+    }
+
+    t.test("standalone: JEB_RELEASE_TAG installs that tag instead of the newest") {
+        sandbox("pinned-tag") { home in
+            writeFile(home + "/no-releases/latest", "v9.9.9")
+            let was = envVar("JEB_RELEASE_TAG")
+            setEnvVar("JEB_RELEASE_TAG", "v1.5.0")
+            defer { setEnvVar("JEB_RELEASE_TAG", was) }
+            var rc: Int32 = 99
+            let out = printed { rc = standaloneInstall(["--dry-run", "--no-agents"], handOff: { _, _ in 98 }) }
+            t.eq(rc, 0, "a dry run succeeds")
+            t.check(out.contains("release (JEB_RELEASE_TAG): v1.5.0") && out.contains("/download/v1.5.0/"), "it names the pinned tag: \(out)")
+            t.check(!out.contains("v9.9.9"), "not the newest: \(out)")
+        }
     }
 
     t.test("standalone: --replace-clone --dry-run changes nothing") {

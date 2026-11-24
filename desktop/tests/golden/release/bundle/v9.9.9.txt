@@ -14,6 +14,7 @@ made:
   $SB/out/Jeb-v9.9.9-macos-$ARCH.zip
   $SB/out/Jeb-v9.9.9-macos-x86_64.zip
   $SB/out/jebctl-macos
+  $SB/out/install.sh
 
 ## stderr
 Signing file $SB/out/Jeb-v9.9.9-manifest.json
@@ -51,6 +52,7 @@ Jeb-v9.9.9-macos-$ARCH.zip
 Jeb-v9.9.9-macos-x86_64.zip
 Jeb-v9.9.9-manifest.json
 Jeb-v9.9.9-manifest.json.sig
+install.sh
 jebctl-macos
 
 ## arm64 bundle.json

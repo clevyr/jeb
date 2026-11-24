@@ -4,7 +4,7 @@
 ## stdout
 smoke v1.5.0 from file://$SB/rel
   sandbox $REPO/.git/jeb-smoke/v1.5.0 (fake HOME inside; an earlier one is moved to $REPO/.git/jeb-smoke/old-<time>)
-  HTTPS download of the manifest, signature and jebctl-macos, verify, then jebctl-macos install --no-agents (it downloads this Mac's zip,
+  HTTPS download of the manifest, signature and jebctl-macos, verify, then the release's install.sh --no-agents (it runs jebctl install, which downloads this Mac's zip,
   unpacks into <home>/.jeb/versions/<tag> and runs the bundle's own install); then jebctl follow --dry-run and jebctl doctor (JEB_NO_LAUNCHCTL=1)
 dry run: nothing was created.
 

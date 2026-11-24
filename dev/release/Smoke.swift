@@ -1,6 +1,7 @@
 // Smoke: ./release smoke [TAG], the sandboxed end-to-end check of a published release. It downloads the release the
-// way a new user's Claude does (its jebctl-macos, checked against the signed manifest), runs that
-// `install --no-agents` under a fake HOME, and checks what it left. Never touches the real install.
+// way a new user does: the release's install.sh (which fetches jebctl-macos and runs `jebctl install`) with
+// --no-agents under a fake HOME, then checks what it left; jebctl-macos is also checked against the signed manifest.
+// Never touches the real install.
 import Foundation
 
 let smokeMin = (1, 5, 0)      // the first release whose jebctl-macos installs without gh
@@ -69,7 +70,22 @@ private func smokeCase(_ sandbox: String, _ home: String, _ tag: String, _ base:
     let v = run([ctl, "--version"], env: env)
     if v.status != 0 || !v.out.contains(tag) { return bad("jebctl-macos --version said '\(strip(v.out))', not \(tag)") }
     let ver = home + "/.jeb/versions/" + tag
-    let r = run([ctl, "install", "--no-agents"], cwd: sandbox, env: env)
+    // The way a user installs: the release's install.sh, which fetches the newest jebctl-macos and runs its install.
+    // A named tag (which may not be the newest; JEB_RELEASE_TAG makes this tag's jebctl install it) and a release older than
+    // install.sh (v1.7.0) install with this tag's jebctl directly. From v1.7.0 on, a missing install.sh fails the smoke.
+    let script = dl + "/install.sh"
+    var r: (status: Int32, text: String)
+    if !pinned, let k = tagKey(tag), k >= (1, 7, 0) {
+        do { try save("\(base)/download/\(tag)/install.sh", to: script, limit: 64 << 10) }
+        catch { return bad("install.sh download failed: \(error)") }
+        var viaScript = env
+        viaScript["JEB_RELEASE_BASE"] = base
+        let s = run([tool("sh"), script, "--no-agents"], cwd: sandbox, env: viaScript)
+        r = (s.status, s.text)
+    } else {
+        let s = run([ctl, "install", "--no-agents"], cwd: sandbox, env: env)
+        r = (s.status, s.text)
+    }
     try? (r.text + "\n").write(toFile: sandbox + "/install.log", atomically: false, encoding: .utf8)
     if r.status != 0 { return bad("install exit \(r.status): " + String(splitLines(r.text).suffix(3).joined(separator: " | ").prefix(400))) }
     let app = home + "/Applications/JebDesktop.app"
@@ -112,7 +128,7 @@ func smoke(_ named: String?) -> Int32 {
     let root = gitPath("jeb-smoke")
     let sandbox = root + "/" + tag
     say("smoke \(tag) from \(base)\n  sandbox \(sandbox) (fake HOME inside; an earlier one is moved to \(root)/old-<time>)\n"
-        + "  HTTPS download of the manifest, signature and jebctl-macos, verify, then jebctl-macos install --no-agents (it downloads this Mac's zip,\n"
+        + "  HTTPS download of the manifest, signature and jebctl-macos, verify, then the release's install.sh --no-agents (it runs jebctl install, which downloads this Mac's zip,\n"
         + "  unpacks into <home>/.jeb/versions/<tag> and runs the bundle's own install); then jebctl follow --dry-run and jebctl doctor (JEB_NO_LAUNCHCTL=1)")
     if dryRun {
         say("dry run: nothing was created.")
