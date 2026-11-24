@@ -5,16 +5,20 @@ description: Diagnose a Jeb install on this Mac (app, LaunchAgents, plugin regis
 
 # Jeb doctor
 
-1. Run `~/.local/bin/jebctl doctor`, or `~/.jeb/bin/jebctl doctor` if that link is missing (both run the installed Jeb's own doctor; an old git-clone install has none: replace it with `~/.jeb/bin/jebctl install --replace-clone`). It is read-only. Each line is `ok` or `FIX <what>: <fix>`, and it ends with `all good` or `N problem(s)`.
-2. Apply these fixes yourself, without asking the user to run anything, and tell them in one plain line each what was wrong and what you did:
-   - `~/.local/bin/jebctl start` (the desktop was quit from the menu, or is not running);
+1. Run `~/.local/bin/jebctl doctor`, or `~/.jeb/bin/jebctl doctor` if that link is missing (both run the installed Jeb's own doctor; an old git-clone install has none: replace it with `~/.jeb/bin/jebctl install --replace-clone`). It is read-only. Checks are grouped (Install, Desktop app, Background agents, Claude Code, Updates); each line starts with `ok`, `FIX`, `skip` or `note`. It ends with `All good.`, or the problem count and a numbered "To fix them, in order" list, each step once. Work down that list.
+2. Apply these steps yourself, without asking the user to run anything, and tell them in one plain line each what was wrong and what you did:
+   - `~/.jeb/bin/jebctl install` (current is not a valid bundle): downloads the release again;
+   - `~/.local/bin/jebctl install` (missing app, LaunchAgents, plugin or install record, or a signing key that is not pinned): reinstalls the app, background agents and plugin;
+   - `~/.local/bin/jebctl quit`, then `~/.local/bin/jebctl start` (more than one Jeb running);
+   - `~/.local/bin/jebctl start` (Jeb is not running, has stopped responding, or was quit from the menu);
    - `~/.local/bin/jebctl resume-updates` (updates are paused; someone paused them on purpose, so ask first);
-   - `~/.local/bin/jebctl reload-agents` (the LaunchAgent plists are stale after an update);
-   - updates look stuck, or the user asks to update: follow the jeb-update skill (`~/.jeb/current/.claude/skills/jeb-update/SKILL.md`);
-   - repair: run the install again, `~/.jeb/current/install` with no flags (on an install older than v1.7.0, which bundles Python, run `~/.jeb/current/python/bin/python3 -I ~/.jeb/current/install` instead) (missing app, LaunchAgents or plugin registration: `jeb@jeb` not installed in `claude plugin list`, or an old Jeb entry still in `CLAUDE_CODE_PLUGIN_DIRS`, which also loads Jeb twice). If `~/.jeb/current` itself is broken, run `~/.jeb/bin/jebctl install` (or follow the jeb-install steps) to download the newest release again;
-   - `FIX GitHub releases reachable`: nothing to sign in to; check the network (a VPN, proxy or firewall must allow github.com and release-assets.githubusercontent.com) and explain it.
+   - `~/.local/bin/jebctl retry-update` (the last update was rejected or rolled back; read `update.log` first and say why);
+   - `~/.local/bin/jebctl update` (the plugin version differs from the mod, or more than one version is on disk; it also removes the older folders). Updates that look stuck, or the user asks to update: follow the jeb-update skill (`~/.jeb/current/.claude/skills/jeb-update/SKILL.md`);
+   - the PATH step (jebctl not on PATH, or another jebctl first): tell the user what to do; do not edit the shell profile yourself;
+   - "Start a new Claude Code session": tell the user; the farm data fills in once a session has run;
+   - the network step (GitHub releases): nothing to sign in to; a VPN, proxy or firewall must allow github.com and release-assets.githubusercontent.com. Explain it.
    Anything else: explain it in plain words and do not change it without the user's approval.
-3. If more detail is needed, read `~/Library/Application Support/Jeb/update.log`, `release.log` and `watchdog.log`. Older installs may still be at `~/.claude/jeb-desktop` until the next install or update moves them; the doctor's "state folder" line says which is in use. Point to logs by path only.
+3. If more detail is needed, read `~/Library/Application Support/Jeb/update.log`, `release.log` and `watchdog.log`. Older installs may still be at `~/.claude/jeb-desktop` until the next install or update moves them; the doctor prints a note when the older folder is still in use. Point to logs by path only.
 4. Never read or quote `~/Library/Application Support/Jeb/run.log` (or `~/.claude/jeb-desktop/run.log`) beyond lines containing "no usable art", "exited", "ROLLBACK" or "REJECTED".
 
 ## Rules

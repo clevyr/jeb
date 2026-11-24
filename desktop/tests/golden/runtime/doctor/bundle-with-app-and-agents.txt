@@ -2,37 +2,36 @@
 1
 
 ## stdout
-ok    macOS
-ok    $SB/home/.jeb/current resolves to a Jeb bundle
-ok    one version on disk (v1.4.0)
-ok    claude found ($SB/home/.local/bin/claude)
-FIX   jebctl command: ask Claude to repair Jeb (it re-runs the install)
-ok    install mode: release
-ok    app bundle $SB/home/Applications/JebDesktop.app
-FIX   app's mod folder (JebMod) has hooks/pixel-art.ts: ask Claude to repair Jeb (it re-runs the install)
-ok    LaunchAgent plist com.jeb.desktop
-ok    com.jeb.desktop ProgramArguments exist
-ok    com.jeb.desktop JEB_MOD is $SB/home/.jeb/current/mod
-skip  LaunchAgent loaded com.jeb.desktop: skipped (sandbox)
-ok    LaunchAgent plist com.jeb.desktop.watchdog
-ok    com.jeb.desktop.watchdog ProgramArguments exist
-ok    com.jeb.desktop.watchdog JEB_MOD is $SB/home/.jeb/current/mod
-skip  LaunchAgent loaded com.jeb.desktop.watchdog: skipped (sandbox)
-ok    LaunchAgent plist com.jeb.desktop.release
-ok    com.jeb.desktop.release ProgramArguments exist
-ok    com.jeb.desktop.release JEB_MOD is $SB/home/.jeb/current/mod
-skip  LaunchAgent loaded com.jeb.desktop.release: skipped (sandbox)
-FIX   exactly one JebDesktop running (0): run: jebctl start (more than one: jebctl quit, then jebctl start)
-ok    no quit marker
-ok    updates not paused
-FIX   plugin jeb@jeb installed and enabled in Claude Code: ask Claude to repair Jeb (it re-runs the install)
-FIX   mod store file: start a new Claude Code session so the plugin loads
-ok    last update result: ok
-ok    state folder: $SB/home/Library/Application Support/Jeb
-ok    release signers pinned
-ok    a pinned signer covers jeb-release
-ok    GitHub releases reachable (newest v1.4.0)
-5 problem(s)
+Jeb doctor
+
+Install
+  ok    Jeb v1.4.0 is installed (~/.jeb/current)
+  FIX   The jebctl command isn't on your PATH
+Desktop app
+  ok    The desktop app is installed (~/Applications/JebDesktop.app)
+  FIX   The app can't find Jeb's mod files
+  FIX   Jeb isn't running
+Background agents
+  ok    The desktop agent is set up
+  ok    The watchdog agent is set up
+  ok    The update agent is set up
+  skip  Agent status not checked (sandbox)
+Claude Code
+  ok    Claude Code found (~/.local/bin/claude)
+  FIX   The Jeb plugin isn't installed in Claude Code
+  FIX   No farm data yet
+Updates
+  ok    Updates are on
+  ok    Last update result: ok
+  ok    Release signing key pinned
+  ok    The pinned key covers jeb-release
+  ok    GitHub releases reachable (newest v1.4.0)
+
+5 problems. To fix them, in order:
+  1. ~/.jeb/current/desktop/bin/jebctl install  reinstalls the app, background agents and plugin
+  2. ~/.jeb/current/desktop/bin/jebctl start    starts the desktop app
+  3. Run ~/.jeb/current/desktop/bin/jebctl install --add-path to link jebctl and add it to your PATH
+  4. Start a new Claude Code session so the plugin loads
 
 ## stderr
 (empty)

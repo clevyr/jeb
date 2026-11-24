@@ -28,7 +28,7 @@ jebctl is the only tool a new user needs: it fetches the newest signed release, 
    - runs the health check at the end.
    Tell the user in one line what it set up once it finishes.
 4. If it fails, read the error and fix it yourself where these steps cover it, then run it again; otherwise explain the problem in plain words. Never edit the release's code to make it pass. "could not reach GitHub" means the network, VPN or proxy must allow github.com and release-assets.githubusercontent.com; "HTTP 404" means the release is missing, so tell the user. An older install (a git clone in `~/.jeb/repo` or `~/jeb`) is replaced by `jebctl install --replace-clone`, which moves the clone aside itself; do not move it by hand.
-5. Read the install's final lines: it runs the doctor itself and tells the user to start a new Claude Code session. Fix any `FIX` line the doctor skill (`~/.jeb/current/.claude/skills/jeb-doctor/SKILL.md`) covers, apart from the mod store line, which fills in once a session has run. Then tell the user in one line to start a NEW Claude Code session so the plugin loads.
+5. Read the install's final lines: it runs the doctor itself and tells the user to start a new Claude Code session. Work through its "To fix them" list with the doctor skill (`~/.jeb/current/.claude/skills/jeb-doctor/SKILL.md`), apart from the "No farm data yet" line, which fills in once a session has run. Then tell the user in one line to start a NEW Claude Code session so the plugin loads.
 
 ## Rules
 

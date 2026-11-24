@@ -491,7 +491,7 @@ func cmdUpdate() -> Int32 {
     FileManager.default.createFile(atPath: click, contents: Data())      // the menu's click: the agent skips the quiet wait for it
     if launchctlRun(["kickstart", "\(guiDomain)/com.jeb.desktop.release"]).status != 0 {
         unlink(click)
-        say("the release agent is not loaded; run the install again (or ask Claude to repair Jeb)")
+        say("the release agent is not loaded; run jebctl install to set it up again")
         return 1
     }
     say("checking for a new release")

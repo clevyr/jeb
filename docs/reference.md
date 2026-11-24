@@ -5,7 +5,7 @@ Jeb's commands, troubleshooting steps, and where its files and settings live.
 ## Commands
 
     jebctl status            # app, heartbeat, mode, last update, LaunchAgents
-    jebctl doctor            # health check, one ok/FIX line per check
+    jebctl doctor            # health check: grouped ok/FIX lines, then the steps to fix them
     jebctl start             # start it again after Quit
     jebctl quit              # same as Quit in the menu
     jebctl pause-updates     # stop following releases
@@ -19,15 +19,15 @@ Jeb's commands, troubleshooting steps, and where its files and settings live.
 
 ## Troubleshooting
 
-Run `jebctl doctor` first. Every `FIX` line tells you what to do.
+Run `jebctl doctor` first. It ends with the steps that fix every `FIX` line, in order.
 
-**Nothing on the desktop and no menu bar item.** It was quit, or it isn't running. Run `jebctl start`. If the LaunchAgents are gone, run the `install` in `~/.jeb/current` again (`~/.jeb/current/install`).
+**Nothing on the desktop and no menu bar item.** It was quit, or it isn't running. Run `jebctl start`. If the LaunchAgents are gone, run `jebctl install`.
 
 **A menu bar item that says "Waiting for art".** The app can't find the plugin's art (`mod/hooks/pixel-art.ts`), usually because `~/.jeb/current` is broken or was deleted. It checks every 30 seconds and carries on once the file is back. Ask Claude to install Jeb again.
 
 **The desktop is empty.** Start a new Claude Code session. The plugin only loads in sessions started after the install, and `doctor` will tell you whether it's registered and has written any state yet.
 
-**Updates stopped.** The app reloads the release and watchdog agents at start, and the update agent on a **Check for Updates** click, when launchd has dropped them (the `agents:` lines in `run.log` say so). `jebctl update` checks now and waits for the result, printing why if it fails. `jebctl status` shows the last release check and any failed tags. If the download is failing, look at `doctor`'s `GitHub releases reachable` line; a proxy or firewall must allow github.com and release-assets.githubusercontent.com. "app download failed; will retry" means the release couldn't be downloaded; nothing is marked failed and the next check tries again. `doctor` also tells you if updates are paused.
+**Updates stopped.** The app reloads the release and watchdog agents at start, and the update agent on a **Check for Updates** click, when launchd has dropped them (the `agents:` lines in `run.log` say so). `jebctl update` checks now and waits for the result, printing why if it fails. `jebctl status` shows the last release check and any failed tags. If the download is failing, look at `doctor`'s GitHub releases line; a proxy or firewall must allow github.com and release-assets.githubusercontent.com. "app download failed; will retry" means the release couldn't be downloaded; nothing is marked failed and the next check tries again. `doctor` also tells you if updates are paused.
 
 **An update failed.** The previous version keeps running and the failed release isn't retried. `jebctl retry-update` drops the newest failed tag and checks again. `update.log` and `release.log` say why.
 

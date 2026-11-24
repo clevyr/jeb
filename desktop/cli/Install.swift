@@ -414,9 +414,9 @@ func cmdInstall(_ flags: [String]) -> Int32 {
         fin("not registered")
         if !verbose { msgs.forEach { say("  " + $0) } }
         switch res {
-        case "no-claude": say("note: Claude Code is not installed, so Jeb is not registered yet; run ./install again after installing it")
+        case "no-claude": say("note: Claude Code is not installed, so Jeb is not registered yet; run jebctl install again after installing it")
         case "conflict": say("note: a Claude Code marketplace named \"jeb\" already points elsewhere; Jeb was left as it was (run jebctl doctor)")
-        default: say("note: Claude Code refused the plugin install; Jeb was left as it was (run ./install again, or jebctl doctor)")
+        default: say("note: Claude Code refused the plugin install; Jeb was left as it was (run jebctl install again, or jebctl doctor)")
         }
     }
     for m in msgs where m.hasPrefix("moved") { say("  " + m) }
