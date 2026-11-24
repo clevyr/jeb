@@ -495,8 +495,10 @@ struct ArtInfo {
     }
 }
 
+/// Matches against the plain sprites: the renders (JEB_BENCH) never wear a holiday costume, so the detector must not
+/// either, or every Jeb is missed in a holiday week (its Art reads the real date).
 func detect(_ at: Places, _ image: String, _ queries: [String], _ need: String) -> [Match] {
-    let out = capture([at.tools + "/detect", at.art, image] + queries, env: environWith(["DETECT_NEED": need]))
+    let out = capture([at.tools + "/detect", at.art, image] + queries, env: environWith(["DETECT_NEED": need, "JEB_HOLIDAY": "none"]))
     var found: [Match] = []
     for line in out.split(separator: "\n") {
         let parts = line.components(separatedBy: " ")       // rsplit(" ", 5): the name may hold spaces (a text label)
