@@ -5,7 +5,7 @@ description: Set up Jeb (the Claude Code mod plus the macOS desktop app) from gi
 
 # Set up Jeb
 
-Set up Jeb from the clevyr/jeb release (install, update, repair or remove), doing every step yourself. Most users are not developers: never ask them to run a command. A new user's Mac needs no Xcode, Command Line Tools, git or Homebrew. Keep progress updates to one short line per step, and explain a failure in simple words.
+Set up Jeb from the clevyr/jeb release (install, update, repair or remove), doing every step yourself and fixing what the install and doctor report without handing it back to the user. The Rules at the end apply throughout. Most users are not developers: never ask them to run a command. A new user's Mac needs no Xcode, Command Line Tools, git or Homebrew. Keep progress updates to one short line per step, and explain a failure in simple words.
 
 ## What to do
 

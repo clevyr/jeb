@@ -14,7 +14,7 @@ Jeb is a cute little farm that lives on your Mac's desktop. It keeps an eye on y
 
 ## Getting Jeb
 
-You need a Mac running macOS 12 or later (Apple Silicon or Intel) and Claude Code, signed in with your own account. There's no Python, Homebrew, Xcode, git or admin password involved.
+You need a Mac running macOS 12 or later (Apple Silicon or Intel) and Claude Code, signed in with your own account.
 
 **1. Run the installer.** In Terminal:
 
@@ -22,7 +22,7 @@ You need a Mac running macOS 12 or later (Apple Silicon or Intel) and Claude Cod
 curl -fsSL https://github.com/clevyr/jeb/releases/latest/download/install.sh | sh
 ```
 
-It takes a minute or two and ends with a health check. The release's signature is checked before anything runs, so a tampered download is refused. Run the same command any time to update or repair Jeb.
+It checks the release's signature first and takes a minute or two. Run it again any time to update or repair Jeb.
 
 **2. Start a new Claude Code session.** Jeb only joins sessions started after the install. The farm starts out bare and fills in as you work.
 
@@ -43,8 +43,7 @@ Install or update:
 ```text
 Install or update Jeb for me. Run:
 curl -fsSL https://github.com/clevyr/jeb/releases/latest/download/install.sh | sh
-Then follow ~/.jeb/current/.claude/skills/jeb-install/SKILL.md to finish, and fix anything it
-reports yourself. Never ask me for a password or sudo, and never compile anything.
+Then follow ~/.jeb/current/.claude/skills/jeb-install/SKILL.md to finish.
 ```
 
 Update:
@@ -109,13 +108,21 @@ The menu bar item lets you pause the farm, set the frame rate, check for updates
 
 ## FAQ
 
-**Will it slow my Mac down?** It's built not to. The frame rate drops when nothing on the farm is moving, and drawing stops entirely while the screen is asleep or locked, while you're away, or while windows cover the farm. You can also cap it at 30 fps or pause it from the menu bar.
+### Will it slow my Mac down?
 
-**Does it send my code anywhere?** No. No work names, paths or text ever leave a session; see [Cost and privacy](#cost-and-privacy). Jeb's only network traffic is checking GitHub for updates and, with Creative drops on, the Haiku calls on your own Claude account.
+It's built not to. The frame rate drops when nothing on the farm is moving, and drawing stops entirely while the screen is asleep or locked, while you're away, or while windows cover the farm. You can also cap it at 30 fps or pause it from the menu bar.
 
-**Do I need an API key?** No. The Haiku calls go through Claude Code on the account you're already signed in with.
+### Does it send my code anywhere?
 
-**Why isn't my session on the farm?** Jeb only joins sessions started after it was installed. Start a new one.
+No. No work names, paths or text ever leave a session; see [Cost and privacy](#cost-and-privacy). Jeb's only network traffic is checking GitHub for updates and, with Creative drops on, the Haiku calls on your own Claude account.
+
+### Do I need an API key?
+
+No. The Haiku calls go through Claude Code on the account you're already signed in with.
+
+### Why isn't my session on the farm?
+
+Jeb only joins sessions started after it was installed. Start a new one.
 
 ## If something looks wrong
 
