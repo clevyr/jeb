@@ -40,7 +40,7 @@ One line installs Jeb, or updates it if it is already installed (from any older 
     shasum -a 256 "Jeb-$tag-macos-<arch>.zip"
     mkdir -p ~/.jeb/versions/"$tag" && ditto -x -k "Jeb-$tag-macos-<arch>.zip" ~/.jeb/versions/"$tag"
     ~/.jeb/versions/"$tag"/install
-    ~/.local/bin/jebctl doctor
+    jebctl doctor
 
 The release is a zip per architecture holding the app, the Claude Code plugin, Jeb's install script and the native `jebctl`, plus a signed manifest (see [Signed releases](#signed-releases)). It's unpacked into `~/.jeb/versions/<tag>`, and `~/.jeb/current` is a link to the version in use. The bundle's own `./install --dry-run` shows every step without changing anything. It prints one short line per step; add `--verbose` for every command and detail. You never need git: updates download and verify the next zip the same way, then move the `current` link.
 

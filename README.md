@@ -28,7 +28,7 @@ It checks the release's signature first and takes a minute or two. Run it again 
 
 What the install sets up:
 
-- The app in `~/Applications`, its code in `~/.jeb`, and `jebctl` in `~/.local/bin` (`~/.jeb/bin/jebctl` always works).
+- The app in `~/Applications`, its code in `~/.jeb`, and `jebctl` in `~/.local/bin`. To type plain `jebctl`, end the install command with `| sh -s -- --add-path` instead of `| sh`; it adds `~/.local/bin` to your PATH (uninstalling takes it out again).
 - Three login items: the app, a watchdog that brings it back if it stops, and an updater that checks GitHub for new releases.
 - The Jeb plugin in Claude Code. It can make up to 9 Haiku calls a day on your account; see [Cost and privacy](#cost-and-privacy) to turn them off.
 
@@ -44,6 +44,9 @@ Install or update:
 Install or update Jeb for me. Run:
 curl -fsSL https://github.com/clevyr/jeb/releases/latest/download/install.sh | sh
 Then follow ~/.jeb/current/.claude/skills/jeb-install/SKILL.md to finish.
+If that file doesn't exist and the output says "an old install is at", run
+~/.jeb/bin/jebctl install --replace-clone and then follow that file. Otherwise the
+install failed: show me its output and stop. Never use sudo or install other tools.
 ```
 
 Update:
@@ -139,7 +142,7 @@ More in [Troubleshooting](docs/reference.md#troubleshooting).
 In Terminal:
 
 ```sh
-~/.jeb/bin/jebctl uninstall --remove-files
+jebctl uninstall --remove-files
 ```
 
 That removes the app and its login items, takes Jeb out of Claude Code and deletes the `~/.jeb` folder. Your farm is kept in case you come back; add `--purge --purge-farm` to delete it and the rest of Jeb's state too (a backup copy of the farm stays in `~/.claude/backups/jeb`).
