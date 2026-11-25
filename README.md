@@ -119,6 +119,13 @@ It's built not to. The frame rate drops when nothing on the farm is moving, and 
 
 No. No work names, paths or text ever leave a session; see [Cost and privacy](#cost-and-privacy). Jeb's only network traffic is checking GitHub for updates and, with Creative drops on, the Haiku calls on your own Claude account.
 
+### How does Jeb use Claude?
+
+In two ways:
+
+- **It watches your sessions.** Jeb is a Claude Code plugin. As you work, it notices what your sessions are up to (prompts going in, tools running, turns finishing, helpers starting) and keeps a few rough numbers about it on your Mac. The farm grows from those.
+- **It asks Haiku for surprises.** With Creative drops on, it asks Haiku for up to 9 small things a day, such as a happening, a saying or a place for a project. For a surprise, Haiku is told the date, the season, a few farm counts and what it came up with before. For a project's place, it's told only the rough kind of work, such as "testing: high" or "docs: low". It never sees names, paths, prompts or code. The calls go through Claude Code's plugin interface inside your running session; Jeb never starts `claude` itself.
+
 ### Do I need an API key?
 
 No. The Haiku calls go through Claude Code on the account you're already signed in with.
