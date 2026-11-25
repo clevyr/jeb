@@ -12,6 +12,13 @@
 #   dev/run sync                 copy the working tree's plugin into the dev home (then /reload-plugins)
 #   dev/run stop [--purge]       stop the dev app, restore the installed Jeb; --purge removes the dev state
 #   dev/run status
+#   dev/run install-sandbox [--no-build] [--keep] [install args...]
+#                                a real `jebctl install --no-agents` of this working tree in a throwaway HOME, in this terminal
+#
+# install-sandbox builds the app, the gate helpers and jebctl from the working tree, makes a signed bundle with a
+# throwaway key (./release bundle --from-tree), unpacks it into <tmp>/home/.jeb/versions/v0.0.0 and runs its install with
+# no LaunchAgents and the shell picker live (the PATH step writes shell config under the throwaway HOME). Nothing outside
+# the throwaway folder is touched; it is removed on exit unless --keep. Arguments it does not know go to install.
 #
 # Everything the dev run writes lives under JEB_DEV_HOME and one store file named for the plugin id
 # jeb-dev@inline. It refuses to run against the installed Jeb's own folders and store.
@@ -239,9 +246,94 @@ cmd_status() {
   fi
 }
 
+# A real, styled `jebctl install` of this working tree in a throwaway HOME (no LaunchAgents, nothing real touched).
+# The build steps write to <box>/build.log; on a terminal each shows as one line with the install's water-wheel spinner.
+sb_tty=0; [ -t 1 ] && [ -z "${NO_COLOR:-}" ] && [ "${TERM:-dumb}" != dumb ] && sb_tty=1
+sb_ok()   { if [ $sb_tty = 1 ]; then printf '\r\033[2K  \033[32m✓\033[0m %s\n' "$1"; else echo "  $1 ... ok"; fi; }
+sb_note() { if [ $sb_tty = 1 ]; then printf '  \033[2m%s\033[0m\n' "$1"; else echo "$1"; fi; }
+# sb_step <label> <command...>: run quietly into the log; on failure show its tail and stop
+sb_step() {
+  label=$1; shift
+  if [ $sb_tty = 1 ]; then
+    printf '\033[?25l'
+    ( set -- ◐ ◓ ◑ ◒; while :; do for f; do printf '\r\033[2K  \033[36m%s\033[0m %s' "$f" "$label"; sleep 0.15; done; done ) &
+    spin=$!
+  fi
+  "$@" >>"$log" 2>&1; st=$?
+  if [ $sb_tty = 1 ]; then kill $spin 2>/dev/null; wait $spin 2>/dev/null; printf '\033[?25h'; fi
+  if [ $st = 0 ]; then sb_ok "$label"; return 0; fi
+  if [ $sb_tty = 1 ]; then printf '\r\033[2K  \033[31m✗ %s\033[0m\n' "$label"; else echo "  $label ... failed"; fi
+  tail -n 15 "$log" | sed 's/^/    /'
+  keep=1
+  die "the sandbox build failed; the full log is $log"
+}
+
+cmd_install_sandbox() {
+  build=1; keep=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --no-build) build=0; shift;;
+      --keep) keep=1; shift;;
+      *) break;;
+    esac
+  done
+  tag=v0.0.0
+  case "$(uname -m)" in arm64) arch=arm64;; x86_64) arch=x86_64;; *) die "install-sandbox: unsupported architecture $(uname -m)";; esac
+  base=${TMPDIR:-/tmp}
+  box=$(mktemp -d "${base%/}/jeb-sandbox.XXXXXX") || die "cannot make a folder under $base"
+  box=$(cd "$box" && pwd -P)
+  # the box goes on exit unless --keep, or a failed build (keep=1 then, so the log can be read)
+  trap '[ $sb_tty = 1 ] && printf "\033[?25h"; [ "$keep" = 1 ] || rm -rf "$box"' EXIT
+  trap 'exit 130' INT TERM HUP
+  home=$box/home; stage=$box/stage; out=$box/out; log=$box/build.log
+  mkdir -p "$home" "$stage" "$out" || die "cannot create folders in $box"
+  : > "$log"
+
+  [ $sb_tty = 1 ] && printf '🧪 Setting up a sandbox farm from your working tree\n\n' || echo "Setting up a sandbox farm from your working tree"
+  if [ $build = 1 ]; then
+    sb_step "Built the desktop app" sh -c 'cd "$1/desktop/src" && JEB_OUT=JebDesktop.dev ./build.sh' _ "$REPO"
+  fi
+  [ -x "$BIN" ] || die "no dev binary at $BIN (run without --no-build)"
+  cp "$BIN" "$stage/JebDesktop" || die "cannot stage the app"
+  # the same commands as gateTools in dev/release/Steps.swift, for this Mac's architecture only
+  sb_step "Built the gate helpers" sh -c 'cd "$1/desktop/src" &&
+    swiftc -O tools/detect-src/main.swift Art.swift PixelArt.swift Farm.swift Holiday.swift -o "$2/detect" &&
+    swiftc -O tools/png2raw.swift -o "$2/png2raw"' _ "$REPO" "$stage"
+  sb_step "Built jebctl" sh -c 'cd "$1/desktop/cli" && JEB_OUT="$2/jebctl" JEB_VERSION="$3" sh build.sh &&
+    codesign --force --sign - "$2/jebctl"' _ "$REPO" "$stage" "$tag"
+  sb_step "Packed a bundle, signed with a throwaway key" sh -c '
+    ssh-keygen -q -t ed25519 -N "" -f "$1/key" -C jeb-sandbox &&
+    printf "jeb-release namespaces=\"git,jeb-release\" %s\n" "$(cut -d" " -f1,2 "$1/key.pub")" > "$1/signers" &&
+    cd "$2" && ./release bundle --tag "$3" --out "$4" --from-tree --app "$5" --key "$1/key" --signers "$1/signers"' \
+    _ "$box" "$REPO" "$tag" "$out" "$stage"
+  zip=$out/Jeb-$tag-macos-$arch.zip
+  sb_step "Unpacked it into the sandbox" sh -c 'mkdir -p "$2" && ditto -x -k "$1" "$2"' _ "$zip" "$home/.jeb/versions/$tag"
+  echo
+
+  (
+    for v in $(env | sed -n 's/^\(JEB_[A-Za-z0-9_]*\)=.*/\1/p'); do unset "$v"; done
+    unset CLAUDE_CODE_PLUGIN_DIRS ZDOTDIR XDG_CONFIG_HOME
+    HOME=$home CLAUDE_CONFIG_DIR=$home/.claude JEB_APP_DIR=$home/Applications JEB_LAUNCHAGENTS=$home/Library/LaunchAgents \
+      JEB_SETTINGS=$home/.claude/settings.json JEB_BACKUPS=$home/.claude/backups/jeb JEB_STORE_DIR=$home/.claude/plugins/store \
+      JEB_BIN_DIR=$home/.local/bin JEB_NO_LAUNCHCTL=1
+    export HOME CLAUDE_CONFIG_DIR JEB_APP_DIR JEB_LAUNCHAGENTS JEB_SETTINGS JEB_BACKUPS JEB_STORE_DIR JEB_BIN_DIR JEB_NO_LAUNCHCTL
+    "$home/.jeb/versions/$tag/desktop/bin/jebctl" install --no-agents "$@"
+  )
+  rc=$?
+  echo
+  [ $rc = 0 ] || { keep=1; echo "install exited $rc"; }
+  if [ $keep = 1 ]; then
+    sb_note "Sandbox kept: $box"
+    sb_note "Look around: HOME=$home $home/.local/bin/jebctl doctor"
+  else
+    sb_note "Sandbox cleaned up (--keep leaves it to look around)."
+  fi
+  return $rc
+}
+
 # a first argument that is not a subcommand goes to claude, as with up
 sub=up
-[ $# -gt 0 ] && case "$1" in start|claude|sync|stop|status|up) sub=$1; shift;; esac
+[ $# -gt 0 ] && case "$1" in start|claude|sync|stop|status|install-sandbox|up) sub=$1; shift;; esac
 # --surprise is taken out of the args of the claude session (up and claude only)
 SURPRISE=
 case "$sub" in
@@ -259,5 +351,6 @@ case "$sub" in
   sync) cmd_sync;;
   stop) cmd_stop "$@";;
   status) cmd_status;;
-  *) echo "usage: dev/run [--surprise] [claude args] | start [--alongside] [--no-build] [--dry-run] | claude [--surprise] [args] | sync | stop [--purge] | status" >&2; exit 2;;
+  install-sandbox) cmd_install_sandbox "$@"; exit $?;;
+  *) echo "usage: dev/run [--surprise] [claude args] | start [--alongside] [--no-build] [--dry-run] | claude [--surprise] [args] | sync | stop [--purge] | status | install-sandbox [--no-build] [--keep] [install args]" >&2; exit 2;;
 esac

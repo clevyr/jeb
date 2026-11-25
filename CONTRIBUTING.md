@@ -51,6 +51,12 @@ Until `dev/run stop`, the installed Jeb has its updates paused and its app quit.
 
 Dev state lives in `~/Library/Application Support/Jeb Dev` (`JEB_DEV_HOME`): the staged `plugin/`, `dev.pid`, `run.log`, and what the app and plugin write there. The dev plugin is named `jeb-dev`, so its store file is `~/.claude/plugins/store/jeb-dev_inline-*.json`, apart from the installed Jeb's `jeb_jeb-*.json`.
 
+To see the real `jebctl install` (the styled progress output, the shell picker for PATH, the check that your shells find `jebctl`, and the reload offer) from this working tree without touching your own install:
+
+    dev/run install-sandbox [--no-build] [--keep] [install args...]
+
+It builds the app, the gate helpers and `jebctl` from the working tree, makes a bundle signed with a throwaway key, unpacks it into a throwaway `HOME` under `$TMPDIR`, and runs that bundle's `jebctl install --no-agents` in your terminal. No LaunchAgents are loaded, and shell config, the `jebctl` link and all state land under the throwaway `HOME`; nothing real is read or written. `--no-build` reuses the last `JebDesktop.dev`, `--keep` leaves the folder in place (it prints the path and a `jebctl doctor` command to poke at it), and other arguments such as `--plain` or `--verbose` pass through to `install`.
+
 Never start a session with a plain `claude --plugin-dir mod`, and never point `JEB_STORE_PATH` at a real store: a plugin loaded that way is `jeb@inline`, which can be someone's real farm. `dev/run` refuses a dev home or store that is the installed Jeb's.
 
 ## The plugin

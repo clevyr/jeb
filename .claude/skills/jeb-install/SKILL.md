@@ -11,7 +11,7 @@ Set up Jeb from the clevyr/jeb release (install, update, repair or remove), doin
 
 - Never ask for an administrator password or use `sudo`, never run `xcodebuild -license`, and never install Homebrew or any other tool.
 - Never compile anything or use `--build-from-source`; if the install says it needs a build, report that instead.
-- Never edit the shell profile or PATH, and never pass `--add-path`, `--repin` or `--no-agents`.
+- Never edit a shell profile or PATH yourself, and never pass `--repin` or `--no-agents`. PATH setup happens only through `jebctl add-path`, and only after the user says yes in Finish.
 - Never work around a signature or hash refusal, and never set `JEB_RELEASE_*` variables.
 - Never install Jeb another way (git clone, downloading zips, the by-hand steps in the docs).
 - Never run `claude plugin ...` or `launchctl`, or edit `~/.claude/settings.json`, by hand; the install does those.
@@ -42,6 +42,8 @@ It works for a new Mac and for one that already has Jeb (it updates instead). If
 ## Finish
 
 Run `~/.jeb/bin/jebctl doctor --fix` and work through what its final report still lists with the doctor skill (`~/.jeb/current/.claude/skills/jeb-doctor/SKILL.md`), ignoring "No farm data yet", "Start a new Claude Code session" and the PATH lines.
+
+If this was a new install (not `Jeb is installed: updating it`) and the doctor lists the PATH step, ask the user once: "Do you want to be able to type `jebctl` in your terminal? I can add it to your shell's PATH." On yes, run `~/.jeb/bin/jebctl add-path` (it sets up their login shell and any of zsh, bash, fish and nushell they use, backing up each file first); on no or no answer, skip it and don't ask again.
 
 Then tell the user in one line what was set up (the desktop app, background agents that keep it running and updated, and the Claude Code plugin), and in one line to start a NEW Claude Code session so the plugin loads.
 

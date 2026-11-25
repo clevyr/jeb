@@ -7,5 +7,5 @@ cd "$(dirname "$0")"
 OUT="${JEB_OUT:-release}"
 CLI=../../desktop/cli
 swiftc -O ./*.swift "$CLI/Json.swift" "$CLI/Env.swift" "$CLI/Home.swift" "$CLI/State.swift" "$CLI/Signers.swift" "$CLI/Tags.swift" \
-  "$CLI/Fetch.swift" -o "$OUT.tmp"
+  "$CLI/Fetch.swift" "$CLI/Style.swift" -o "$OUT.tmp"
 mv -f "$OUT.tmp" "$OUT"

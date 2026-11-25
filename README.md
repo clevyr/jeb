@@ -28,7 +28,7 @@ It checks the release's signature first and takes a minute or two. Run it again 
 
 What the install sets up:
 
-- The app in `~/Applications`, its code in `~/.jeb`, and `jebctl` in `~/.local/bin`. To type plain `jebctl`, end the install command with `| sh -s -- --add-path` instead of `| sh`; it adds `~/.local/bin` to your PATH (uninstalling takes it out again).
+- The app in `~/Applications`, its code in `~/.jeb`, and `jebctl` in `~/.local/bin`. To type plain `jebctl`, end the install command with `| sh -s -- --add-path` instead of `| sh`; it adds `~/.local/bin` to your PATH for zsh, bash, fish and nushell (`--add-path=zsh,fish` picks the shells; uninstalling takes it out again).
 - Three login items: the app, a watchdog that brings it back if it stops, and an updater that checks GitHub for new releases.
 - The Jeb plugin in Claude Code. It can make up to 9 Haiku calls a day on your account; see [Cost and privacy](#cost-and-privacy) to turn them off.
 

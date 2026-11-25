@@ -35,7 +35,7 @@ struct FixStep: Equatable {
     static let resume = FixStep(id: .resume, priority: 5, command: "jebctl resume-updates", reason: "updates were paused on purpose; check before resuming")
     static let retry = FixStep(id: .retry, priority: 6, command: "jebctl retry-update", reason: "runs the last failed update again")
     static let update = FixStep(id: .update, priority: 7, command: "jebctl update", reason: "updates the plugin to match and removes older version folders")
-    static func addPath(_ live: String) -> FixStep { FixStep(id: .addPath, priority: 9, command: "", reason: "Run \(live) install --add-path to link jebctl and add it to your PATH") }
+    static func addPath(_ live: String) -> FixStep { FixStep(id: .addPath, priority: 9, command: "", reason: "Run \(live) add-path to link jebctl and add it to your PATH") }
     static func pathOrder(_ other: String, _ bin: String) -> FixStep {
         FixStep(id: .pathOrder, priority: 9, command: "", reason: "Remove \(other), or put \(bin) first on your PATH")
     }

@@ -74,6 +74,7 @@ var verbose = true      // main turns it off for install/uninstall unless --verb
 var openLine = false    // a step line ("  app ... ") is waiting for its result
 
 func say(_ s: String) {
+    if Style.pretty { Style.plainSay(s); return }
     if openLine { print(""); openLine = false }
     print(s)
     fflush(stdout)
@@ -84,18 +85,22 @@ func detail(_ s: String) { if verbose { say(s) } }
 
 /// Default install/uninstall: open one step line, closed by fin() (or by whatever say() prints meanwhile).
 func lead(_ label: String) {
+    if Style.pretty { Style.lead(label); return }
     if !verbose { print("  \(label) ... ", terminator: ""); fflush(stdout); openLine = true }
 }
 
 func fin(_ text: String) {
+    if Style.pretty { Style.fin(text); return }
     if !verbose { print(text); fflush(stdout); openLine = false }
 }
 
 func line(_ label: String, _ text: String) {
+    if Style.pretty { Style.step(label, text); return }
     if !verbose { say("  \(label) ... \(text)") }
 }
 
 func warn(_ s: String) {
+    if Style.pretty && isatty(2) != 0 { Style.error(s); return }
     FileHandle.standardError.write((s + "\n").data(using: .utf8)!)
 }
 

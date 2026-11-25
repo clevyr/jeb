@@ -38,10 +38,17 @@ func standaloneTests(_ t: Tester) {
 
     t.test("standalone: flags parse, unknown ones are named, and --replace-clone stays out of what the bundle is told") {
         let f = parseStandaloneFlags(["--dry-run", "--no-agents", "--verbose", "--repin", "--add-path", "--replace-clone"])
-        t.check(f.dry && f.noAgents && f.verbose && f.repin && f.addPath && f.replaceClone, "every flag is read")
+        t.check(f.dry && f.noAgents && f.verbose && f.repin && f.path.add && f.replaceClone, "every flag is read")
         t.eq(f.bad, nil, "none is bad")
         t.eq(f.forward, ["--dry-run", "--no-agents", "--verbose", "--repin", "--add-path"], "forwarded without --replace-clone")
         t.eq(parseStandaloneFlags([]), StandaloneFlags(), "no flags is the default")
+        let g = parseStandaloneFlags(["--add-path=zsh,nu", "--no-agents"])
+        t.eq(g.path.shells, ["zsh", "nu"])
+        t.eq(g.forward, ["--no-agents", "--add-path=zsh,nu"], "the list is forwarded")
+        t.eq(parseStandaloneFlags(["--no-add-path"]).forward, ["--no-add-path"])
+        t.check(parseStandaloneFlags(["--add-path", "--no-add-path"]).path.error != nil, "the clash is an error")
+        t.check(parseStandaloneFlags(["--add-path=tcsh"]).path.error != nil, "an unknown shell is an error")
+        t.eq(parseStandaloneFlags(["--add-path=tcsh"]).bad, nil, "and not an unknown option")
         for gone in ["--dev", "--build-from-source", "--mode"] { t.eq(parseStandaloneFlags(["--dry-run", gone, "--other"]).bad, gone, "\(gone) is unknown (D1)") }
         sandbox("flags") { _ in
             var rc: Int32 = 0

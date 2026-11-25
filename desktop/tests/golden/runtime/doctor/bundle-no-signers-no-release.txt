@@ -28,7 +28,7 @@ Updates
 9 problems. To fix them, in order:
   1. ~/.jeb/current/desktop/bin/jebctl install  reinstalls the app, background agents and plugin
   2. ~/.jeb/current/desktop/bin/jebctl start    starts the desktop app
-  3. Run ~/.jeb/current/desktop/bin/jebctl install --add-path to link jebctl and add it to your PATH
+  3. Run ~/.jeb/current/desktop/bin/jebctl add-path to link jebctl and add it to your PATH
   4. Start a new Claude Code session so the plugin loads
 
 ## stderr

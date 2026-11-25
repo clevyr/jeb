@@ -5,10 +5,11 @@
 // bundle's own jebctl does the install. An installed Jeb updates instead; an old git clone is only replaced on request (Q3).
 import Foundation
 
-let standaloneUsage = "usage: jebctl install [--repin] [--add-path] [--replace-clone] [--no-agents] [--dry-run] [--verbose]"
+let standaloneUsage = "usage: jebctl install [--repin] [--add-path[=zsh,bash,fish,nu]] [--no-add-path] [--replace-clone] [--no-agents] [--dry-run] [--verbose] [--plain]"
 
 struct StandaloneFlags: Equatable {
-    var dry = false, noAgents = false, verbose = false, repin = false, addPath = false, replaceClone = false
+    var dry = false, noAgents = false, verbose = false, repin = false, replaceClone = false, plain = false
+    var path = PathFlags()
     var bad: String?        // the first option that is not one of these (--dev and --build-from-source are gone)
 
     /// What the bundle's own install is told: everything but --replace-clone, which only this step knows.
@@ -18,8 +19,8 @@ struct StandaloneFlags: Equatable {
         if noAgents { out.append("--no-agents") }
         if verbose { out.append("--verbose") }
         if repin { out.append("--repin") }
-        if addPath { out.append("--add-path") }
-        return out
+        if plain { out.append("--plain") }
+        return out + path.forward
     }
 }
 
@@ -31,9 +32,9 @@ func parseStandaloneFlags(_ args: [String]) -> StandaloneFlags {
         case "--no-agents": f.noAgents = true
         case "--verbose": f.verbose = true
         case "--repin": f.repin = true
-        case "--add-path": f.addPath = true
+        case "--plain": f.plain = true
         case "--replace-clone": f.replaceClone = true
-        default: if f.bad == nil { f.bad = a }
+        default: if !f.path.take(a) && f.bad == nil { f.bad = a }
         }
     }
     return f
@@ -63,7 +64,8 @@ func standaloneBundleProblem(_ dir: String) -> String? {
     return isExecutableFile(dir + "/desktop/bin/jebctl") ? nil : "desktop/bin/jebctl is not executable"
 }
 
-func standaloneStep(_ s: String) { say("  " + s) }
+/// A progress line; pretty mode shows the step spinner instead and keeps only what `always` names (a dry run's plan).
+func standaloneStep(_ s: String, always: Bool = false) { if !Style.pretty || always { say("  " + s) } }
 
 /// Replaces this process with the bundle's jebctl (execv). Only returns, with 1, when it cannot start.
 func execBundleInstall(_ jebctl: String, _ args: [String]) -> Int32 {
@@ -138,10 +140,15 @@ func standaloneUpdateLoop(passes: Int = 3, update: () -> Int32 = { run([liveJebc
 func standaloneInstall(_ flags: [String], signers: [String] = signerLines,
                        handOff: (String, [String]) -> Int32 = execBundleInstall,
                        update: () -> Int32 = { run([liveJebctl, "update"], capture: false).status },
+                       addPath: ([String]) -> Void = { _ = run([liveJebctl, "add-path"] + $0, capture: false) },
                        readTag: () -> String? = installedTag) -> Int32 {
     let f = parseStandaloneFlags(flags)
     if let bad = f.bad {
         say("jebctl install: unknown option \(bad)\n" + standaloneUsage)
+        return 2
+    }
+    if let e = f.path.error {
+        say("jebctl install: \(e)\n" + standaloneUsage)
         return 2
     }
     dryRun = f.dry
@@ -149,12 +156,13 @@ func standaloneInstall(_ flags: [String], signers: [String] = signerLines,
     let tag = f.dry ? " (dry run)" : ""
     // a Jeb that is already installed updates itself, then says how it is
     if liveValid() {
-        say("Jeb is installed: updating it\(tag)")
+        Style.announce(plain: "Jeb is installed: updating it\(tag)", mode: .update)
         if f.dry {
-            standaloneStep("would run jebctl update (again while it installs a newer release), then jebctl doctor")
+            standaloneStep("would run jebctl update (again while it installs a newer release), then \(f.path.add ? "jebctl add-path and " : "")jebctl doctor", always: true)
             return 0
         }
         let rc = standaloneUpdateLoop(update: update, readTag: readTag)
+        if f.path.add { addPath(f.path.shells.map { [$0.joined(separator: ",")] } ?? []) }
         _ = run([liveJebctl, "doctor"], capture: false)
         return rc
     }
@@ -165,7 +173,7 @@ func standaloneInstall(_ flags: [String], signers: [String] = signerLines,
         }
         if let rc = replaceOldClone(clone, f) { return rc }
     }
-    say("Installing Jeb\(tag)")
+    if !Style.pretty { say("Installing Jeb\(tag)") }
     let arch = hostArch(), base = releaseBase(releaseRepo())
     standaloneStep("architecture: \(arch)")
     let newest: String
@@ -182,12 +190,18 @@ func standaloneInstall(_ flags: [String], signers: [String] = signerLines,
     }
     standaloneStep((envVar("JEB_RELEASE_TAG") == nil ? "newest release: " : "release (JEB_RELEASE_TAG): ") + newest)
     if f.dry {
-        standaloneStep("would download its manifest, signature and \(arch) zip from \(base)/download/\(newest)/,")
-        standaloneStep("verify the signature and hashes, unpack into \(versionsDir())/<tag> and run the bundle's own install")
+        if Style.pretty { Style.announce(plain: "", mode: .install, version: newest) }
+        standaloneStep("would download its manifest, signature and \(arch) zip from \(base)/download/\(newest)/,", always: true)
+        standaloneStep("verify the signature and hashes, unpack into \(versionsDir())/<tag> and run the bundle's own install", always: true)
         say("Dry run only; nothing was changed.")
         return 0
     }
+    if Style.pretty {
+        Style.announce(plain: "", mode: .install, version: newest)
+        lead("fetch")
+    }
     let got = standaloneFetch(newest, signers: signers)
+    if Style.pretty { fin(got.path == nil ? "failed" : "ok") }
     guard let ver = got.path else {
         let e = got.err
         die("jebctl: " + (e?.permanent == true ? "refusing release \(newest): " : "could not fetch \(newest): ") + (e?.why ?? "unknown error"))

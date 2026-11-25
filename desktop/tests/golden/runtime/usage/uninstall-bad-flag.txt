@@ -3,7 +3,7 @@
 
 ## stdout
 jebctl uninstall: unknown option --bogus
-usage: jebctl uninstall [--purge] [--purge-farm] [--remove-files] [--dry-run] [--verbose]
+usage: jebctl uninstall [--purge] [--purge-farm] [--remove-files] [--dry-run] [--verbose] [--plain]
 
 ## stderr
 (empty)

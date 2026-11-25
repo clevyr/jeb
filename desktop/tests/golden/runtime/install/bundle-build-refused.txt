@@ -3,7 +3,7 @@
 
 ## stdout
 jebctl install: unknown option --build-from-source
-usage: jebctl install [--repin] [--add-path] [--no-agents] [--dry-run] [--verbose]
+usage: jebctl install [--repin] [--add-path[=zsh,bash,fish,nu]] [--no-add-path] [--no-agents] [--dry-run] [--verbose] [--plain]
 
 ## stderr
 (empty)

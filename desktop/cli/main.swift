@@ -35,7 +35,9 @@ dryRun = argv.contains("--dry-run")
 noAgents = argv.contains("--no-agents")
 let cmd = args.first ?? "status"
 if argv.contains("--no-agents"), let why = checkSandbox(cmd) { die("jebctl: " + why) }
-verbose = argv.contains("--verbose") || !["install", "uninstall"].contains(cmd)
+if argv.contains("--no-agents"), cmd == "install", let why = checkSandboxLinks() { die("jebctl: " + why) }
+verbose = argv.contains("--verbose") || !["install", "uninstall", "preview-ui"].contains(cmd)
+if ["install", "uninstall", "preview-ui"].contains(cmd) { Style.configure(plain: argv.contains("--plain")) }
 switch cmd {
 case "status": cmdStatus()
 case "perf": cmdPerf(args)
@@ -52,6 +54,8 @@ case "install":
     var rest = argv
     rest.remove(at: rest.firstIndex(of: "install")!)
     exit(standaloneInstall(rest))
+case "add-path": exit(cmdAddPath(Array(args.dropFirst())))
+case "preview-ui": exit(cmdPreviewUI(Array(args.dropFirst())))
 case "uninstall": exit(cmdUninstall(Array(args.dropFirst())))
 case "follow": exit(cmdFollow(Array(args.dropFirst())))
 case "rollback": rollbackBundle()

@@ -7,6 +7,8 @@ let helpText = #"""
 jebctl: install, supervise and update the Jeb desktop.
 
   install                 install or repair Jeb
+  add-path [zsh,bash,fish,nu]
+                          put ~/.local/bin on PATH so plain `jebctl` works
   update                  check for a new version now and wait for the result
   status                  is Jeb running, which version, last update
   doctor [--fix]          health check; --fix runs the safe repair steps, then checks again

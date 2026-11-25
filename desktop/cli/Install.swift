@@ -4,8 +4,9 @@
 // compiled: the bundle's own `jebctl apply` gates the prebuilt one and swaps it in.
 import Foundation
 
-let installUsage = "usage: jebctl install [--repin] [--add-path] [--no-agents] [--dry-run] [--verbose]"
-let uninstallUsage = "usage: jebctl uninstall [--purge] [--purge-farm] [--remove-files] [--dry-run] [--verbose]"
+let installUsage = "usage: jebctl install [--repin] [--add-path[=zsh,bash,fish,nu]] [--no-add-path] [--no-agents] [--dry-run] [--verbose] [--plain]"
+let addPathUsage = "usage: jebctl add-path [zsh,bash,fish,nu] [--dry-run]"
+let uninstallUsage = "usage: jebctl uninstall [--purge] [--purge-farm] [--remove-files] [--dry-run] [--verbose] [--plain]"
 
 /// The folder this jebctl's bundle is unpacked in (<root>/desktop/bin/jebctl); it holds bundle.json when this is one.
 func bundleRoot() -> String { (codeDir() as NSString).deletingLastPathComponent }
@@ -82,24 +83,142 @@ func linkJebctl() -> Bool {
     return true
 }
 
+/// `install --no-agents` also links jebctl and writes the PATH line, so those targets (JEB_BIN_DIR, JEB_PROFILE, ZDOTDIR,
+/// XDG_CONFIG_HOME and the shells' folders) must sit inside the sandbox HOME too. The reason to refuse, or nil.
+func checkSandboxLinks() -> String? {
+    let me = pyRealpath(homeDir())
+    var places = [("JEB_BIN_DIR", binDir()), ("ZDOTDIR", zshDir()), ("the fish config folder", fishDir()), ("the nushell config folder", nuDir())]
+    if let p = envVar("JEB_PROFILE"), !p.isEmpty { places.append(("JEB_PROFILE", (p as NSString).deletingLastPathComponent)) }
+    for (what, p) in places {
+        let r = pyRealpath(p)
+        if r != me && !r.hasPrefix(me + "/") { return "--no-agents: \(what) (\(p)) is outside the sandbox HOME \(me)" }
+    }
+    return nil
+}
+
 func onPath(_ d: String) -> Bool {
     let want = pyRealpath(d)
     return (envVar("PATH") ?? "").split(separator: ":").contains { pyRealpath(expandUser(String($0))) == want }
 }
 
-/// The login profile of the user's shell: zsh ~/.zprofile, bash ~/.bash_profile, else ~/.profile (JEB_PROFILE overrides).
-func profilePath() -> String {
+let pathShells = ["zsh", "bash", "fish", "nu"]
+
+/// One place the PATH line goes: shell (zsh|bash|fish|nu|sh, or "profile" for JEB_PROFILE), its file, and whether
+/// the file already has Jeb's line.
+struct PathTarget: Equatable {
+    var shell: String, file: String, has: Bool
+}
+
+/// ZDOTDIR when set, else ~.
+func zshDir() -> String { envVar("ZDOTDIR").flatMap { $0.isEmpty ? nil : $0 } ?? expandUser("~") }
+func xdgConfig() -> String? { envVar("XDG_CONFIG_HOME").flatMap { $0.isEmpty ? nil : $0 } }
+func fishDir() -> String { (xdgConfig() ?? expandUser("~/.config")) + "/fish" }
+/// nushell's own rule (nu-path): XDG_CONFIG_HOME/nushell when that is an absolute path, else the macOS default.
+func nuDir() -> String { xdgConfig().flatMap { $0.hasPrefix("/") ? $0 + "/nushell" : nil } ?? expandUser("~/Library/Application Support/nushell") }
+
+/// The file Jeb's PATH line goes in for a shell (JEB_PROFILE overrides every one).
+func pathFile(_ shell: String) -> String {
     if let p = envVar("JEB_PROFILE"), !p.isEmpty { return p }
-    switch ((envVar("SHELL") ?? "") as NSString).lastPathComponent {
-    case "zsh": return expandUser("~/.zprofile")
+    switch shell {
+    case "zsh": return zshDir() + "/.zprofile"
     case "bash": return expandUser("~/.bash_profile")
+    case "fish": return fishDir() + "/conf.d/jeb.fish"
+    case "nu": return nuDir() + "/env.nu"
     default: return expandUser("~/.profile")
     }
+}
+
+/// Whether the shell has a config already (so Jeb never creates config for a shell the user does not use).
+func shellConfigured(_ shell: String) -> Bool {
+    let fm = FileManager.default
+    switch shell {
+    case "zsh": return fm.fileExists(atPath: zshDir() + "/.zprofile") || fm.fileExists(atPath: zshDir() + "/.zshrc")
+    case "bash": return fm.fileExists(atPath: expandUser("~/.bash_profile")) || fm.fileExists(atPath: expandUser("~/.bashrc"))
+    case "fish": return isDir(fishDir())
+    case "nu": return isDir(nuDir())
+    default: return false
+    }
+}
+
+/// The login profile of the user's shell: zsh ~/.zprofile, bash ~/.bash_profile, else ~/.profile (JEB_PROFILE overrides).
+func profilePath() -> String {
+    let sh = ((envVar("SHELL") ?? "") as NSString).lastPathComponent
+    return pathFile(pathShells.contains(sh) && sh != "fish" && sh != "nu" ? sh : "sh")
 }
 
 func exportLine() -> String {
     let d = binDir()
     return d == expandUser("~/.local/bin") ? "export PATH=\"$HOME/.local/bin:$PATH\"" : "export PATH=\"\(d):$PATH\""
+}
+
+/// The line after pathMark, in the shell's own syntax (sh for zsh, bash, ~/.profile and JEB_PROFILE).
+func pathLine(_ shell: String) -> String {
+    let d = binDir(), dflt = d == expandUser("~/.local/bin")
+    switch shell {
+    case "fish": return "fish_add_path -g " + (dflt ? "~/.local/bin" : d)
+    case "nu":
+        let p = dflt ? "(\"~/.local/bin\" | path expand)" : "\"\(d)\""   // not $nu.home-path: gone in nushell 0.117
+        return "$env.PATH = ($env.PATH | split row (char esep) | prepend \(p) | uniq)"
+    default: return exportLine()
+    }
+}
+
+func isPathLine(_ l: String) -> Bool { l.hasPrefix("export PATH=") || l.hasPrefix("$env.PATH = ") || l.hasPrefix("fish_add_path ") }
+
+/// The login shell (zsh|bash|fish|nu, else sh) and every shell of the four that has a config, in that order; or `only`
+/// as given. JEB_PROFILE: its one file.
+func pathTargets(_ only: [String]?) -> [PathTarget] {
+    func target(_ s: String) -> PathTarget {
+        let f = pathFile(s), text = readText(f) ?? ""
+        let has = s == "fish" ? profileLines(text).first.map { bare($0) == pathMark } ?? false : profileLines(text).contains { bare($0) == pathMark }
+        return PathTarget(shell: s, file: f, has: has)
+    }
+    if let p = envVar("JEB_PROFILE"), !p.isEmpty { return [target("profile")] }
+    var shells: [String] = []
+    if let o = only {
+        shells = o
+    } else {
+        let sh = ((envVar("SHELL") ?? "") as NSString).lastPathComponent
+        shells.append(pathShells.contains(sh) ? sh : "sh")
+        shells += pathShells.filter { shellConfigured($0) }
+    }
+    var seen = Set<String>()
+    return shells.filter { seen.insert($0).inserted }.map(target)
+}
+
+/// Every place Jeb's line may be (uninstall looks in all of them).
+func allPathTargets() -> [PathTarget] {
+    if envVar("JEB_PROFILE").map({ !$0.isEmpty }) == true { return pathTargets(nil) }
+    return pathTargets(pathShells + ["sh"])
+}
+
+/// A comma list of zsh|bash|fish|nu; nil when a name is not one of them.
+func parseShellList(_ s: String) -> [String]? {
+    let l = s.split(separator: ",", omittingEmptySubsequences: false).map { String($0) }
+    return !l.isEmpty && l.allSatisfy({ pathShells.contains($0) }) ? l : nil
+}
+
+let shellListError = "use zsh, bash, fish or nu"
+
+/// What the PATH flags of one command line ask: --add-path[=zsh,fish], --no-add-path.
+struct PathFlags: Equatable {
+    var add = false, no = false
+    var shells: [String]?
+    var error: String?
+
+    /// True when `a` is one of the three flags (a bad list or a clash sets `error`).
+    mutating func take(_ a: String) -> Bool {
+        if a == "--add-path" { add = true } else if a == "--no-add-path" { no = true } else if a.hasPrefix("--add-path=") {
+            add = true
+            let v = String(a.dropFirst("--add-path=".count))
+            if let l = parseShellList(v) { shells = l } else if error == nil { error = "unknown shell in \(a) (\(shellListError))" }
+        } else { return false }
+        if add && no && error == nil { error = "--add-path and --no-add-path cannot be used together" }
+        return true
+    }
+
+    /// What the bundle's own install is told.
+    var forward: [String] { (add ? ["--add-path" + (shells.map { "=" + $0.joined(separator: ",") } ?? "")] : []) + (no ? ["--no-add-path"] : []) }
 }
 
 /// The profile's lines with their newlines kept (str.splitlines(keepends=True) for "\n").
@@ -131,26 +250,44 @@ func writeProfile(_ prof: String, _ text: String) {
     h.closeFile()
 }
 
-func addToProfile() {
-    let prof = profilePath(), text = readText(prof) ?? ""
-    if profileLines(text).contains(where: { bare($0) == pathMark }) {
-        say("\(prof) already has the PATH line; open a new terminal")
-        return
+/// Add Jeb's lines to one target. Returns true when it wrote (or, in a dry run, would write) something.
+@discardableResult
+func addToProfile(_ t: PathTarget) -> Bool {
+    let prof = t.file, text = readText(prof) ?? ""
+    if t.shell == "fish" && lexists(prof) && !t.has {
+        say("\(prof) exists and is not Jeb's; left alone, so fish is not set up")
+        return false
     }
-    detail("add to \(prof): \(pathMark) / \(exportLine())")
-    if dryRun { return }
+    if t.has {
+        say("\(prof) already has the PATH line; open a new terminal")
+        return false
+    }
+    let body = pathMark + "\n" + pathLine(t.shell) + "\n"
+    detail("add to \(prof): \(pathMark) / \(pathLine(t.shell))")
+    if dryRun { return true }
+    try? FileManager.default.createDirectory(atPath: (prof as NSString).deletingLastPathComponent, withIntermediateDirectories: true)
+    if t.shell == "fish" {
+        writeProfile(prof, body)
+        return true
+    }
     if !text.isEmpty { backupProfile(prof) }
-    writeProfile(prof, text + (text.isEmpty || text.hasSuffix("\n") ? "" : "\n") + pathMark + "\n" + exportLine() + "\n")
-    say("open a new terminal for `jebctl` to work")
+    writeProfile(prof, text + (text.isEmpty || text.hasSuffix("\n") ? "" : "\n") + body)
+    return true
 }
 
-func removeFromProfile() {
-    let prof = profilePath(), lines = profileLines(readText(profilePath()) ?? "")
-    guard lines.contains(where: { bare($0) == pathMark }) else { return }
+/// Take Jeb's lines out of one target: Jeb's own jeb.fish goes, a foreign one stays; other files lose just the block.
+func removePathFrom(_ t: PathTarget) {
+    guard t.has else { return }
+    let prof = t.file, lines = profileLines(readText(prof) ?? "")
+    if t.shell == "fish" {
+        detail("remove \(prof)")
+        if !dryRun { unlink(prof) }
+        return
+    }
     var out: [String] = [], i = 0
     while i < lines.count {
         if bare(lines[i]) == pathMark {
-            i += i + 1 < lines.count && lines[i + 1].hasPrefix("export PATH=") ? 2 : 1
+            i += i + 1 < lines.count && isPathLine(lines[i + 1]) ? 2 : 1
         } else {
             out.append(lines[i])
             i += 1
@@ -163,18 +300,48 @@ func removeFromProfile() {
     }
 }
 
-func pathStep(add: Bool) {
+func removeFromProfile() { allPathTargets().forEach(removePathFrom) }
+
+func pathStep(add: Bool, only: [String]? = nil) {
     let d = binDir()
-    if onPath(d) {
+    if onPath(d) && only == nil {   // named shells are written even when this shell already has it
         detail("\(d) is on PATH")
         return
     }
     if add {
-        addToProfile()
+        let wrote = pathTargets(only).map { addToProfile($0) }
+        if dryRun { return }
+        if Style.pretty {   // checked, with the reload line, once the install is done (askPathNow)
+            let ready = pathTargets(only).filter { $0.has && pathShells.contains($0.shell) }
+            if !ready.isEmpty { pathConfirmPending = ready; return }
+        }
+        if wrote.contains(true) { say("open a new terminal for `jebctl` to work") }
     } else {
         let home = expandUser("~")
         say("Run Jeb's tool as " + (d.range(of: home).map { d.replacingCharacters(in: $0, with: "~") } ?? d) + "/jebctl")
     }
+}
+
+/// `jebctl add-path [zsh,bash,fish,nu]`: the jebctl link and the PATH step alone, for an installed Jeb. The exit code.
+func cmdAddPath(_ args: [String]) -> Int32 {
+    var shells: [String]?
+    if args.count > 1 || args.first?.hasPrefix("-") == true {
+        say("jebctl add-path: unexpected \(args.count > 1 ? args[1] : args[0])\n" + addPathUsage)
+        return 2
+    }
+    if let a = args.first {
+        guard let l = parseShellList(a) else {
+            say("jebctl add-path: unknown shell in \(a) (\(shellListError))\n" + addPathUsage)
+            return 2
+        }
+        shells = l
+    }
+    guard liveValid() else {
+        say("jebctl add-path: Jeb is not installed; run jebctl install first")
+        return 1
+    }
+    if linkJebctl() { pathStep(add: true, only: shells) }
+    return 0
 }
 
 func unlinkJebctl() {
@@ -285,70 +452,76 @@ func handOver() {
 }
 
 /// Plists, the LaunchAgents, the desktop wait and the jebctl link.
-func finishInstall(noAgents: Bool, addPath: Bool) {
+func finishInstall(noAgents: Bool, path: PathFlags, fresh: Bool = false) {
     let mode = "release", fm = FileManager.default
     lead("LaunchAgents")
     detail("2. plists")
     writePlists(stateHome + "/launchd", mode)
     if !dryRun { unlink(stateHome + "/quit") }
     if noAgents {
-        detail("3-5. hand-over, LaunchAgents (copy, bootout, bootstrap), waiting for the desktop and the jebctl link: skipped (--no-agents)")
+        detail("3-4. hand-over, LaunchAgents (copy, bootout, bootstrap) and waiting for the desktop: skipped (--no-agents)")
         fin("skipped (--no-agents)")
         lead("desktop")
         fin("skipped (--no-agents)")
-        line("jebctl command", "skipped (--no-agents)")
-        return
-    }
-    detail("3. hand the desktop over from any running instance")
-    handOver()
-    detail("4. LaunchAgents")
-    let mine = labelsFor(mode), agents = agentsDir()
-    for l in mine {
-        let src = stateHome + "/launchd/" + l + ".plist", dst = agents + "/" + l + ".plist"
-        if dryRun {
-            detail("$ cp \(src) \(dst)")
-            continue
+    } else {
+        detail("3. hand the desktop over from any running instance")
+        handOver()
+        detail("4. LaunchAgents")
+        let mine = labelsFor(mode), agents = agentsDir()
+        for l in mine {
+            let src = stateHome + "/launchd/" + l + ".plist", dst = agents + "/" + l + ".plist"
+            if dryRun {
+                detail("$ cp \(src) \(dst)")
+                continue
+            }
+            try? fm.createDirectory(atPath: agents, withIntermediateDirectories: true)
+            try? fm.removeItem(atPath: dst)
+            do { try fm.copyItem(atPath: src, toPath: dst) } catch { installFail("cannot copy \(src) to \(dst): \(error.localizedDescription)") }
         }
-        try? fm.createDirectory(atPath: agents, withIntermediateDirectories: true)
-        try? fm.removeItem(atPath: dst)
-        do { try fm.copyItem(atPath: src, toPath: dst) } catch { installFail("cannot copy \(src) to \(dst): \(error.localizedDescription)") }
-    }
-    for l in allLabels {
-        launchctl(["bootout", "\(guiDomain)/\(l)"])     // a re-install: "not loaded" is ignored
-        if !mine.contains(l) {                          // an agent of the old dev mode goes
-            detail("remove \(agents)/\(l).plist (not part of \(mode) mode)")
-            if !dryRun { unlink(agents + "/" + l + ".plist") }
-        }
-    }
-    for l in ["com.jeb.desktop.update", "com.jeb.desktop.watchdog", "com.jeb.desktop", "com.jeb.desktop.release"] where mine.contains(l) {
-        let a = ["bootstrap", guiDomain, agents + "/" + l + ".plist"]
-        if launchctl(a) != 0 { installFail("failed: launchctl " + a.joined(separator: " ")) }
-    }
-    fin(dryRun ? "skipped (dry run)" : "ok")
-    lead("desktop")
-    var up = false
-    if !dryRun {
-        for _ in 0..<60 {
-            Clock.sleep(1)
-            let procs = running()
-            if procs.count == 1 && procs[0].path.hasPrefix(installedApp) {
-                up = true
-                break
+        for l in allLabels {
+            launchctl(["bootout", "\(guiDomain)/\(l)"])     // a re-install: "not loaded" is ignored
+            if !mine.contains(l) {                          // an agent of the old dev mode goes
+                detail("remove \(agents)/\(l).plist (not part of \(mode) mode)")
+                if !dryRun { unlink(agents + "/" + l + ".plist") }
             }
         }
-        if verbose { cmdStatus() }
+        for l in ["com.jeb.desktop.update", "com.jeb.desktop.watchdog", "com.jeb.desktop", "com.jeb.desktop.release"] where mine.contains(l) {
+            let a = ["bootstrap", guiDomain, agents + "/" + l + ".plist"]
+            if launchctl(a) != 0 { installFail("failed: launchctl " + a.joined(separator: " ")) }
+        }
+        fin(dryRun ? "skipped (dry run)" : "ok")
+        lead("desktop")
+        var up = false
+        if !dryRun {
+            for _ in 0..<60 {
+                Clock.sleep(1)
+                let procs = running()
+                if procs.count == 1 && procs[0].path.hasPrefix(installedApp) {
+                    up = true
+                    break
+                }
+            }
+            if verbose { cmdStatus() }
+        }
+        fin(dryRun ? "skipped (dry run)" : up ? "running" : "not running yet; see `jebctl status`")
     }
-    fin(dryRun ? "skipped (dry run)" : up ? "running" : "not running yet; see `jebctl status`")
     detail("5. jebctl on PATH")
     let st = linkState()
     let ok = linkJebctl()
     line("jebctl command", !ok ? "not set up" : dryRun && st != "ours" ? "would link" : "ok")
-    if ok { pathStep(add: addPath) }
+    if ok {
+        if shouldAskForPath(pretty: Style.pretty, fresh: fresh, addFlag: path.add, noFlag: path.no, dry: dryRun,
+                            onPath: onPath(binDir()), ttyAvailable: canOpenTTY()) {
+            pathAskPending = true       // asked by cmdInstall once every step is done
+            return
+        }
+        pathStep(add: path.add, only: path.shells)
+    }
 }
 
 /// Install from the unpacked bundle this jebctl sits in: signers pinned, the prebuilt app gated and swapped in with
 /// ~/.jeb/current pointed at the bundle, then the plists, the LaunchAgents and the jebctl link, all on that one path.
-func installBundle(_ clone: String, repin: Bool, noAgents: Bool, addPath: Bool) {
+func installBundle(_ clone: String, repin: Bool, noAgents: Bool, path: PathFlags, fresh: Bool = false) {
     let vd = versionsDir()
     guard let tag = codeBundle()?["tag"]?.string, pyRealpath((clone as NSString).deletingLastPathComponent) == pyRealpath(vd) else {
         installFail("run install from the unpacked bundle in \(vd)/<tag>, as the README says")
@@ -377,24 +550,30 @@ func installBundle(_ clone: String, repin: Bool, noAgents: Bool, addPath: Bool) 
         if let m = oldMod, pyRealpath(m) != pyRealpath(liveMod) { rs.set("legacy_mod", .string(m)) }
         do { try saveRState(rs) } catch { installFail("jebctl: \(error)") }
     }
-    finishInstall(noAgents: noAgents, addPath: addPath)
+    finishInstall(noAgents: noAgents, path: path, fresh: fresh)
     refreshStandalone()
     if !dryRun { pruneVersions() }
 }
 
-/// `jebctl install [--repin] [--add-path] [--no-agents]`: checks, the bundle install, then the mod registered through
+/// `jebctl install [--repin] [--add-path[=shells]] [--no-add-path] [--no-agents]`: checks, the bundle install, then the mod registered through
 /// Claude Code's plugin system (Jeb's own CLAUDE_CODE_PLUGIN_DIRS entry leaves settings.json, backup first) and the
 /// doctor. The exit code.
 func cmdInstall(_ flags: [String]) -> Int32 {
-    if let bad = flags.first(where: { !["--repin", "--add-path", "--no-agents"].contains($0) }) {
+    var path = PathFlags()
+    if let bad = flags.first(where: { !["--repin", "--no-agents", "--plain"].contains($0) && !path.take($0) }) {
         say("jebctl install: unknown option \(bad)\n" + installUsage)
         return 2
     }
+    if let e = path.error {
+        say("jebctl install: \(e)\n" + installUsage)
+        return 2
+    }
     let clone = bundleRoot(), noAgents = flags.contains("--no-agents")
+    let fresh = !liveValid()        // before the install makes it valid: the shell picker is for a first install only
     if verbose {
         say("Jeb install (release mode\(dryRun ? ", dry run" : "")) from \(clone)")
     } else {
-        say("Installing Jeb (release mode\(dryRun ? ", dry run" : ""))")
+        Style.announce(plain: "Installing Jeb (release mode\(dryRun ? ", dry run" : ""))", mode: .install, version: codeBundle()?["tag"]?.string)
         lead("checks")
     }
     if !isDir(clone + "/mod") { installFail("install: \(clone)/mod not found; the bundle is incomplete") }
@@ -402,7 +581,7 @@ func cmdInstall(_ flags: [String]) -> Int32 {
     if findClaude() == nil {
         say("note: Claude Code was not found on this Mac; Jeb installs anyway, but it needs Claude Code to show up in sessions")
     }
-    installBundle(clone, repin: flags.contains("--repin"), noAgents: noAgents, addPath: flags.contains("--add-path"))
+    installBundle(clone, repin: flags.contains("--repin"), noAgents: noAgents, path: path, fresh: fresh)
 
     lead("Claude Code plugin")
     var msgs: [String] = []
@@ -420,16 +599,38 @@ func cmdInstall(_ flags: [String]) -> Int32 {
         }
     }
     for m in msgs where m.hasPrefix("moved") { say("  " + m) }
+    askPathNow()
     if dryRun {
         if !verbose { say("Dry run only; nothing was changed.") }
         return 0
     }
     if !noAgents {      // a sandbox has no agents loaded; ./release smoke runs the doctor itself
-        say("Health check (jebctl doctor):")
-        _ = printDoctor()   // its result does not fail the install
+        if Style.pretty {
+            prettyHealthCheck()
+        } else {
+            say("Health check (jebctl doctor):")
+            _ = printDoctor()   // its result does not fail the install
+        }
     }
-    say("Done. Start a new Claude Code session to load Jeb; the desktop fills in once a session has run.")
+    sayDone()
     return 0
+}
+
+/// The steps every first install leaves for later (no session has run yet, PATH not set up); pretty mode does not list them.
+let expectedAfterInstall: Set<FixID> = [.newSession, .addPath, .pathOrder]
+
+/// Pretty mode's health check: one step line, plus the doctor's numbered list when something besides the expected steps is left.
+func prettyHealthCheck() {
+    lead("health")
+    let r = diagnose()
+    let left = r.steps.filter { !expectedAfterInstall.contains($0.id) }
+    if left.isEmpty {
+        fin("ok")
+        return
+    }
+    fin("needs a look")
+    doctorSummary(steps: left, problems: left.count, jebctl: r.jebctl).dropFirst().forEach(say)
+    say("  Run `jebctl doctor --fix` to sort it out.")
 }
 
 // ---- uninstall ----
@@ -496,27 +697,31 @@ func removeFiles(legacyClone: String?) {
     let jd = jebDir()
     if let old = legacyClone, !old.isEmpty, isDir(old), pyRealpath(old) != pyRealpath(jd), !isSymlink(old) {
         if cleanGitClone(old) {
-            say("  old clone ... " + (dryRun ? "would remove " : "removed ") + old)
+            stepSay("old clone", (dryRun ? "would remove " : "removed ") + old)
             if !dryRun { try? FileManager.default.removeItem(atPath: old) }
         } else {
-            say("  old clone ... kept: \(old) has local changes or is not a git clone")
+            stepSay("old clone", "kept: \(old) has local changes or is not a git clone")
         }
     }
-    say("  files ... " + (dryRun ? "would remove " : "removed ") + jd)
+    stepSay("files", (dryRun ? "would remove " : "removed ") + jd)
     if !dryRun { try? FileManager.default.removeItem(atPath: jd) }
 }
 
 /// `jebctl uninstall [--purge] [--purge-farm] [--remove-files]`: the desktop part, then the plugin leaves Claude Code
 /// (its farm kept unless --purge-farm, backed up first) and Jeb's CLAUDE_CODE_PLUGIN_DIRS entries leave settings.json.
 func cmdUninstall(_ flags: [String]) -> Int32 {
-    if let bad = flags.first(where: { !["--purge", "--purge-farm", "--remove-files", "--remove-clone"].contains($0) }) {
+    if let bad = flags.first(where: { !["--purge", "--purge-farm", "--remove-files", "--remove-clone", "--plain"].contains($0) }) {
         say("jebctl uninstall: unknown option \(bad)\n" + uninstallUsage)
         return 2
     }
     let farm = flags.contains("--purge-farm")
     // the bundle this jebctl sits in; a standalone copy speaks for the live one
     let clone = codeBundle() != nil ? bundleRoot() : pyRealpath(currentDir())
-    say(verbose ? "Jeb uninstall\(dryRun ? " (dry run)" : "") from \(clone)" : "Uninstalling Jeb\(dryRun ? " (dry run)" : "")")
+    if verbose {
+        say("Jeb uninstall\(dryRun ? " (dry run)" : "") from \(clone)")
+    } else {
+        Style.announce(plain: "Uninstalling Jeb\(dryRun ? " (dry run)" : "")", mode: .uninstall)
+    }
     let rs = Json.load(releaseStatePath)        // read before the desktop part runs (--purge deletes it)
     uninstallDesktop(purge: flags.contains("--purge"))
     let note: (String) -> Void = { if verbose { say($0) } }
@@ -535,14 +740,14 @@ func cmdUninstall(_ flags: [String]) -> Int32 {
             unlink(f)
         }
         if files.isEmpty {
-            say(verbose ? "no farm file found" : "  farm ... none found")
+            if verbose { say("no farm file found") } else { line("farm", "none found") }
         } else {
             line("farm", dryRun ? "would remove (backup first)" : "removed (backed up first)")
         }
     } else if verbose {
         say("farm kept (\(files.count) file(s) in \(storeDir())); --purge-farm removes it")
     } else {
-        say("  farm ... kept (\(files.count) file(s)); --purge-farm removes it")
+        line("farm", "kept (\(files.count) file(s)); --purge-farm removes it")
     }
     if flags.contains("--remove-files") || flags.contains("--remove-clone") {
         removeFiles(legacyClone: rs?["legacy_clone"]?.string)

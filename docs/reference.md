@@ -99,7 +99,7 @@ These keep working but are not in `jebctl --help`; the update agents, the watchd
 - `jebctl perf [--days N] [--stamp S]`: summarises the watchdog's telemetry (`telemetry/*.csv`) per stamp and class: samples, median and p95 CPU, max RSS and footprint, flagged OVER past the targets.
 - `jebctl screenshot --fixture NAME [--out DIR] [--hour H]`: renders a parity fixture headlessly with the installed binary, without touching the running app. `screenshot --list` prints the fixture names.
 - `jebctl install --repin`: replaces the pinned release signers (`JEB_HOME/release-signers`) by hand. Normally the pin is set on first install and followed from later releases.
-- `jebctl install --add-path`: adds `~/.local/bin` to the shell profile (zsh `~/.zprofile`, bash `~/.bash_profile`, else `~/.profile`; backup first).
+- `jebctl install --add-path[=zsh,bash,fish,nu]` and `jebctl add-path [zsh,bash,fish,nu]`: add `~/.local/bin` to PATH, backing up each file first. With no list it writes your login shell and any of the four you already have set up: zsh `~/.zprofile` (under `ZDOTDIR` if set), bash `~/.bash_profile`, fish `conf.d/jeb.fish` and nushell `env.nu` (both under `XDG_CONFIG_HOME` when set). `--no-add-path` skips it; `uninstall` removes Jeb's lines from all of them.
 - `jebctl install --no-agents`: sandbox only; no hand-over, no LaunchAgent copy, no launchctl. Refused unless HOME differs from the account's real home. `follow`, `reload-agents` and `rollback` accept it too.
 - `--dry-run` and `--verbose` work on install, uninstall and most other commands.
 

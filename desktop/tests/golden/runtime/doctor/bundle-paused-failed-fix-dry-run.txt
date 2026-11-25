@@ -34,7 +34,7 @@ Updates
   2. ~/.jeb/current/desktop/bin/jebctl start           starts the desktop app
   3. ~/.jeb/current/desktop/bin/jebctl resume-updates  updates were paused on purpose; check before resuming
   4. ~/.jeb/current/desktop/bin/jebctl retry-update    runs the last failed update again
-  5. Run ~/.jeb/current/desktop/bin/jebctl install --add-path to link jebctl and add it to your PATH
+  5. Run ~/.jeb/current/desktop/bin/jebctl add-path to link jebctl and add it to your PATH
   6. Start a new Claude Code session so the plugin loads
 
 ## stderr

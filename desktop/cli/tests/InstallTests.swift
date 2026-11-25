@@ -24,6 +24,20 @@ func installTests(_ t: Tester) {
     }
     func backupsIn(_ home: String) -> [String] { ((try? FileManager.default.contentsOfDirectory(atPath: home + "/backups")) ?? []).sorted() }
 
+    t.test("install --no-agents: the link and PATH targets must sit inside the sandbox HOME") {
+        sandbox("sandboxlinks") { home, _, _ in
+            t.check(checkSandboxLinks() == nil, "bin and profile under HOME pass")
+            let was = envVar("JEB_BIN_DIR")
+            setEnvVar("JEB_BIN_DIR", "/usr/local/bin")
+            t.check(checkSandboxLinks()?.contains("JEB_BIN_DIR") == true, "a link folder outside HOME is refused")
+            setEnvVar("JEB_BIN_DIR", was)
+            let prof = envVar("JEB_PROFILE")
+            setEnvVar("JEB_PROFILE", "/etc/profile")
+            t.check(checkSandboxLinks()?.contains("JEB_PROFILE") == true, "a profile outside HOME is refused")
+            setEnvVar("JEB_PROFILE", prof)
+        }
+    }
+
     t.test("install: the jebctl link is made, recognised, and removed again") {
         sandbox("link") { home, bin, _ in
             let fm = FileManager.default, link = bin + "/jebctl"
@@ -107,6 +121,196 @@ func installTests(_ t: Tester) {
             t.eq(cmdInstall(["--dev"]), 2)
             t.eq(cmdInstall(["--mode", "release"]), 2)
             t.eq(cmdUninstall(["--bogus"]), 2)
+            t.check(!lexists(bin), "nothing was made")
+        }
+    }
+
+    /// sandbox without JEB_PROFILE, with SHELL set and XDG_CONFIG_HOME / ZDOTDIR cleared (body sets them when it needs them).
+    func shellBox(_ name: String, shell: String, _ body: (String) throws -> Void) rethrows {
+        try sandbox(name) { home, _, _ in
+            let names = ["JEB_PROFILE", "SHELL", "XDG_CONFIG_HOME", "ZDOTDIR"]
+            let was = names.map { envVar($0) }
+            defer { for (k, v) in zip(names, was) { setEnvVar(k, v) } }
+            for k in names { setEnvVar(k, nil) }
+            setEnvVar("SHELL", "/bin/" + shell)
+            try body(home)
+        }
+    }
+    let mark = pathMark + "\n"
+    let sh = mark + "export PATH=\"$HOME/.local/bin:$PATH\"\n"
+    let nuBlock = mark + "$env.PATH = ($env.PATH | split row (char esep) | prepend (\"~/.local/bin\" | path expand) | uniq)\n"
+    let fishFile = mark + "fish_add_path -g ~/.local/bin\n"
+
+    t.test("add-path: zsh alone gets only .zprofile") {
+        shellBox("ap-zsh", shell: "zsh") { home in
+            pathStep(add: true)
+            t.eq(readFile(home + "/.zprofile"), sh)
+            for f in ["/.bash_profile", "/.profile", "/.config/fish/conf.d/jeb.fish"] { t.check(!lexists(home + f), "\(f) not made") }
+        }
+    }
+
+    t.test("add-path: a shell that has config is set up too, fish with its own file") {
+        shellBox("ap-fish", shell: "zsh") { home in
+            try? FileManager.default.createDirectory(atPath: home + "/.config/fish", withIntermediateDirectories: true)
+            t.eq(pathTargets(nil).map { $0.shell }, ["zsh", "fish"])
+            pathStep(add: true)
+            t.eq(readFile(home + "/.zprofile"), sh)
+            t.eq(readFile(home + "/.config/fish/conf.d/jeb.fish"), fishFile)
+        }
+    }
+
+    t.test("add-path: nushell goes under Library or XDG_CONFIG_HOME") {
+        shellBox("ap-nu", shell: "nu") { home in
+            pathStep(add: true)
+            t.eq(readFile(home + "/Library/Application Support/nushell/env.nu"), nuBlock)
+            t.check(!lexists(home + "/.profile"), "nu is not a sh shell")
+            try? FileManager.default.removeItem(atPath: home + "/Library")
+            setEnvVar("XDG_CONFIG_HOME", home + "/xdg")
+            pathStep(add: true)
+            t.eq(readFile(home + "/xdg/nushell/env.nu"), nuBlock)
+            t.check(!lexists(home + "/Library"), "and nothing under Library")
+        }
+    }
+
+    t.test("add-path: an explicit list writes only those shells") {
+        shellBox("ap-list", shell: "zsh") { home in
+            pathStep(add: true, only: ["fish"])
+            t.eq(readFile(home + "/.config/fish/conf.d/jeb.fish"), fishFile)
+            t.check(!lexists(home + "/.zprofile"), "zsh untouched")
+            t.eq(parseShellList("zsh,nu"), ["zsh", "nu"])
+            t.eq(parseShellList("zsh,tcsh"), nil)
+        }
+    }
+
+    t.test("add-path: an explicit list is written even when this shell already has the folder on PATH") {
+        shellBox("ap-list-onpath", shell: "zsh") { home in
+            setEnvVar("PATH", "/usr/bin:" + binDir())
+            pathStep(add: true)
+            t.check(!lexists(home + "/.config/fish/conf.d/jeb.fish"), "no list: on PATH, nothing written")
+            pathStep(add: true, only: ["fish"])
+            t.eq(readFile(home + "/.config/fish/conf.d/jeb.fish"), fishFile)
+        }
+    }
+
+    t.test("add-path: a second run changes nothing, then uninstall removes every block and keeps other lines") {
+        shellBox("ap-twice", shell: "zsh") { home in
+            let fm = FileManager.default
+            try? fm.createDirectory(atPath: home + "/.config/fish", withIntermediateDirectories: true)
+            try? fm.createDirectory(atPath: home + "/Library/Application Support/nushell", withIntermediateDirectories: true)
+            let nu = home + "/Library/Application Support/nushell/env.nu"
+            writeFile(home + "/.zprofile", "export A=1\n")
+            writeFile(nu, "let x = 1\n")
+            writeFile(home + "/.bash_profile", "export B=2\n")
+            pathStep(add: true)
+            let z = readFile(home + "/.zprofile"), n = readFile(nu), made = backupsIn(home)
+            t.eq(z, "export A=1\n" + sh)
+            t.eq(n, "let x = 1\n" + nuBlock)
+            t.eq(readFile(home + "/.bash_profile"), "export B=2\n" + sh, "bash has config, so it is set up too")
+            t.eq(made.count, 3)
+            pathStep(add: true)
+            t.eq(readFile(home + "/.zprofile"), z)
+            t.eq(readFile(nu), n)
+            t.eq(backupsIn(home), made, "no second backup")
+            unlinkJebctl()
+            t.eq(readFile(home + "/.zprofile"), "export A=1\n")
+            t.eq(readFile(nu), "let x = 1\n")
+            t.eq(readFile(home + "/.bash_profile"), "export B=2\n")
+            t.check(!lexists(home + "/.config/fish/conf.d/jeb.fish"), "our jeb.fish is gone")
+        }
+    }
+
+    t.test("add-path: a jeb.fish that is not ours is left alone by add and remove") {
+        shellBox("ap-foreign", shell: "fish") { home in
+            let f = home + "/.config/fish/conf.d/jeb.fish"
+            writeFile(f, "# mine\nset -x JEB 1\n")
+            pathStep(add: true)
+            t.eq(readFile(f), "# mine\nset -x JEB 1\n")
+            removeFromProfile()
+            t.eq(readFile(f), "# mine\nset -x JEB 1\n")
+            t.eq(backupsIn(home), [])
+        }
+    }
+
+    t.test("add-path: a dry run writes nothing") {
+        shellBox("ap-dry", shell: "zsh") { home in
+            dryRun = true
+            pathStep(add: true, only: ["zsh", "fish", "nu"])
+            t.check(!lexists(home + "/.zprofile") && !lexists(home + "/.config"), "nothing written")
+        }
+    }
+
+    t.test("add-path: in pretty mode the check is left for the end of the install, with no new-terminal line") {
+        shellBox("ap-pretty", shell: "zsh") { home in
+            Style.pretty = true
+            defer { Style.pretty = false; pathConfirmPending = nil }
+            pathStep(add: true, only: ["zsh", "bash"])
+            t.eq(pathConfirmPending?.map(\.shell), ["zsh", "bash"])
+            t.check(pathConfirmPending?.allSatisfy(\.has) == true, "both written")
+        }
+    }
+
+    t.test("add-path: a login zsh finds jebctl once the line is written, and not before") {
+        shellBox("ap-check", shell: "zsh") { home in
+            let bin = home + "/.local/bin"
+            try? FileManager.default.createDirectory(atPath: bin, withIntermediateDirectories: true)
+            FileManager.default.createFile(atPath: bin + "/jebctl", contents: Data("#!/bin/sh\n".utf8), attributes: [.posixPermissions: 0o755])
+            let target = { pathTargets(["zsh"])[0] }
+            t.eq(checkShell(target()), .missing)
+            pathStep(add: true, only: ["zsh"])
+            t.eq(checkShell(target()), .found)
+            t.eq(checkShell(PathTarget(shell: "nosuchshell", file: "", has: true)), .unchecked)
+        }
+    }
+
+    t.test("add-path: nushell's folder follows nushell's rule for XDG_CONFIG_HOME") {
+        shellBox("ap-nudir", shell: "nu") { home in
+            t.eq(nuDir(), home + "/Library/Application Support/nushell")
+            setEnvVar("XDG_CONFIG_HOME", home + "/xdg")
+            t.eq(nuDir(), home + "/xdg/nushell")
+            setEnvVar("XDG_CONFIG_HOME", "relative/xdg")
+            t.eq(nuDir(), home + "/Library/Application Support/nushell", "a relative XDG_CONFIG_HOME is ignored, as nushell does")
+        }
+    }
+
+    t.test("add-path: ZDOTDIR is respected") {
+        shellBox("ap-zdot", shell: "zsh") { home in
+            setEnvVar("ZDOTDIR", home + "/zd")
+            pathStep(add: true)
+            t.eq(readFile(home + "/zd/.zprofile"), sh)
+            t.check(!lexists(home + "/.zprofile"), "not in HOME")
+            removeFromProfile()
+            t.eq(readFile(home + "/zd/.zprofile"), "")
+        }
+    }
+
+    t.test("add-path: JEB_PROFILE keeps the one-file behaviour") {
+        sandbox("ap-profile") { home, _, profile in
+            try? FileManager.default.createDirectory(atPath: home + "/.config/fish", withIntermediateDirectories: true)
+            setEnvVar("SHELL", "/bin/fish")
+            t.eq(pathTargets(nil), [PathTarget(shell: "profile", file: profile, has: false)])
+            pathStep(add: true, only: ["fish", "nu"])
+            t.eq(readFile(profile), sh)
+            t.check(!lexists(home + "/.config/fish/conf.d"), "no other file")
+        }
+    }
+
+    t.test("add-path: flags are parsed, a bad shell and a clash are usage errors") {
+        var f = PathFlags()
+        t.check(f.take("--add-path=zsh,nu") && f.error == nil, "taken")
+        t.eq(f.shells, ["zsh", "nu"])
+        t.eq(f.forward, ["--add-path=zsh,nu"])
+        var g = PathFlags()
+        t.check(g.take("--add-path") && g.shells == nil && g.forward == ["--add-path"], "plain")
+        var h = PathFlags()
+        t.check(h.take("--no-add-path") && h.no && h.forward == ["--no-add-path"], "no")
+        t.check(h.take("--add-path") && h.error != nil, "the clash")
+        var b = PathFlags()
+        t.check(b.take("--add-path=tcsh") && b.error != nil, "an unknown shell")
+        t.check(!b.take("--repin"), "other flags are not ours")
+        sandbox("ap-flags") { _, bin, _ in
+            t.eq(cmdInstall(["--add-path", "--no-add-path"]), 2)
+            t.eq(cmdInstall(["--add-path=csh"]), 2)
+            t.eq(cmdAddPath(["csh"]), 2)
             t.check(!lexists(bin), "nothing was made")
         }
     }

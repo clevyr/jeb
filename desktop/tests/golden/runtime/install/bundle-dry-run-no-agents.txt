@@ -11,7 +11,10 @@ $SB/home/.jeb/current -> versions/v1.4.0
 plist com.jeb.desktop: JEB_MOD=$SB/home/.jeb/current/mod JEB_SRC=$SB/home/.jeb/current/desktop/src
 plist com.jeb.desktop.watchdog: JEB_MOD=$SB/home/.jeb/current/mod JEB_SRC=$SB/home/.jeb/current/desktop/src
 plist com.jeb.desktop.release: JEB_MOD=$SB/home/.jeb/current/mod JEB_SRC=$SB/home/.jeb/current/desktop/src
-3-5. hand-over, LaunchAgents (copy, bootout, bootstrap), waiting for the desktop and the jebctl link: skipped (--no-agents)
+3-4. hand-over, LaunchAgents (copy, bootout, bootstrap) and waiting for the desktop: skipped (--no-agents)
+5. jebctl on PATH
+link $SB/home/.local/bin/jebctl -> $SB/home/.jeb/current/desktop/bin/jebctl
+Run Jeb's tool as ~/.local/bin/jebctl
 would register jeb@jeb from $SB/home/.jeb/current (marketplace added)
 
 ## stderr

@@ -9,7 +9,7 @@ if [ ! -x "$BIN" ]; then
   stale=1
 else
   for s in dev/release/*.swift dev/release/build.sh desktop/cli/Json.swift desktop/cli/Env.swift desktop/cli/Home.swift \
-           desktop/cli/State.swift desktop/cli/Signers.swift desktop/cli/Tags.swift desktop/cli/Fetch.swift; do
+           desktop/cli/State.swift desktop/cli/Signers.swift desktop/cli/Tags.swift desktop/cli/Fetch.swift desktop/cli/Style.swift; do
     [ "$s" -nt "$BIN" ] && stale=1
   done
 fi
