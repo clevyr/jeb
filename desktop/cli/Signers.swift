@@ -17,20 +17,32 @@ let manifestMax = 64 << 10                  // the most a manifest or its signat
 /// The shipped desktop/release-signers beside this jebctl (REPO_SIGNERS): <bundle>/desktop/release-signers.
 func repoSignersPath() -> String { codeDir() + "/release-signers" }
 
+/// How this jebctl was started (argv[0]). A variable so the tests can make the running binary look like a bundle's jebctl.
+var invokedAs = CommandLine.arguments[0]
+
 /// The desktop/ folder this jebctl runs from (its realpath, since jebctl may run through a link).
 func codeDir() -> String {
-    let exe = pyRealpath(CommandLine.arguments[0].contains("/") ? CommandLine.arguments[0] : (which(CommandLine.arguments[0]) ?? CommandLine.arguments[0]))
+    let exe = pyRealpath(invokedAs.contains("/") ? invokedAs : (which(invokedAs) ?? invokedAs))
     return ((exe as NSString).deletingLastPathComponent as NSString).deletingLastPathComponent
 }
 
-/// os.path.realpath: symlinks resolved as far as the path exists, the rest kept.
-func pyRealpath(_ p: String) -> String {
+/// os.path.realpath: symlinks resolved as far as the path exists, the rest kept. A dangling link is followed to where it
+/// points (as Python's non-strict realpath does); a loop (more than 40 links) falls back to the path as it stands.
+func pyRealpath(_ p: String) -> String { pyRealpath(p, links: 0) }
+
+private func pyRealpath(_ p: String, links: Int) -> String {
     let abs = p.hasPrefix("/") ? p : FileManager.default.currentDirectoryPath + "/" + p
     if let r = realpath(abs, nil) { defer { free(r) }; return String(cString: r) }
     let ns = abs as NSString
     let parent = ns.deletingLastPathComponent, last = ns.lastPathComponent
     if parent.isEmpty || parent == abs { return ns.standardizingPath }
-    return pyRealpath(parent) + "/" + last
+    var st = stat()
+    if links < 40, lstat(abs, &st) == 0, (st.st_mode & S_IFMT) == S_IFLNK,
+       let target = try? FileManager.default.destinationOfSymbolicLink(atPath: abs) {
+        let full = target.hasPrefix("/") ? target : pyRealpath(parent, links: links + 1) + "/" + target
+        return pyRealpath((full as NSString).standardizingPath, links: links + 1)
+    }
+    return pyRealpath(parent, links: links + 1) + "/" + last
 }
 
 /// open(path).read() in text mode: UTF-8 with universal newlines; nil when unreadable.
@@ -231,4 +243,11 @@ func pyStr(_ v: Json?) -> String {
 func isRegularFile(_ p: String) -> Bool {
     var st = stat()
     return stat(p, &st) == 0 && (st.st_mode & S_IFMT) == S_IFREG
+}
+
+/// True when some pinned key is also a jeb-release key of the shipped file: the pin can check the releases that file
+/// belongs to. An old pin that only carries the personal key (or never lists jeb-release for it) cannot.
+func pinCanVerify(pinLines: [String], shippedLines: [String]) -> Bool {
+    let shipped = Set(shippedLines.compactMap(keyLine).filter { $0.ns?.names.contains("jeb-release") == true }.map { $0.blob })
+    return pinLines.compactMap(keyLine).contains { shipped.contains($0.blob) && $0.ns?.names.contains("jeb-release") == true }
 }

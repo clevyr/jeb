@@ -99,6 +99,8 @@ func status() {
     sb = bundleSB("doctor-bundle-nopin", pin: nil)
     removeAll(sb.rel + "/latest")
     write("runtime/doctor/bundle-no-signers-no-release.txt", sb.snapshot(sb.jc(["doctor"]), plists: false))
+    sb = bundleSB("doctor-bundle-oldpin", pin: "old-key namespaces=\"git,jeb-release\" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOldOldOldOldOldOldOldOldOldOldOldOldOldOldOld\n")
+    write("runtime/doctor/bundle-old-key-pin.txt", sb.snapshot(sb.jc(["doctor"]), plists: false))
     sb = bundleSB("doctor-bundle-paused")
     writeText(sb.state + "/updates-paused", "")
     sb.saveRS(obj(("failed", ["v1.5.0"]), ("checked", .int(NOW - 100)), ("last", obj(("at", .int(NOW - 100)), ("tag", "v1.5.0"), ("result", "rejected"), ("app", "prebuilt"))),

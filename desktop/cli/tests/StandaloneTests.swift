@@ -133,23 +133,6 @@ func standaloneTests(_ t: Tester) {
         t.check(standaloneBundleProblem(t.scratch("none")) != nil, "no bundle.json is refused")
     }
 
-    t.test("standalone: an old clone is named, with --replace-clone as the way on") {
-        sandbox("clone") { home in
-            writeFile(home + "/.jeb/repo/desktop/jebctl", "#!/bin/sh\n", mode: 0o755)
-            var rc: Int32 = 0
-            let out = printed { rc = standaloneInstall([], handOff: { _, _ in 99 }) }
-            t.eq(rc, 1, "refused")
-            t.eq(out, "an old install is at \(home)/.jeb/repo: run jebctl install --replace-clone\n")
-            t.check(isRegularFile(home + "/.jeb/repo/desktop/jebctl"), "the clone is where it was")
-            t.check(!lexists(home + "/.jeb/repo.old"), "and nothing moved")
-        }
-        sandbox("clone-home") { home in
-            writeFile(home + "/jeb/desktop/jebctl", "#!/bin/sh\n", mode: 0o755)
-            t.eq(oldCloneInstall(), home + "/jeb", "a clone at ~/jeb is found too")
-        }
-        sandbox("noclone") { _ in t.eq(oldCloneInstall(), nil, "none, none") }
-    }
-
     t.test("standalone: JEB_RELEASE_TAG installs that tag instead of the newest") {
         sandbox("pinned-tag") { home in
             writeFile(home + "/no-releases/latest", "v9.9.9")
@@ -164,41 +147,46 @@ func standaloneTests(_ t: Tester) {
         }
     }
 
-    t.test("standalone: --replace-clone --dry-run changes nothing") {
-        sandbox("replace-dry") { home in
-            let clone = home + "/.jeb/repo"
-            writeFile(clone + "/desktop/jebctl", "#!/bin/sh\n", mode: 0o755)
-            let settings = "{\"env\": {\"CLAUDE_CODE_PLUGIN_DIRS\": \"\(clone)/mod\"}}"
-            writeFile(home + "/settings.json", settings)
-            writeFile(home + "/no-releases/latest", "v9.9.9")      // the dry run reads the newest tag, nothing more
-            var rc: Int32 = 99
-            let out = printed { rc = standaloneInstall(["--replace-clone", "--dry-run", "--no-agents"], handOff: { _, _ in 98 }) }
-            t.eq(rc, 0, "a dry run succeeds")
-            t.check(out.contains("would move \(clone) to \(clone).old"), "it says what it would move: \(out)")
-            t.check(out.contains("would remove it"), "and the entry: \(out)")
-            t.check(isRegularFile(clone + "/desktop/jebctl") && !lexists(clone + ".old"), "the clone did not move")
-            t.eq(readFile(home + "/settings.json"), settings, "settings.json is untouched")
-            t.check(!lexists(home + "/backups"), "and nothing was backed up")
-            t.check(!lexists(home + "/Library"), "no state folder was made")
+    t.test("standalone: a live schema 2 with a dangling older link is relinked, and one that is current is left") {
+        sandbox("dangling") { home in
+            schema2(home + "/.jeb/versions/v1")
+            try? FileManager.default.createSymbolicLink(atPath: home + "/.jeb/current", withDestinationPath: "versions/v1")
+            let bin = home + "/bin"
+            try? FileManager.default.createDirectory(atPath: bin, withIntermediateDirectories: true)
+            let was = envVar("JEB_BIN_DIR")
+            setEnvVar("JEB_BIN_DIR", bin)
+            defer { setEnvVar("JEB_BIN_DIR", was) }
+            try? FileManager.default.createSymbolicLink(atPath: bin + "/jebctl", withDestinationPath: home + "/jeb/desktop/jebctl")
+            t.eq(linkState(), "older", "a link to a clone that is gone is older")
+            _ = printed { _ = standaloneInstall([], update: { 0 }, readTag: { "v1" }, latest: { nil }) }
+            t.eq(linkState(), "ours", "relinked")
         }
     }
 
-    t.test("standalone: --replace-clone moves the clone aside and drops its plugin entry, and refuses an existing .old") {
-        sandbox("replace") { home in
-            let clone = home + "/.jeb/repo"
-            writeFile(clone + "/desktop/jebctl", "#!/bin/sh\n", mode: 0o755)
-            writeFile(home + "/settings.json", "{\"env\": {\"CLAUDE_CODE_PLUGIN_DIRS\": \"\(clone)/mod:/elsewhere/mod\"}}")
-            let rc = printed { t.check(replaceOldClone(clone, parseStandaloneFlags(["--no-agents"])) == nil, "carry on") }
-            t.check(rc.contains("moved \(clone) to \(clone).old"), rc)
-            t.check(isRegularFile(clone + ".old/desktop/jebctl") && !lexists(clone), "the clone is now <clone>.old")
-            let after = readFile(home + "/settings.json") ?? ""
-            t.check(!after.contains(clone) && after.contains("/elsewhere/mod"), "only Jeb's entry left settings.json: \(after)")
-            t.check(((try? FileManager.default.contentsOfDirectory(atPath: home + "/backups")) ?? []).count == 1, "after one backup")
-            writeFile(clone + "/desktop/jebctl", "#!/bin/sh\n", mode: 0o755)
-            var again: Int32?
-            _ = printed { again = replaceOldClone(clone, parseStandaloneFlags(["--no-agents"])) }
-            t.eq(again, 1, "a second one will not overwrite <clone>.old")
-            t.check(isRegularFile(clone + "/desktop/jebctl"), "and leaves the clone")
+    t.test("standalone: a schema 1 live bundle takes the fresh path") {
+        sandbox("schema1") { home in
+            schema2(home + "/.jeb/versions/v1")
+            writeFile(home + "/.jeb/versions/v1/bundle.json", "{\"schema\":1,\"tag\":\"v1.4.0\"}")
+            try? FileManager.default.createSymbolicLink(atPath: home + "/.jeb/current", withDestinationPath: "versions/v1")
+            var updated = false
+            var fetched: [String] = []
+            writeFile(home + "/no-releases/latest", "v9.9.9")
+            let out = printed { _ = standaloneInstall(["--dry-run"], update: { updated = true; return 0 }, fetch: { tag, _ in fetched.append(tag); return (nil, nil) }) }
+            t.check(!updated, "no update is run on a schema 1 bundle")
+            t.check(out.contains("newest release: v9.9.9"), out)
+        }
+    }
+
+    t.test("standalone: a fake jebctl first on PATH makes the hint name the absolute path") {
+        sandbox("hint") { home in
+            schema2(home + "/.jeb/versions/v1")
+            try? FileManager.default.createSymbolicLink(atPath: home + "/.jeb/current", withDestinationPath: "versions/v1")
+            let was = envVar("PATH")
+            writeFile(home + "/fakebin/jebctl", "#!/bin/sh\n", mode: 0o755)
+            setEnvVar("PATH", home + "/fakebin:" + (was ?? ""))
+            defer { setEnvVar("PATH", was) }
+            t.check(selfCommand() != "jebctl", "not the bare name: \(selfCommand())")
+            t.check(selfCommand().hasPrefix("/"), "an absolute path")
         }
     }
 
@@ -224,7 +212,7 @@ func standaloneTests(_ t: Tester) {
             var out = printed { rc = standaloneInstall(["--add-path=zsh"], update: { 1 }, addPath: { calls.append($0); return 0 }, readTag: { "v1" }) }
             t.eq(rc, 1, "the update's failure is the exit code")
             t.eq(calls, [], "add-path is not run after a failed update")
-            t.check(out.contains("note: PATH setup was skipped because the update did not finish; run `jebctl add-path` to set it up"), out)
+            t.check(out.contains("note: PATH setup was skipped because the update did not finish; run `\(selfCommand()) add-path` to set it up"), out)
             out = printed { rc = standaloneInstall(["--add-path=zsh"], update: { 0 }, addPath: { calls.append($0); return 0 }, readTag: { "v1" }) }
             t.eq(rc, 0)
             t.eq(calls, [["zsh"]], "run after a good update, with the shells asked for")

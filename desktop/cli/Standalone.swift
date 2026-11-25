@@ -2,17 +2,17 @@
 // ~/.jeb/bin, or the dev build). It is the schema-2 install path: the newest release (the releases/latest
 // redirect, no API or sign-in), its manifest signature against signerLines (nothing is pinned yet), its hashes,
 // the unpack into ~/.jeb/versions/<tag> with fetchBundle's safety checks, then `exec <ver>/desktop/bin/jebctl install ...` so the
-// bundle's own jebctl does the install. An installed Jeb updates instead; an old git clone is only replaced on request (Q3).
+// bundle's own jebctl does the install, and moves an old git clone aside itself once the new one works. An installed Jeb updates instead.
 import Foundation
 
-let standaloneUsage = "usage: jebctl install [--repin] [--add-path[=zsh,bash,fish,nu]] [--no-add-path] [--replace-clone] [--no-agents] [--dry-run] [--verbose] [--plain]"
+let standaloneUsage = "usage: jebctl install [--repin] [--add-path[=zsh,bash,fish,nu]] [--no-add-path] [--replace-clone (no longer needed)] [--no-agents] [--dry-run] [--verbose] [--plain]"
 
 struct StandaloneFlags: Equatable {
     var dry = false, noAgents = false, verbose = false, repin = false, replaceClone = false, plain = false
     var path = PathFlags()
     var bad: String?        // the first option that is not one of these (--dev and --build-from-source are gone)
 
-    /// What the bundle's own install is told: everything but --replace-clone, which only this step knows.
+    /// What the bundle's own install is told: everything but --replace-clone, which does nothing now (the bundle's install moves an old clone itself).
     var forward: [String] {
         var out: [String] = []
         if dry { out.append("--dry-run") }
@@ -45,11 +45,6 @@ func isBundleRoot(_ root: String) -> Bool {
     isRegularFile(root + "/bundle.json") && isExecutableFile(root + "/desktop/bin/jebctl")
 }
 
-/// An install from before the bundles: a git clone at ~/.jeb/repo or ~/jeb with its Python jebctl. nil when there is none.
-func oldCloneInstall() -> String? {
-    [jebDir() + "/repo", homeDir() + "/jeb"].first { isRegularFile($0 + "/desktop/jebctl") }
-}
-
 /// nil when dir is a usable schema 2 bundle for a standalone install to hand over to; else the reason. fetchBundle has checked
 /// the signature, hashes, architecture and member links; this is the shape the bundle's own install needs.
 func standaloneBundleProblem(_ dir: String) -> String? {
@@ -79,38 +74,6 @@ func execBundleInstall(_ jebctl: String, _ args: [String]) -> Int32 {
     execve(jebctl, &cargs, &cenv)
     warn("jebctl: could not run \(jebctl): \(String(cString: strerror(errno)))")
     return 1
-}
-
-/// --replace-clone (Q3): the old install's agents are booted out, its folder moves to <clone>.old (no git needed), its
-/// CLAUDE_CODE_PLUGIN_DIRS entry leaves settings.json (backup first). nil: carry on with the fresh install; else the exit code.
-func replaceOldClone(_ clone: String, _ f: StandaloneFlags) -> Int32? {
-    let old = clone + ".old", tag = f.dry ? " (dry run)" : ""
-    say("Replacing the old install at \(clone)\(tag)")
-    if lexists(old) {
-        say("jebctl: \(old) already exists; move it away first. Nothing was changed.")
-        return 1
-    }
-    do { _ = try loadSettings(settingsPath()) } catch {      // before anything moves: a settings file we cannot edit stops here
-        say("jebctl: \(error)")
-        return 1
-    }
-    if f.noAgents {
-        standaloneStep("agents: left loaded (--no-agents)")
-    } else {
-        for l in allLabels { launchctl(["bootout", "\(guiDomain)/\(l)"]) }      // "not loaded" is ignored
-        standaloneStep("agents: " + (f.dry ? "would boot out the old LaunchAgents" : "booted out"))
-    }
-    if f.dry {
-        standaloneStep("would move \(clone) to \(old)")
-    } else if rename(clone, old) != 0 {
-        say("jebctl: could not move \(clone) to \(old): \(String(cString: strerror(errno)))")
-        return 1
-    } else {
-        standaloneStep("moved \(clone) to \(old)")
-    }
-    let act = removeEntry(clone + "/mod", dry: f.dry, say: { detail($0) })
-    standaloneStep("plugin entry: " + (act == "absent" ? "not listed in \(settingsPath())" : f.dry ? "would remove it (backup first)" : "removed (backup first)"))
-    return nil
 }
 
 /// Fetch release `tag` with the pinned signers, staging in a private folder under `tmpRoot` that is removed before this returns
@@ -146,7 +109,9 @@ func standaloneInstall(_ flags: [String], signers: [String] = signerLines,
                        handOff: (String, [String]) -> Int32 = execBundleInstall,
                        update: () -> Int32 = { run([liveJebctl, "update"], capture: false).status },
                        addPath: ([String]) -> Int32 = { run([liveJebctl, "add-path"] + $0, capture: false).status },
-                       readTag: () -> String? = installedTag) -> Int32 {
+                       readTag: () -> String? = installedTag,
+                       latest: () -> String? = { envVar("JEB_RELEASE_TAG") ?? (try? latestTag(releaseBase(releaseRepo()))) },
+                       fetch: (String, [String]) -> (path: String?, err: BundleError?) = { standaloneFetch($0, signers: $1) }) -> Int32 {
     let f = parseStandaloneFlags(flags)
     if let bad = f.bad {
         say("jebctl install: unknown option \(bad)\n" + standaloneUsage)
@@ -159,35 +124,53 @@ func standaloneInstall(_ flags: [String], signers: [String] = signerLines,
     dryRun = f.dry
     verbose = f.verbose
     let tag = f.dry ? " (dry run)" : ""
-    // a Jeb that is already installed updates itself, then says how it is
-    if liveValid() {
+    // a Jeb that is already installed updates itself, then says how it is; a schema 1 one has no `update` to run, so it takes
+    // the fresh path, which the bundle's own install finishes
+    var headerDrawn = false
+    if liveValid() && readBundle(currentDir())?["schema"]?.int == 2 {
         Style.announce(plain: "Jeb is installed: updating it\(tag)", mode: .update)
+        headerDrawn = true
         if f.dry {
             standaloneStep("would run jebctl update (again while it installs a newer release), then \(f.path.add ? "jebctl add-path and " : "")jebctl doctor", always: true)
             return 0
         }
-        var rc = standaloneUpdateLoop(update: update, readTag: readTag)
-        if f.path.add {
-            if rc == 0 {        // the live jebctl is the updated one: an older one may not know add-path
-                let a = addPath(f.path.shells.map { [$0.joined(separator: ",")] } ?? [])
-                if a != 0 { rc = a }
-            } else {
-                say("note: PATH setup was skipped because the update did not finish; run `jebctl add-path` to set it up")
-            }
-        }
-        _ = run([liveJebctl, "doctor"], capture: false)
-        return rc
+        let rc = standaloneUpdateLoop(update: update, readTag: readTag)
+        if linkState() == "older" { _ = linkJebctl() }      // a link to a clone that moved or went away
+        // still behind the newest release (an update that could not get there): the fresh path installs it
+        let behind: Bool = {
+            guard let newest = latest(), let nk = tagKey(newest) else { return false }
+            guard let have = readTag(), let hk = tagKey(have) else { return true }
+            return hk < nk
+        }()
+        if !behind { return finishLiveUpdate(f, rc: rc, addPath: addPath) }
+        standaloneStep("still behind the newest release; installing it")
+        Style.mode = .install
     }
-    if let clone = oldCloneInstall() {
-        if !f.replaceClone {
-            say("an old install is at \(clone): run jebctl install --replace-clone")
-            return 1
+    return freshInstall(f, tag: tag, headerDrawn: headerDrawn, signers: signers, handOff: handOff, fetch: fetch)
+}
+
+/// The live branch's last steps: PATH setup when asked, then the doctor. The exit code.
+private func finishLiveUpdate(_ f: StandaloneFlags, rc first: Int32, addPath: ([String]) -> Int32) -> Int32 {
+    var rc = first
+    if f.path.add {
+        if rc == 0 {        // the live jebctl is the updated one: an older one may not know add-path
+            let a = addPath(f.path.shells.map { [$0.joined(separator: ",")] } ?? [])
+            if a != 0 { rc = a }
+        } else {
+            say("note: PATH setup was skipped because the update did not finish; run `\(selfCommand()) add-path` to set it up")
         }
-        if let rc = replaceOldClone(clone, f) { return rc }
     }
+    _ = run([liveJebctl, "doctor"], capture: false)
+    return rc
+}
+
+/// The fresh path: fetch the newest release, verify it with the built-in signers, hand over to the bundle's own install (which
+/// does everything to the machine: the state folder, the pin, an old clone, the plugin).
+private func freshInstall(_ f: StandaloneFlags, tag: String, headerDrawn: Bool, signers: [String],
+                          handOff: (String, [String]) -> Int32, fetch: (String, [String]) -> (path: String?, err: BundleError?)) -> Int32 {
     if !Style.pretty { say("Installing Jeb\(tag)") }
     if Style.pretty {       // the header and the fetch spinner before any network work, so a failure shows under them
-        Style.announce(plain: "", mode: .install)
+        if !headerDrawn { Style.announce(plain: "", mode: .install) }
         lead("fetch")
     }
     /// A failed fetch step closed, then the reason and exit.
@@ -206,8 +189,8 @@ func standaloneInstall(_ flags: [String], signers: [String] = signerLines,
         do { newest = try latestTag(base) }
         catch let e as FetchError {
             if e.status == 404 { failFetch("jebctl: \(base) has no published release (HTTP 404; is the repository public?)") }
-            failFetch("jebctl: could not reach GitHub (\(e)); check the network and run jebctl install again")
-        } catch { failFetch("jebctl: could not reach GitHub (\(error)); check the network and run jebctl install again") }
+            failFetch("jebctl: could not reach GitHub (\(e)); check the network and run \(selfCommand()) install again")
+        } catch { failFetch("jebctl: could not reach GitHub (\(error)); check the network and run \(selfCommand()) install again") }
     }
     standaloneStep((envVar("JEB_RELEASE_TAG") == nil ? "newest release: " : "release (JEB_RELEASE_TAG): ") + newest)
     if f.dry {
@@ -217,7 +200,7 @@ func standaloneInstall(_ flags: [String], signers: [String] = signerLines,
         say("Dry run only; nothing was changed.")
         return 0
     }
-    let got = standaloneFetch(newest, signers: signers)
+    let got = fetch(newest, signers)
     if Style.pretty { fin(got.path == nil ? "failed" : "ok (\(newest))") }
     guard let ver = got.path else {
         let e = got.err

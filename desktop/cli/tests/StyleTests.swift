@@ -287,4 +287,12 @@ func styleTests(_ t: Tester) {
         t.eq(runQuiet(["/bin/sleep", "5"], env: [:], timeout: 0.2), nil)
         t.eq(runQuiet(["/no/such/program"], env: [:], timeout: 1), nil)
     }
+
+    t.test("install step labels: the state folder and old install steps have friendly names and read as done") {
+        t.eq(friendlyLabel("state folder", mode: .install), "Moved Jeb's things into Application Support")
+        t.eq(friendlyLabel("old install", mode: .install), "Moved the old install aside")
+        t.eq(classifyStep("ok (re-pinned; the old pin could not check new releases)"), .ok("re-pinned; the old pin could not check new releases"))
+        t.eq(classifyStep("ok (moved ~/jeb to ~/jeb.old)"), .ok("moved ~/jeb to ~/jeb.old"))
+        if case .skipped = classifyStep("kept (Jeb is not registered with Claude Code yet)") {} else { t.check(false, "kept counts as skipped") }
+    }
 }

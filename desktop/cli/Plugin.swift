@@ -179,10 +179,17 @@ func removeEntries(_ entries: [String], dry: Bool, say: (String) -> Void) {
     for e in entries { removeEntry(e, dry: dry, say: say) }
 }
 
-/// The CLAUDE_CODE_PLUGIN_DIRS entries that are Jeb's own release install (under ~/.jeb: current, versions, repo).
+/// True when dir is a Jeb mod folder: its .claude-plugin/plugin.json names the plugin "jeb".
+func isJebModDir(_ dir: String) -> Bool { Json.load(dir + "/.claude-plugin/plugin.json")?["name"]?.string == "jeb" }
+
+/// The CLAUDE_CODE_PLUGIN_DIRS entries that are an older Jeb install: anything under ~/.jeb (current, versions, repo), a
+/// folder whose plugin.json names "jeb" (a git clone wherever it sits), or a `/mod` path that no longer exists (a clone that moved).
 func legacyEntries() -> [String] {
     guard let v = try? currentDirs(loadSettings(settingsPath())) else { return [] }
-    return dirEntries(v).filter { isUnder(normPath($0), jebDir()) }.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+    return dirEntries(v).filter { e in
+        let n = normPath(e)
+        return isUnder(n, jebDir()) || isJebModDir(n) || (!lexists(n) && n.hasSuffix("/mod") && isUnder(n, homeDir()))
+    }.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
 }
 
 /// The entries actually listed in CLAUDE_CODE_PLUGIN_DIRS now, each once.

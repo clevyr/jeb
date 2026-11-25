@@ -573,4 +573,133 @@ func installTests(_ t: Tester) {
             t.eq(nuQuote("/a'#\"b"), "r##'/a'#\"b'##", "more # than any '# inside")
         }
     }
+
+    // ---- an older install moved aside ----
+
+    /// A Jeb git clone at dir: the Python jebctl and a mod whose plugin.json names "jeb".
+    func makeClone(_ dir: String) {
+        writeFile(dir + "/desktop/jebctl", "#!/bin/sh\n", mode: 0o755)
+        writeFile(dir + "/mod/.claude-plugin/plugin.json", "{\"name\": \"jeb\"}")
+    }
+    /// sandbox plus a state folder and settings.json under it.
+    func withState(_ name: String, _ body: (String) -> Void) {
+        sandbox(name) { home, _, _ in
+            let was = stateHome, ws = envVar("JEB_SETTINGS"), wa = envVar("JEB_LAUNCHAGENTS")
+            stateHome = home + "/state"
+            setEnvVar("JEB_SETTINGS", home + "/settings.json")
+            setEnvVar("JEB_LAUNCHAGENTS", home + "/agents")
+            defer { stateHome = was; setEnvVar("JEB_SETTINGS", ws); setEnvVar("JEB_LAUNCHAGENTS", wa) }
+            try? FileManager.default.createDirectory(atPath: stateHome, withIntermediateDirectories: true)
+            body(home)
+        }
+    }
+
+    t.test("install: a dangling link to a moved clone is older, and linkJebctl relinks it") {
+        sandbox("dangling") { home, bin, _ in
+            try? FileManager.default.createDirectory(atPath: bin, withIntermediateDirectories: true)
+            try? FileManager.default.createSymbolicLink(atPath: bin + "/jebctl", withDestinationPath: home + "/jeb/desktop/jebctl")
+            t.eq(linkState(), "older", "the clone is gone")
+            t.check(linkJebctl(), "relinked")
+            t.check(linkState() != "older", "no longer older")
+            t.eq(pyRealpath(bin + "/jebctl"), pyRealpath(liveJebctl), "and it reaches the live bundle")
+        }
+    }
+
+    t.test("install: a wired clone is replaced; an unwired Jeb clone and a non-Jeb ~/jeb stay") {
+        withState("scan") { home in
+            makeClone(home + "/jeb")
+            writeFile(home + "/settings.json", "{\"env\": {\"CLAUDE_CODE_PLUGIN_DIRS\": \"\(home)/jeb/mod\"}}")
+            var r = scanOldInstalls(home: home)
+            t.eq(r.replace.map { $0.path }, [home + "/jeb"], "wired through settings.json")
+            t.eq(r.unwired, [], "none unwired")
+            writeFile(home + "/settings.json", "{}")
+            r = scanOldInstalls(home: home)
+            t.eq(r.replace.count, 0, "unwired: not replaced")
+            t.eq(r.unwired, [home + "/jeb"], "but named")
+            try? FileManager.default.removeItem(atPath: home + "/jeb")
+            writeFile(home + "/jeb/desktop/jebctl", "#!/bin/sh\n", mode: 0o755)
+            writeFile(home + "/jeb/mod/.claude-plugin/plugin.json", "{\"name\": \"other\"}")
+            r = scanOldInstalls(home: home)
+            t.check(r.replace.isEmpty && r.unwired.isEmpty, "a non-Jeb ~/jeb is ignored")
+        }
+        withState("scan-dev") { home in
+            makeClone(home + "/jeb")
+            writeFile(home + "/settings.json", "{\"env\": {\"CLAUDE_CODE_PLUGIN_DIRS\": \"\(home)/jeb/mod\"}}")
+            writeFile(stateHome + "/install-mode", "dev\n")
+            let r = scanOldInstalls(home: home)
+            t.check(r.replace.isEmpty && r.unwired.isEmpty, "dev mode: nothing is touched")
+        }
+    }
+
+    t.test("install: asidePath counts up and ~/.jeb/repo leaves ~/.jeb") {
+        sandbox("aside") { home, _, _ in
+            t.eq(asidePath(home + "/jeb", home: home), home + "/jeb.old")
+            try? FileManager.default.createDirectory(atPath: home + "/jeb.old", withIntermediateDirectories: true)
+            try? FileManager.default.createDirectory(atPath: home + "/jeb.old-2", withIntermediateDirectories: true)
+            t.eq(asidePath(home + "/jeb", home: home), home + "/jeb.old-3")
+            t.eq(asidePath(home + "/.jeb/repo", home: home), home + "/jeb-repo.old")
+        }
+    }
+
+    t.test("install: moveOldInstallsAside renames the clone, records legacy_clone, and keeps it when not registered") {
+        withState("move") { home in
+            makeClone(home + "/jeb")
+            writeFile(home + "/jeb/file", "x")
+            let olds: [OldInstall] = [(home + "/jeb", ["Claude Code loads its mod"])]
+            var out = printed { moveOldInstallsAside(olds, registered: false) }
+            t.check(isDir(home + "/jeb") && out.contains("kept"), "not registered: kept: \(out)")
+            out = printed { moveOldInstallsAside(olds, registered: true) }
+            t.check(!lexists(home + "/jeb") && isRegularFile(home + "/jeb.old/file"), "moved to jeb.old: \(out)")
+            t.check(out.contains("ok (moved"), out)
+            t.eq(loadRState()["legacy_clone"]?.string, home + "/jeb.old", "recorded")
+        }
+        withState("move-repo") { home in
+            makeClone(home + "/.jeb/repo")
+            _ = printed { moveOldInstallsAside([(home + "/.jeb/repo", ["x"])], registered: true) }
+            t.check(isDir(home + "/jeb-repo.old") && !lexists(home + "/.jeb/repo"), "~/.jeb/repo goes to ~/jeb-repo.old")
+        }
+        withState("move-dirty") { home in
+            makeClone(home + "/jeb")
+            _ = run(["/usr/bin/git", "-C", home + "/jeb", "init", "-q"])
+            let out = printed { moveOldInstallsAside([(home + "/jeb", ["x"])], registered: true) }
+            t.check(out.contains("had local changes"), "a dirty clone moves with a note: \(out)")
+            t.check(isDir(home + "/jeb.old"), "moved")
+        }
+        withState("move-dry") { home in
+            makeClone(home + "/jeb")
+            dryRun = true
+            let out = printed { moveOldInstallsAside([(home + "/jeb", ["x"])], registered: true) }
+            t.check(isDir(home + "/jeb") && out.contains("would move"), "a dry run only says: \(out)")
+        }
+    }
+
+    t.test("install: repinUnusablePin replaces an old-key pin and leaves a usable one") {
+        withState("repin") { home in
+            guard let shipped = readText(repoSignersPath()) else { t.check(false, "the shipped signers are readable"); return }
+            writeFile(pinnedSignersPath, "me namespaces=\"git\" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOldOldOldOldOldOldOldOldOldOldOldOldOldOldOld\n")
+            t.check(repinUnusablePin(), "an old key is replaced")
+            t.eq(readFile(pinnedSignersPath), shipped, "by the shipped file")
+            t.check(!repinUnusablePin(), "a usable pin is left")
+        }
+    }
+
+    t.test("uninstall --remove-files keeps a dirty old clone inside ~/.jeb") {
+        withState("keep-dirty") { home in
+            makeClone(home + "/.jeb/repo.old")
+            _ = run(["/usr/bin/git", "-C", home + "/.jeb/repo.old", "init", "-q"])
+            writeFile(home + "/.jeb/other", "x")
+            _ = printed { removeFiles(legacyClone: home + "/.jeb/repo.old") }
+            t.check(isRegularFile(home + "/.jeb/repo.old/desktop/jebctl"), "the dirty clone stays")
+            t.check(!lexists(home + "/.jeb/other"), "the rest goes")
+        }
+    }
+
+    t.test("install: a settings entry spelled through a symlink is still found as legacy") {
+        withState("legacy-link") { home in
+            makeClone(home + "/real")
+            try? FileManager.default.createSymbolicLink(atPath: home + "/jeb", withDestinationPath: home + "/real")
+            writeFile(home + "/settings.json", "{\"env\": {\"CLAUDE_CODE_PLUGIN_DIRS\": \"\(home)/jeb/mod\"}}")
+            t.eq(legacyEntries(), [home + "/jeb/mod"], "found by its plugin.json")
+        }
+    }
 }

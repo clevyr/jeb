@@ -11,10 +11,25 @@ let uninstallUsage = "usage: jebctl uninstall [--purge] [--purge-farm] [--remove
 /// The folder this jebctl's bundle is unpacked in (<root>/desktop/bin/jebctl); it holds bundle.json when this is one.
 func bundleRoot() -> String { (codeDir() as NSString).deletingLastPathComponent }
 
+/// Set while the old agents are booted out and the install has not yet replaced them: a failure puts them back.
+var installFailHook: (() -> Void)?
+
 /// An install that cannot go on: the open step line is closed with "failed", then the reason on stderr.
 func installFail(_ msg: String) -> Never {
     if openLine { fin("failed") }
+    installFailHook?()
     die(msg)
+}
+
+/// What the hints say to run: `jebctl` when the jebctl on PATH is this one (or the live one), else the absolute path of the
+/// jebctl that works (the live one once installed, the standalone's own copy before that).
+func selfCommand() -> String {
+    if let w = which("jebctl") {
+        let exe = CommandLine.arguments[0]
+        let me = pyRealpath(exe.contains("/") ? exe : (which(exe) ?? exe))
+        if pyRealpath(w) == me || isMe(w) { return "jebctl" }
+    }
+    return liveValid() ? liveJebctl : toolsDir() + "/jebctl"
 }
 
 // ---- the state folder ----
@@ -22,9 +37,28 @@ func installFail(_ msg: String) -> Never {
 /// Move the old state folder to ~/Library/Application Support/Jeb (once), then follow it. Returns the status.
 @discardableResult
 func migrateHome() -> String {
-    let r = migrate(log: { say($0) }, dry: dryRun)
+    let r = migrate(log: { detail($0) }, dry: dryRun)
     if r == "moved" || r == "failed" { setHome(resolveHome()) }
     return r
+}
+
+/// True when the old state folder is still to be moved.
+func stateMovePending() -> Bool {
+    (envVar("JEB_HOME") ?? "").isEmpty && isRealDir(oldPath()) && !lexists(newPath())
+}
+
+/// The state-folder move as its own install step: "state folder ... ok (moved from ~/.claude/jeb-desktop)". Nothing is
+/// printed when there is nothing to move; the full sentences show with --verbose.
+func moveStateFolderStep() {
+    guard stateMovePending() else { return }
+    let from = shortPath(oldPath())
+    lead("state folder")
+    switch migrateHome() {
+    case "moved": fin("ok (moved from \(from))")
+    case "would move": fin("would move from \(from)")
+    case "busy": fin("kept (an update is running; the next run moves it)")
+    default: fin("kept (could not move it; Jeb carries on from \(from))")
+    }
 }
 
 // ---- the jebctl link and PATH ----
@@ -57,9 +91,24 @@ func linkState() -> String {
     if !isSymlink(p) { return "foreign" }
     let r = pyRealpath(p)
     if pyRealpath(liveJebctl) == r || isMe(p) { return "ours" }
+    if danglingOlderLink(p) { return "older" }
+    return jebctlShape(r) ? "older" : "foreign"
+}
+
+/// A path that ends in desktop/jebctl (a git clone's Python jebctl) or desktop/bin/jebctl (a bundle's).
+private func jebctlShape(_ r: String) -> Bool {
     let dir = (r as NSString).deletingLastPathComponent
     let d = (dir as NSString).lastPathComponent, up = ((dir as NSString).deletingLastPathComponent as NSString).lastPathComponent
-    return (r as NSString).lastPathComponent == "jebctl" && (d == "desktop" || (d == "bin" && up == "desktop")) ? "older" : "foreign"
+    return (r as NSString).lastPathComponent == "jebctl" && (d == "desktop" || (d == "bin" && up == "desktop"))
+}
+
+/// A link whose target is gone (the clone moved to ~/jeb.old): still Jeb's own when it pointed at a jebctl of an old
+/// install, under ~/jeb, ~/jeb.old*, ~/jeb-repo.old* or ~/.jeb/repo*.
+private func danglingOlderLink(_ p: String) -> Bool {
+    guard !FileManager.default.fileExists(atPath: p), let t = try? FileManager.default.destinationOfSymbolicLink(atPath: p) else { return false }
+    let full = normPath(t.hasPrefix("/") ? t : (p as NSString).deletingLastPathComponent + "/" + t), h = homeDir()
+    guard jebctlShape(full) else { return false }
+    return full.hasPrefix(h + "/jeb/") || full.hasPrefix(h + "/jeb.old") || full.hasPrefix(h + "/jeb-repo.old") || full.hasPrefix(h + "/.jeb/repo")
 }
 
 /// Link ~/.local/bin/jebctl to the live jebctl. True when it is (or, in a dry run, would be) ours.
@@ -412,7 +461,7 @@ func cmdAddPath(_ args: [String]) -> Int32 {
         shells = l
     }
     guard liveValid() else {
-        say("jebctl add-path: Jeb is not installed; run jebctl install first")
+        say("jebctl add-path: Jeb is not installed; run \(selfCommand()) install first")
         return 1
     }
     guard linkJebctl() else { return 1 }
@@ -447,6 +496,109 @@ func refreshStandalone(from: String? = nil) {
         chmod(dst + ".new", 0o755)
         if rename(dst + ".new", dst) != 0 { throw posixError("rename", dst) }
     } catch { say("warning: could not refresh \(dst): \(error)") }
+}
+
+// ---- an older install to move aside ----
+
+/// An old Jeb install (a git clone with the Python jebctl) and why it counts as in use.
+typealias OldInstall = (path: String, reasons: [String])
+
+/// True for a Jeb git clone: its Python jebctl is there and its plugin.json names "jeb" (or its git config names clevyr/jeb).
+func looksLikeJebClone(_ dir: String) -> Bool {
+    guard isRegularFile(dir + "/desktop/jebctl") else { return false }
+    return isJebModDir(dir + "/mod") || (readText(dir + "/.git/config") ?? "").contains("clevyr/jeb")
+}
+
+/// A path that is dir or sits under it, spelled literally or through links.
+private func pointsInto(_ s: String, _ dir: String) -> Bool {
+    let n = normPath(s), d = normPath(dir)
+    if n == d || n.hasPrefix(d + "/") { return true }
+    let r = pyRealpath(s), rd = pyRealpath(dir)
+    return r == rd || r.hasPrefix(rd + "/")
+}
+
+/// What still uses dir: a LaunchAgent plist, a CLAUDE_CODE_PLUGIN_DIRS entry, the jebctl link, or release-state's legacy_clone.
+func oldInstallWiring(_ dir: String, legacyClone: String?) -> [String] {
+    var why: [String] = []
+    for l in allLabels {
+        guard let doc = plistAt(agentsDir() + "/" + l + ".plist") else { continue }
+        let env = doc["EnvironmentVariables"] as? [String: Any]
+        let named = ((doc["ProgramArguments"] as? [String]) ?? []) + ["JEB_MOD", "JEB_SRC"].compactMap { env?[$0] as? String }
+        if named.contains(where: { pointsInto($0, dir) }) { why.append("the \(l) agent runs from it"); break }
+    }
+    if let v = try? currentDirs(loadSettings(settingsPath())), dirEntries(v).contains(where: { pointsInto($0, dir) }) {
+        why.append("Claude Code loads its mod")
+    }
+    if isSymlink(linkPath()), let t = try? FileManager.default.destinationOfSymbolicLink(atPath: linkPath()),
+       pointsInto(t.hasPrefix("/") ? t : binDir() + "/" + t, dir) {
+        why.append("the jebctl command links to it")
+    }
+    if let lc = legacyClone, !lc.isEmpty, pointsInto(lc, dir) { why.append("an earlier install recorded it") }
+    return why
+}
+
+/// The old installs under home (~/.jeb/repo, ~/jeb): those still in use (to move aside) and the Jeb-looking ones that
+/// nothing uses any more (left alone, named in a note). A folder that is not Jeb is ignored, and so is any when this
+/// state folder records a dev-mode install.
+func scanOldInstalls(home: String) -> (replace: [OldInstall], unwired: [String]) {
+    if (readText(modeFilePath) ?? "").trimmingCharacters(in: .whitespacesAndNewlines) == "dev" { return ([], []) }
+    let legacy = loadRState()["legacy_clone"]?.string
+    var seen: [String] = [], replace: [OldInstall] = [], unwired: [String] = []
+    for dir in [home + "/.jeb/repo", home + "/jeb"] where isDir(dir) {
+        let real = pyRealpath(dir)
+        if seen.contains(real) || !looksLikeJebClone(dir) { continue }
+        seen.append(real)
+        let why = oldInstallWiring(dir, legacyClone: legacy)
+        if why.isEmpty { unwired.append(dir) } else { replace.append((dir, why)) }
+    }
+    return (replace, unwired)
+}
+
+/// oldInstallToReplace: the old installs that are Jeb, in use and not dev mode.
+func oldInstallToReplace(home: String) -> [OldInstall] { scanOldInstalls(home: home).replace }
+
+/// Where an old install moves to, in the same folder: <name>.old, then .old-2, .old-3 (~/.jeb/repo leaves ~/.jeb, for ~/jeb-repo.old).
+func asidePath(_ path: String, home: String) -> String {
+    let base = path == home + "/.jeb/repo" ? home + "/jeb-repo.old" : path + ".old"
+    var dst = base, n = 2
+    while lexists(dst) { dst = base + "-\(n)"; n += 1 }
+    return dst
+}
+
+/// Move each old install aside (rename within its folder, never a delete), once Jeb is registered with Claude Code.
+/// A dirty clone moves too, with a note. A rename that fails leaves the folder where it is and the install carries on.
+func moveOldInstallsAside(_ olds: [OldInstall], registered: Bool) {
+    let home = homeDir()
+    for o in olds {
+        let dst = asidePath(o.path, home: home), from = shortPath(o.path), to = shortPath(dst)
+        detail("old install \(from): " + o.reasons.joined(separator: "; "))
+        if !registered {
+            line("old install", "kept (Jeb is not registered with Claude Code yet; the next install moves \(from) aside)")
+            continue
+        }
+        if dryRun {
+            line("old install", "would move \(from) to \(to)")
+            continue
+        }
+        let dirty = isDir(o.path + "/.git") && !cleanGitClone(o.path)
+        if rename(o.path, dst) != 0 {
+            line("old install", "kept (could not move \(from): \(String(cString: strerror(errno))))")
+            rlog("note: \(from) was left where it is; the next install tries again")
+            continue
+        }
+        var rs = loadRState()
+        rs.set("legacy_clone", .string(dst))
+        try? saveRState(rs)
+        line("old install", "ok (moved \(from) to \(to))")
+        if dirty { say("note: \(from) had local changes; they are in \(to)") }
+    }
+}
+
+/// The LaunchAgents an install booted out come back when it fails before replacing them.
+func restoreAgents() {
+    for l in allLabels where isRegularFile(agentsDir() + "/" + l + ".plist") {
+        launchctl(["bootstrap", guiDomain, agentsDir() + "/" + l + ".plist"])
+    }
 }
 
 // ---- the bundle's app ----
@@ -594,19 +746,41 @@ func finishInstall(noAgents: Bool, path: PathFlags, fresh: Bool = false) {
     }
 }
 
+/// A pin that cannot check the signatures of this bundle's releases (an old key only) is replaced by the bundle's
+/// release-signers, so updates do not silently stop. True when it was.
+func repinUnusablePin() -> Bool {
+    let shipped = repoSignersPath()
+    guard !dryRun, let new = readText(shipped), let pin = readText(pinnedSignersPath) else { return false }
+    if pinCanVerify(pinLines: splitLines(pin), shippedLines: splitLines(new)) { return false }
+    guard parseSigners(new) != nil else {
+        detail("signers: \(shipped) is not usable; the old pin stays")
+        return false
+    }
+    detail("signers: the pin cannot check this release's signatures; replaced by \(shipped)")
+    do { try writePrivate(new, to: pinnedSignersPath) } catch { installFail("jebctl: \(error)") }
+    return true
+}
+
 /// Install from the unpacked bundle this jebctl sits in: signers pinned, the prebuilt app gated and swapped in with
 /// ~/.jeb/current pointed at the bundle, then the plists, the LaunchAgents and the jebctl link, all on that one path.
-func installBundle(_ clone: String, repin: Bool, noAgents: Bool, path: PathFlags, fresh: Bool = false) {
+func installBundle(_ clone: String, repin: Bool, noAgents: Bool, path: PathFlags, fresh: Bool = false, olds: [OldInstall] = []) {
     let vd = versionsDir()
     guard let tag = codeBundle()?["tag"]?.string, pyRealpath((clone as NSString).deletingLastPathComponent) == pyRealpath(vd) else {
         installFail("run install from the unpacked bundle in \(vd)/<tag>, as the README says")
     }
+    let liveOld = readBundle(currentDir()).map { ($0["schema"]?.int ?? 1) != 2 } ?? false
+    if !noAgents && !dryRun && (!olds.isEmpty || stateMovePending() || liveOld) {
+        detail("booting out the old LaunchAgents before anything moves")
+        for l in allLabels { launchctl(["bootout", "\(guiDomain)/\(l)"]) }        // "not loaded" is ignored
+        installFailHook = restoreAgents
+    }
+    moveStateFolderStep()
     lead("signers")
-    migrateHome()
     makePrivateDir(stateHome)
     pinSigners(repin: repin)
     widenSigners(repoSignersPath())
-    fin("ok")
+    let repinned = repinUnusablePin()
+    fin(repinned ? "ok (re-pinned; the old pin could not check new releases)" : "ok")
     lead("app")
     if !dryRun, let why = bundleAppProblem(clone + "/app") {
         installFail("the bundle's app is unusable: \(why)\nNothing was installed or changed.")
@@ -615,6 +789,7 @@ func installBundle(_ clone: String, repin: Bool, noAgents: Bool, path: PathFlags
     let t0 = Clock.now
     let oldMod = agentMod()
     applyBundle(clone, tag: tag)
+    installFailHook = nil
     fin(dryRun ? "skipped (dry run)" : "ok (prebuilt \(tag), \(fixed(Clock.now - t0, 0))s)")
     if !dryRun {
         FileManager.default.createFile(atPath: modeFilePath, contents: Data("release\n".utf8))
@@ -623,6 +798,7 @@ func installBundle(_ clone: String, repin: Bool, noAgents: Bool, path: PathFlags
         rs.set("last", .object([("at", .int(Clock.epoch)), ("tag", .string(tag)), ("result", .string("ok")), ("app", .string("prebuilt"))]))
         if !(rs["installed"]?.array ?? []).contains(where: { $0["tag"]?.string == tag }) { recordInstalled(&rs, tag) }
         if let m = oldMod, pyRealpath(m) != pyRealpath(liveMod) { rs.set("legacy_mod", .string(m)) }
+        if repinned { rs.set("signers_from", .string(tag)) } else { adoptSigners(&rs, tag: tag, src: repoSignersPath()) }
         do { try saveRState(rs) } catch { installFail("jebctl: \(error)") }
     }
     finishInstall(noAgents: noAgents, path: path, fresh: fresh)
@@ -656,24 +832,32 @@ func cmdInstall(_ flags: [String]) -> Int32 {
     if findClaude() == nil {
         say("note: Claude Code was not found on this Mac; Jeb installs anyway, but it needs Claude Code to show up in sessions")
     }
-    installBundle(clone, repin: flags.contains("--repin"), noAgents: noAgents, path: path, fresh: fresh)
+    let olds = scanOldInstalls(home: homeDir())
+    for p in olds.unwired { say("note: an old Jeb folder is at \(shortPath(p)); nothing uses it now, so it is safe to delete.") }
+    installBundle(clone, repin: flags.contains("--repin"), noAgents: noAgents, path: path, fresh: fresh, olds: olds.replace)
+    if lexists(stateHome + "/updates-paused") {
+        say("note: updates are paused (carried over); run \(selfCommand()) resume-updates to turn them on")
+    }
 
     lead("Claude Code plugin")
     var msgs: [String] = []
     let old = loadRState()["legacy_mod"]?.string ?? ""      // a git clone's entry from before this bundle
-    let res = registerPlugin(currentDir(), dry: dryRun, say: { verbose ? say($0) : msgs.append($0) }, extra: [old])
+    // the old clones' entries, spelled as listed and as resolved now: the folders move only after this works
+    let extra = [old] + olds.replace.flatMap { [$0.path + "/mod", pyRealpath($0.path) + "/mod"] }
+    let res = registerPlugin(currentDir(), dry: dryRun, say: { verbose ? say($0) : msgs.append($0) }, extra: extra)
     if res == "ok" {
         fin("ok")
     } else {
         fin("not registered")
         if !verbose { msgs.forEach { say("  " + $0) } }
         switch res {
-        case "no-claude": say("note: Claude Code is not installed, so Jeb is not registered yet; run jebctl install again after installing it")
-        case "conflict": say("note: a Claude Code marketplace named \"jeb\" already points elsewhere; Jeb was left as it was (run jebctl doctor)")
-        default: say("note: Claude Code refused the plugin install; Jeb was left as it was (run jebctl install again, or jebctl doctor)")
+        case "no-claude": say("note: Claude Code is not installed, so Jeb is not registered yet; run \(selfCommand()) install again after installing it")
+        case "conflict": say("note: a Claude Code marketplace named \"jeb\" already points elsewhere; Jeb was left as it was (run \(selfCommand()) doctor)")
+        default: say("note: Claude Code refused the plugin install; Jeb was left as it was (run \(selfCommand()) install again, or \(selfCommand()) doctor)")
         }
     }
     for m in msgs where m.hasPrefix("moved") { say("  " + m) }
+    moveOldInstallsAside(olds.replace, registered: res == "ok" || res == "no-claude")
     askPathNow()
     if dryRun {
         if !verbose { say("Dry run only; nothing was changed.") }
@@ -683,10 +867,11 @@ func cmdInstall(_ flags: [String]) -> Int32 {
         if Style.pretty {
             prettyHealthCheck()
         } else {
-            say("Health check (jebctl doctor):")
+            say("Health check (\(selfCommand()) doctor):")
             _ = printDoctor()   // its result does not fail the install
         }
     }
+    Style.doneCommand = selfCommand()
     sayDone()
     return 0
 }
@@ -705,7 +890,7 @@ func prettyHealthCheck() {
     }
     fin("needs a look")
     doctorSummary(steps: left, problems: left.count, jebctl: r.jebctl).dropFirst().forEach(say)
-    say("  Run `jebctl doctor --fix` to sort it out.")
+    say("  Run `\(selfCommand()) doctor --fix` to sort it out.")
 }
 
 // ---- uninstall ----
@@ -775,11 +960,31 @@ func removeFiles(legacyClone: String?) {
             stepSay("old clone", (dryRun ? "would remove " : "removed ") + old)
             if !dryRun { try? FileManager.default.removeItem(atPath: old) }
         } else {
-            stepSay("old clone", "kept: \(old) has local changes or is not a git clone")
+            stepSay("old clone", "kept \(old) (has local changes or is not a git clone)")
         }
     }
-    stepSay("files", (dryRun ? "would remove " : "removed ") + jd)
-    if !dryRun { try? FileManager.default.removeItem(atPath: jd) }
+    // an old install moved aside inside ~/.jeb (<name>.old*) or recorded as the legacy clone is user data unless it is a clean clone
+    let fm = FileManager.default
+    var keep: [String] = []
+    for n in ((try? fm.contentsOfDirectory(atPath: jd)) ?? []).sorted() where n.contains(".old") {
+        let p = jd + "/" + n
+        if isRealDir(p) && !cleanGitClone(p) {
+            keep.append(p)
+            if !(legacyClone.map { sameDir($0, p) } ?? false) { stepSay("old clone", "kept \(p) (has local changes)") }
+        }
+    }
+    if let lc = legacyClone, !lc.isEmpty, isRealDir(lc), isUnder(lc, jd), !cleanGitClone(lc), !keep.contains(where: { sameDir($0, lc) }) { keep.append(lc) }
+    if keep.isEmpty {
+        stepSay("files", (dryRun ? "would remove " : "removed ") + jd)
+        if !dryRun { try? fm.removeItem(atPath: jd) }
+        return
+    }
+    stepSay("files", (dryRun ? "would remove " : "removed ") + jd + " except what is kept above")
+    if dryRun { return }
+    for n in (try? fm.contentsOfDirectory(atPath: jd)) ?? [] {
+        let p = jd + "/" + n
+        if !keep.contains(where: { $0 == p || isUnder($0, p) }) { try? fm.removeItem(atPath: p) }
+    }
 }
 
 /// `jebctl uninstall [--purge] [--purge-farm] [--remove-files]`: the desktop part, then the plugin leaves Claude Code

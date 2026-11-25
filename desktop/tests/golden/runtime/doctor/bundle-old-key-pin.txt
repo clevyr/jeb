@@ -1,0 +1,61 @@
+## rc
+1
+
+## stdout
+Jeb doctor
+
+Install
+  ok    Jeb v1.4.0 is installed (~/.jeb/current)
+  FIX   The jebctl command isn't on your PATH
+Desktop app
+  FIX   The desktop app is missing (~/Applications/JebDesktop.app)
+  FIX   Jeb isn't running
+Background agents
+  FIX   The desktop agent isn't set up
+  FIX   The watchdog agent isn't set up
+  FIX   The update agent isn't set up
+  skip  Agent status not checked (sandbox)
+Claude Code
+  ok    Claude Code found (~/.local/bin/claude)
+  FIX   The Jeb plugin isn't installed in Claude Code
+  FIX   No farm data yet
+Updates
+  ok    Updates are on
+  ok    Last update result: none
+  ok    Release signing key pinned
+  ok    The pinned key covers jeb-release
+  FIX   The pinned key can't check new releases (it is an old key)
+  ok    GitHub releases reachable (newest v1.4.0)
+
+9 problems. To fix them, in order:
+  1. ~/.jeb/current/desktop/bin/jebctl install  reinstalls the app, background agents and plugin
+  2. ~/.jeb/current/desktop/bin/jebctl start    starts the desktop app
+  3. Run ~/.jeb/current/desktop/bin/jebctl add-path to link jebctl and add it to your PATH
+  4. Start a new Claude Code session so the plugin loads
+
+## stderr
+(empty)
+
+## release-state.json
+{
+ "bridge_reset": 1,
+ "checked": null,
+ "failed": [],
+ "installed": [
+  {
+   "at": 1,
+   "stamp": null,
+   "tag": "v1.4.0"
+  }
+ ],
+ "last": null,
+ "layout": "bundle"
+}
+
+## fake.log (claude, gh, launchctl calls)
+$SB/home/.local/bin/claude plugin list --json
+$SB/home/.local/bin/claude plugin marketplace list --json
+
+## ~/.jeb/current
+versions/v1.4.0
+

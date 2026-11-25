@@ -102,4 +102,29 @@ func signersTests(_ t: Tester) {
         writeFile(pinnedSignersPath, "x")
         t.eq(pinHash(), "2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881")
     }
+
+    t.test("pyRealpath follows a dangling link to where it points, and a loop does not hang") {
+        let d = t.scratch("realpath")
+        try? FileManager.default.createSymbolicLink(atPath: d + "/abs", withDestinationPath: d + "/gone/desktop/jebctl")
+        t.eq(pyRealpath(d + "/abs"), pyRealpath(d) + "/gone/desktop/jebctl", "an absolute target")
+        try? FileManager.default.createDirectory(atPath: d + "/sub", withIntermediateDirectories: true)
+        try? FileManager.default.createSymbolicLink(atPath: d + "/sub/rel", withDestinationPath: "../moved/x")
+        t.eq(pyRealpath(d + "/sub/rel"), pyRealpath(d) + "/moved/x", "a relative target is read from the link's folder")
+        try? FileManager.default.createSymbolicLink(atPath: d + "/via", withDestinationPath: d + "/abs")
+        t.eq(pyRealpath(d + "/via"), pyRealpath(d) + "/gone/desktop/jebctl", "a chain of links")
+        try? FileManager.default.createSymbolicLink(atPath: d + "/a", withDestinationPath: d + "/b")
+        try? FileManager.default.createSymbolicLink(atPath: d + "/b", withDestinationPath: d + "/a")
+        t.check(pyRealpath(d + "/a").hasPrefix(pyRealpath(d)), "a loop returns")
+    }
+    t.test("pinCanVerify: only a pinned key that the shipped file lists for jeb-release can check new releases") {
+        let cur = "jeb-release namespaces=\"git,jeb-release\" \(K)", backup = "jeb-release-backup namespaces=\"git,jeb-release\" \(K2)"
+        let shipped = [cur, backup]
+        t.check(!pinCanVerify(pinLines: ["me namespaces=\"git\" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOldOldOldOldOldOldOldOldOldOldOldOldOldOldOld"], shippedLines: shipped), "an old key for git only")
+        t.check(!pinCanVerify(pinLines: ["me namespaces=\"git,jeb-release\" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOldOldOldOldOldOldOldOldOldOldOldOldOldOldOld"], shippedLines: shipped), "an old key, even with jeb-release")
+        t.check(pinCanVerify(pinLines: [cur], shippedLines: shipped), "the current jeb-release key")
+        t.check(pinCanVerify(pinLines: [backup], shippedLines: shipped), "only the backup key")
+        t.check(!pinCanVerify(pinLines: ["me namespaces=\"git\" \(K)"], shippedLines: shipped), "the right key but not for jeb-release")
+        t.check(!pinCanVerify(pinLines: [cur], shippedLines: []), "nothing shipped")
+        t.check(!pinCanVerify(pinLines: [], shippedLines: shipped), "nothing pinned")
+    }
 }

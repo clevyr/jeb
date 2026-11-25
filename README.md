@@ -44,9 +44,8 @@ Install or update:
 Install or update Jeb for me. Run:
 curl -fsSL https://github.com/clevyr/jeb/releases/latest/download/install.sh | sh
 Then follow ~/.jeb/current/.claude/skills/jeb-install/SKILL.md to finish.
-If that file doesn't exist and the output says "an old install is at", run
-~/.jeb/bin/jebctl install --replace-clone and then follow that file. Otherwise the
-install failed: show me its output and stop. Never use sudo or install other tools.
+If that file doesn't exist, the install failed: show me its output and stop.
+Never use sudo or install other tools.
 ```
 
 Update:

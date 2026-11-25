@@ -3,7 +3,7 @@
 
 ## stdout
 jebctl install: unknown option --bogus
-usage: jebctl install [--repin] [--add-path[=zsh,bash,fish,nu]] [--no-add-path] [--replace-clone] [--no-agents] [--dry-run] [--verbose] [--plain]
+usage: jebctl install [--repin] [--add-path[=zsh,bash,fish,nu]] [--no-add-path] [--replace-clone (no longer needed)] [--no-agents] [--dry-run] [--verbose] [--plain]
 
 ## stderr
 (empty)

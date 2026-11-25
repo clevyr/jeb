@@ -297,7 +297,7 @@ func confirmPath(_ targets: [PathTarget]) {
     fin(summary)
     for r in results where r.check == .missing {
         let f = targets.first { $0.shell == r.shell }.map { tildePath($0.file, home: expandUser("~")) } ?? ""
-        say("  \(shellDisplayName(r.shell)) did not pick up \(f); open a new terminal, and run `jebctl doctor` if it still cannot find jebctl")
+        say("  \(shellDisplayName(r.shell)) did not pick up \(f); open a new terminal, and run `\(selfCommand()) doctor` if it still cannot find jebctl")
     }
     let ready = results.filter { $0.check != .missing }.map(\.shell)
     guard let sh = reloadShell(ancestors: ancestorComms(), loginShell: loginShellName(), ready: ready),

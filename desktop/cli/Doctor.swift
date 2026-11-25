@@ -105,7 +105,7 @@ func diagnose(checkNetwork: Bool = true) -> DoctorReport {
     let vs = ((try? fm.contentsOfDirectory(atPath: vd)) ?? []).sorted().filter { isDir(vd + "/" + $0) }
     if vs.count > 1 { fix("More than one Jeb version is on disk (\(vs.joined(separator: ", ")))", .update) }
     if let lc = loadRState()["legacy_clone"]?.string, !lc.isEmpty, isDir(lc) {
-        out("  note  The old git clone \(shortPath(lc)) is no longer used; it can be deleted")
+        out("  note  The old install \(shortPath(lc)) is no longer used; it is safe to delete")
     }
     if !isRegularFile(modeFilePath) || installMode() != "release" {
         fix("Jeb's install record is missing (\(shortPath(modeFilePath)))", .reinstall)
@@ -221,7 +221,12 @@ func diagnose(checkNetwork: Bool = true) -> DoctorReport {
     let pinned = isRegularFile(pinnedSignersPath)
     if check(pinned, ok: "Release signing key pinned", fix: "The release signing key isn't pinned", .reinstall) {
         let covers = splitLines(readText(pinnedSignersPath) ?? "").contains { keyLine($0)?.ns?.names.contains("jeb-release") ?? false }
-        check(covers, ok: "The pinned key covers jeb-release", fix: "The pinned key doesn't cover jeb-release", .reinstall)
+        let covered = check(covers, ok: "The pinned key covers jeb-release", fix: "The pinned key doesn't cover jeb-release", .reinstall)
+        // a pin that holds none of the keys this bundle ships would silently reject every new release
+        if covered, let shipped = readText(live + "/desktop/release-signers"),
+           !pinCanVerify(pinLines: splitLines(readText(pinnedSignersPath) ?? ""), shippedLines: splitLines(shipped)) {
+            fix("The pinned key can't check new releases (it is an old key)", .reinstall)
+        }
     }
     if checkNetwork {
         do {

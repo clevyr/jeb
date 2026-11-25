@@ -32,7 +32,7 @@ It works for a new Mac and for one that already has Jeb (it updates instead). If
 
 - `Done. Start a new Claude Code session...`: go to Finish.
 - `Jeb is installed: updating it`: go to Finish. If it also says `no verified release newer than`, tell the user the newest release was refused (the reason is in `~/Library/Application Support/Jeb/release.log`).
-- `an old install is at <path>: run jebctl install --replace-clone`: run `~/.jeb/bin/jebctl install --replace-clone` (it moves the old clone aside itself; never move it by hand), then read that output the same way.
+- `old install ... ok (moved <path> to <path>.old)`: the install moved an older git clone aside itself once the new release worked; never move or delete it by hand, and tell the user the `.old` folder is safe to delete.
 - `already exists; move it away first. Nothing was changed.`: tell the user an earlier replaced copy is in the way, and stop.
 - `an update is running; try again in a few minutes`: wait a few minutes and run the curl line once more (this one retry is allowed even if the README prompt already ran it).
 - `error: 404`, `HTTP 404` or `has no published release`: the release is missing; tell the user and stop.

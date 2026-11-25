@@ -104,9 +104,14 @@ func warn(_ s: String) {
     FileHandle.standardError.write((s + "\n").data(using: .utf8)!)
 }
 
+/// Tests only (nil in a real run): called with the exit code just before die() exits, so a test can observe a failed install.
+/// A hook must not return into the caller; the tests' one ends its thread, and a hook that does return still gets the exit.
+var dieHook: ((Int32) -> Void)?
+
 func die(_ s: String, _ code: Int32 = 1) -> Never {
     if Style.pretty { Style.abandonStep() }     // no spinner is left turning under the message
     warn(s)
+    dieHook?(code)
     exit(code)
 }
 

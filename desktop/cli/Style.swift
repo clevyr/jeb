@@ -40,6 +40,8 @@ let stepLabels: [StyleMode: [String: String]] = [
     .install: [
         "fetch": "Fetched the release",
         "checks": "Checked the release is the real thing",
+        "state folder": "Moved Jeb's things into Application Support",
+        "old install": "Moved the old install aside",
         "signers": "Pinned the signing key",
         "app": "Built the farmhouse",
         "LaunchAgents": "Hired a watchdog",
@@ -121,11 +123,11 @@ func renderHeader(mode: StyleMode, version: String?) -> String {
 /// The plain closing line of an install (Claude Code's skill matches it) and its pretty twin.
 let plainDone = "Done. Start a new Claude Code session to load Jeb; the desktop fills in once a session has run."
 let prettyDone = "🚜 All set. Start a new Claude Code session and Jeb will turn up on your desktop."
-let prettyDoneFailed = "Jeb's in, but a step above did not go right. Run jebctl doctor to sort it out."
+func prettyDoneFailed(_ cmd: String) -> String { "Jeb's in, but a step above did not go right. Run \(cmd) doctor to sort it out." }
 
-/// The pretty closing line: "All set" only when no step failed.
-func renderDone(failed: Bool) -> String {
-    failed ? "  " + paint("⚠ " + prettyDoneFailed, Ansi.yellow) : prettyDone
+/// The pretty closing line: "All set" only when no step failed. cmd is how jebctl is named (selfCommand()).
+func renderDone(failed: Bool, cmd: String = "jebctl") -> String {
+    failed ? "  " + paint("⚠ " + prettyDoneFailed(cmd), Ansi.yellow) : prettyDone
 }
 
 /// A message through say(): the few known shapes get a style, the rest passes unchanged.
@@ -163,6 +165,7 @@ func renderError(_ msg: String) -> [String] {
 enum Style {
     static var pretty = false
     static var mode: StyleMode = .install
+    static var doneCommand = "jebctl"       // how the closing line names jebctl (selfCommand(), set by the install)
     static let lock = NSRecursiveLock()
     private(set) static var openLabel: String?       // the step whose spinner is drawn
     private(set) static var headerDrawn = false      // this process drew the header, so a hand-over passes JEB_HEADER_SHOWN on
@@ -283,7 +286,7 @@ enum Style {
 
     static func done() {
         if !lastBlank { emit("") }
-        emit(renderDone(failed: anyFailed))
+        emit(renderDone(failed: anyFailed, cmd: doneCommand))
     }
 }
 
