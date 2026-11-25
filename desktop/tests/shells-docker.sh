@@ -42,8 +42,8 @@ printf "%s\n%s\n" "$MARK" "$LINE" > "$f"
 expect found "login fish, after the line (the install check)" fish -l -c "command -q jebctl"
 expect missing "fish without config" fish --no-config -c "command -q jebctl"
 expect found "the line run twice is harmless" fish -l -c "source $f; command -q jebctl"
-rm "$f"   # reload: a fish already open when the line is written, then the line the install offers
-expect found "reload: source ~/.config/fish/conf.d/jeb.fish" fish -l -c "printf \"%s\n%s\n\" \"\$MARK\" \"\$LINE\" > $f; command -q jebctl; and exit 1; source ~/.config/fish/conf.d/jeb.fish; command -q jebctl"
+rm "$f"   # reload: a fish already open when the line is written; the install offers just the PATH line (reloadCommand)
+expect found "reload: the PATH line alone, typed into a window already open" fish -l -c "command -q jebctl; and exit 1; $LINE; command -q jebctl"
 exit $fails
 '
 
@@ -61,7 +61,7 @@ printf "%s\n%s\n" "$MARK" "$LINE" >> "$f"
 expect found "nu --env-config, after the line (the install check)" $NU --env-config "$f" -c "$probe"
 expect found "login nu, after the line" $NU -l -c "$probe"
 expect missing "nu -n (no config)" $NU -n -c "$probe"
-expect found "reload: source \$nu.env-path" $NU -n -c "source \$nu.env-path; $probe"
+expect found "reload: the PATH line alone (reloadCommand)" $NU -n -c "$LINE; $probe"
 expect found "PATH stays a list with no duplicates" $NU --env-config "$f" -c "source \$nu.env-path; if ((\$env.PATH | describe) !~ \"^list\") or ((\$env.PATH | length) != (\$env.PATH | uniq | length)) { exit 1 }"
 exit $fails
 '

@@ -213,4 +213,28 @@ func standaloneTests(_ t: Tester) {
             t.eq(left, [], "the temp folder is gone")
         }
     }
+
+    t.test("standalone: an installed Jeb sets up PATH only when the update finished, and add-path's status is the exit code") {
+        sandbox("installed-addpath") { home in
+            schema2(home + "/.jeb/versions/v1")
+            try? FileManager.default.createSymbolicLink(atPath: home + "/.jeb/current", withDestinationPath: "versions/v1")
+            t.check(liveValid(), "the live bundle is usable")
+            var calls: [[String]] = []
+            var rc: Int32 = 9
+            var out = printed { rc = standaloneInstall(["--add-path=zsh"], update: { 1 }, addPath: { calls.append($0); return 0 }, readTag: { "v1" }) }
+            t.eq(rc, 1, "the update's failure is the exit code")
+            t.eq(calls, [], "add-path is not run after a failed update")
+            t.check(out.contains("note: PATH setup was skipped because the update did not finish; run `jebctl add-path` to set it up"), out)
+            out = printed { rc = standaloneInstall(["--add-path=zsh"], update: { 0 }, addPath: { calls.append($0); return 0 }, readTag: { "v1" }) }
+            t.eq(rc, 0)
+            t.eq(calls, [["zsh"]], "run after a good update, with the shells asked for")
+            t.check(!out.contains("skipped"), out)
+            _ = printed { rc = standaloneInstall(["--add-path"], update: { 0 }, addPath: { _ in 1 }, readTag: { "v1" }) }
+            t.eq(rc, 1, "a failed add-path is folded into the exit code")
+            calls = []
+            _ = printed { rc = standaloneInstall([], update: { 0 }, addPath: { calls.append($0); return 1 }, readTag: { "v1" }) }
+            t.eq(calls, [], "no --add-path: no add-path")
+            t.eq(rc, 0)
+        }
+    }
 }

@@ -105,6 +105,7 @@ func warn(_ s: String) {
 }
 
 func die(_ s: String, _ code: Int32 = 1) -> Never {
+    if Style.pretty { Style.abandonStep() }     // no spinner is left turning under the message
     warn(s)
     exit(code)
 }

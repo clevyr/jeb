@@ -164,7 +164,8 @@ enum Style {
     static var pretty = false
     static var mode: StyleMode = .install
     static let lock = NSRecursiveLock()
-    private static var openLabel: String?       // the step whose spinner is drawn
+    private(set) static var openLabel: String?       // the step whose spinner is drawn
+    private(set) static var headerDrawn = false      // this process drew the header, so a hand-over passes JEB_HEADER_SHOWN on
     private static var frame = 0
     private static var timer: DispatchSourceTimer?
     private static var began = false
@@ -192,13 +193,15 @@ enum Style {
     }
 
     /// The opening line of a run: plain text as it always was, or the pretty header. A header already shown by the process
-    /// that handed over to this one (JEB_HEADER_SHOWN) is not drawn twice.
+    /// that handed over to this one (JEB_HEADER_SHOWN, set by the hand-over alone) is not drawn twice.
     static func announce(plain: String, mode m: StyleMode, version: String? = nil) {
         guard pretty else { say(plain); return }
         mode = m
         begin()
-        if envVar("JEB_HEADER_SHOWN") == nil { write(renderHeader(mode: m, version: version) + "\n\n") }
-        setEnvVar("JEB_HEADER_SHOWN", "1")
+        if envVar("JEB_HEADER_SHOWN") == nil {
+            write(renderHeader(mode: m, version: version) + "\n\n")
+            headerDrawn = true
+        }
     }
 
     private static func draw() {
@@ -258,13 +261,24 @@ enum Style {
         fflush(stdout)
     }
 
+    /// An error above the spinner. The open step keeps its label (a warning in the middle of a step does not end it), so the
+    /// spinner is drawn again below the message and the later fin() still prints the step.
     static func error(_ msg: String) {
         lock.lock(); defer { lock.unlock() }
         erase()
-        openLabel = nil
         fflush(stdout)
         for l in renderError(msg) { fputs(l + "\n", stderr) }
         fflush(stderr)
+        draw()
+    }
+
+    /// The spinner line erased and the open step dropped: for an exit with a step still open (die).
+    static func abandonStep() {
+        lock.lock(); defer { lock.unlock() }
+        erase()
+        openLabel = nil
+        openLine = false
+        fflush(stdout)
     }
 
     static func done() {

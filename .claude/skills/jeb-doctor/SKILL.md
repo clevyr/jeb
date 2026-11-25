@@ -14,7 +14,7 @@ description: Diagnose a Jeb install on this Mac (app, LaunchAgents, plugin regis
    - `~/.jeb/bin/jebctl resume-updates` (updates are paused; `--fix` never runs it because someone paused them on purpose, so ask the user first);
    - `~/.jeb/bin/jebctl retry-update` (the last update was rejected or rolled back; read `update.log` first and say why);
    - `~/.jeb/bin/jebctl update` (the plugin version differs from the mod, or more than one version is on disk; it also removes the older folders). Updates that look stuck, or the user asks to update: follow the jeb-update skill (`~/.jeb/current/.claude/skills/jeb-update/SKILL.md`);
-   - the PATH step (jebctl not on PATH, or another jebctl first): leave it; it only affects typing plain `jebctl` in a terminal. Mention it to the user only if they ask about the `jebctl` command;
+   - the PATH step (jebctl not on PATH, or another jebctl first): it only affects typing plain `jebctl` in a terminal, so leave it unless the user wants that. If they do, ask once and, on yes, run `~/.jeb/bin/jebctl add-path`;
    - "Start a new Claude Code session": tell the user; the farm data fills in once a session has run;
    - the network step (GitHub releases): nothing to sign in to; a VPN, proxy or firewall must allow github.com and release-assets.githubusercontent.com. Explain it.
    Anything else: explain it in plain words and do not change it without the user's approval.
@@ -23,6 +23,6 @@ description: Diagnose a Jeb install on this Mac (app, LaunchAgents, plugin regis
 
 ## Rules
 
-- Never ask for an administrator password or use `sudo`, never run `xcodebuild -license`, never install Homebrew, never edit the shell profile or PATH, never use `--add-path`, and never compile (`--build-from-source`). A release install needs no Xcode, Command Line Tools or git; if a check mentions them, it is a developer install.
+- Never ask for an administrator password or use `sudo`, never run `xcodebuild -license`, never install Homebrew, never compile (`--build-from-source`), never edit a shell profile or PATH yourself, and never pass `--repin` or `--no-agents`. PATH setup happens only through `~/.jeb/bin/jebctl add-path`, and only after you have asked the user once and they said yes (it sets up their login shell and any of zsh, bash, fish and nushell they use, backing up each file first); on no or no answer, skip it and do not ask again. A release install needs no Xcode, Command Line Tools or git; if a check mentions them, it is a developer install.
 - Do not take screenshots of the desktop or describe what it draws; the user should see it themselves.
 - After a fix, run the doctor again and report the result.

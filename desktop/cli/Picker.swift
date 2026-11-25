@@ -44,7 +44,49 @@ func decodeKeys(_ bytes: [UInt8]) -> [Key] {
     return out
 }
 
-enum PickerOutcome: Equatable { case confirmed, skipped }
+/// True when the bytes end inside an escape sequence (a lone ESC, or ESC [ / ESC O with no final byte yet): the rest of an arrow
+/// key may still be on its way, so the reader polls briefly before it decodes.
+func needsMoreKeys(_ bytes: [UInt8]) -> Bool {
+    guard let e = bytes.lastIndex(of: 0x1b) else { return false }
+    if e == bytes.count - 1 { return true }
+    guard bytes[e + 1] == 0x5b || bytes[e + 1] == 0x4f else { return false }
+    return !bytes[(e + 2)...].contains { $0 >= 0x40 }
+}
+
+/// What the terminal sends for one key press, read from `fd`: after a lone ESC or half an escape sequence, up to `wait` ms
+/// for the rest. Empty at end of input.
+func readKeyBytes(_ fd: Int32, wait: Int32 = 50) -> [UInt8] {
+    var buf = [UInt8](repeating: 0, count: 32)
+    let n = read(fd, &buf, buf.count)
+    if n <= 0 { return [] }
+    var bytes = Array(buf[0..<n])
+    while needsMoreKeys(bytes) {
+        let m = readWithin(fd, &buf, wait: wait)
+        if m <= 0 { break }
+        bytes += buf[0..<m]
+    }
+    return bytes
+}
+
+/// One read that gives up after about `wait` ms (0 then). A terminal times the read itself (VMIN 0, VTIME in tenths of a
+/// second): macOS poll() does not work on tty devices, it reports them ready at once and the read then blocks. Anything else
+/// (a pipe, in the tests) is polled.
+private func readWithin(_ fd: Int32, _ buf: inout [UInt8], wait: Int32) -> Int {
+    var saved = termios()
+    if tcgetattr(fd, &saved) == 0 {
+        var t = saved
+        withUnsafeMutableBytes(of: &t.c_cc) { $0[Int(VMIN)] = 0; $0[Int(VTIME)] = UInt8(max(1, min(255, (wait + 99) / 100))) }
+        guard tcsetattr(fd, TCSANOW, &t) == 0 else { return 0 }
+        defer { tcsetattr(fd, TCSANOW, &saved) }
+        return read(fd, &buf, buf.count)
+    }
+    var p = pollfd(fd: fd, events: Int16(POLLIN), revents: 0)
+    guard poll(&p, 1, wait) > 0, p.revents & Int16(POLLIN) != 0 else { return 0 }
+    return read(fd, &buf, buf.count)
+}
+
+/// aborted: ctrl-c (raw mode has no ISIG), which ends the install like SIGINT would; skipped: esc or q.
+enum PickerOutcome: Equatable { case confirmed, skipped, aborted }
 
 struct PickerState: Equatable {
     var shells: [String]
@@ -74,7 +116,8 @@ func pickerStep(_ s: PickerState, key: Key) -> PickerState {
         let on = !n.checked.allSatisfy { $0 }
         n.checked = n.checked.map { _ in on }
     case .enter: n.outcome = .confirmed
-    case .esc, .quit, .interrupt: n.outcome = .skipped
+    case .esc, .quit: n.outcome = .skipped
+    case .interrupt: n.outcome = .aborted
     case .other: break
     }
     return n
@@ -149,13 +192,13 @@ func tildePath(_ p: String, home: String) -> String {
     p == home ? "~" : p.hasPrefix(home + "/") ? "~" + p.dropFirst(home.count) : p
 }
 
-/// The command that loads Jeb's PATH line into an open shell: `source <file>`, the file as ~/… when that needs no quoting.
-func reloadCommand(_ shell: String, file: String, home: String) -> String? {
+/// The command that puts jebctl's folder on PATH in an open shell: just the PATH line (not `source <profile>`, which would
+/// run the whole profile again). zsh and bash get an export, with a non-default folder shell-quoted; fish and nushell get
+/// their own pathLine.
+func reloadCommand(_ shell: String) -> String? {
     switch shell {
-    case "nu": return "source $nu.env-path"
-    case "zsh", "bash", "fish":
-        let t = tildePath(file, home: home), rest = String(t.dropFirst(2))
-        return "source " + (t.hasPrefix("~/") && shQuote(rest) == rest ? t : shQuote(file))
+    case "zsh", "bash": return exportLine()
+    case "fish", "nu": return pathLine(shell)
     default: return nil
     }
 }
@@ -226,7 +269,7 @@ func cmdPreviewUI(_ args: [String]) -> Int32 {
             Clock.sleep(0.4)
             fin(checkSummary(picked.map { ($0, .found) }))
             if let sh = reloadShell(ancestors: ancestorComms(), loginShell: loginShellName(), ready: picked),
-               let cmd = reloadCommand(sh, file: pathFile(sh), home: expandUser("~")) {
+               let cmd = reloadCommand(sh) {
                 offerReload(cmd)
             }
         }
@@ -258,8 +301,7 @@ func confirmPath(_ targets: [PathTarget]) {
     }
     let ready = results.filter { $0.check != .missing }.map(\.shell)
     guard let sh = reloadShell(ancestors: ancestorComms(), loginShell: loginShellName(), ready: ready),
-          let t = targets.first(where: { $0.shell == sh }),
-          let cmd = reloadCommand(sh, file: t.file, home: expandUser("~")) else { return }
+          let cmd = reloadCommand(sh) else { return }
     offerReload(cmd)
 }
 
@@ -394,16 +436,19 @@ private func pickInRawMode(_ fd: Int32) -> PathChoice {
     let fit = { (s: PickerState) in renderPicker(s).map { clipLine($0, to: ttyColumns(fd)) } }
     var rows = fit(state).count
     Style.write(fit(state).joined(separator: "\n") + "\n")
-    var buf = [UInt8](repeating: 0, count: 32)
     while state.outcome == nil {
-        let n = read(fd, &buf, buf.count)
-        if n <= 0 { state.outcome = .skipped; break }
-        for k in decodeKeys(Array(buf[0..<n])) where state.outcome == nil { state = pickerStep(state, key: k) }
+        let bytes = readKeyBytes(fd)
+        if bytes.isEmpty { state.outcome = .skipped; break }
+        for k in decodeKeys(bytes) where state.outcome == nil { state = pickerStep(state, key: k) }
         let lines = fit(state)
         Style.write("\u{1b}[\(rows)A" + lines.map { Ansi.clearLine + $0 + "\n" }.joined())
         rows = lines.count
     }
     Style.write("\u{1b}[\(rows)A\r\u{1b}[J")        // the picker leaves the screen
+    if state.outcome == .aborted {      // ctrl-c: the terminal and cursor back, then out the way SIGINT would end it
+        restoreTerminal()
+        exit(130)
+    }
     let chosen = pickerSelection(state)
     return chosen.isEmpty ? .skip : .shells(chosen)
 }

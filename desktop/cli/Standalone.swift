@@ -67,11 +67,16 @@ func standaloneBundleProblem(_ dir: String) -> String? {
 /// A progress line; pretty mode shows the step spinner instead and keeps only what `always` names (a dry run's plan).
 func standaloneStep(_ s: String, always: Bool = false) { if !Style.pretty || always { say("  " + s) } }
 
-/// Replaces this process with the bundle's jebctl (execv). Only returns, with 1, when it cannot start.
+/// Replaces this process with the bundle's jebctl (execve). Only returns, with 1, when it cannot start. A header this process
+/// drew is passed on in JEB_HEADER_SHOWN, in the hand-over's environment alone, so the bundle's install does not draw it twice.
 func execBundleInstall(_ jebctl: String, _ args: [String]) -> Int32 {
     var cargs: [UnsafeMutablePointer<CChar>?] = ([jebctl, "install"] + args).map { strdup($0) }
     cargs.append(nil)
-    execv(jebctl, &cargs)
+    var env = ProcessInfo.processInfo.environment
+    if Style.headerDrawn { env["JEB_HEADER_SHOWN"] = "1" }
+    var cenv: [UnsafeMutablePointer<CChar>?] = env.map { strdup($0.key + "=" + $0.value) }
+    cenv.append(nil)
+    execve(jebctl, &cargs, &cenv)
     warn("jebctl: could not run \(jebctl): \(String(cString: strerror(errno)))")
     return 1
 }
@@ -140,7 +145,7 @@ func standaloneUpdateLoop(passes: Int = 3, update: () -> Int32 = { run([liveJebc
 func standaloneInstall(_ flags: [String], signers: [String] = signerLines,
                        handOff: (String, [String]) -> Int32 = execBundleInstall,
                        update: () -> Int32 = { run([liveJebctl, "update"], capture: false).status },
-                       addPath: ([String]) -> Void = { _ = run([liveJebctl, "add-path"] + $0, capture: false) },
+                       addPath: ([String]) -> Int32 = { run([liveJebctl, "add-path"] + $0, capture: false).status },
                        readTag: () -> String? = installedTag) -> Int32 {
     let f = parseStandaloneFlags(flags)
     if let bad = f.bad {
@@ -161,8 +166,15 @@ func standaloneInstall(_ flags: [String], signers: [String] = signerLines,
             standaloneStep("would run jebctl update (again while it installs a newer release), then \(f.path.add ? "jebctl add-path and " : "")jebctl doctor", always: true)
             return 0
         }
-        let rc = standaloneUpdateLoop(update: update, readTag: readTag)
-        if f.path.add { addPath(f.path.shells.map { [$0.joined(separator: ",")] } ?? []) }
+        var rc = standaloneUpdateLoop(update: update, readTag: readTag)
+        if f.path.add {
+            if rc == 0 {        // the live jebctl is the updated one: an older one may not know add-path
+                let a = addPath(f.path.shells.map { [$0.joined(separator: ",")] } ?? [])
+                if a != 0 { rc = a }
+            } else {
+                say("note: PATH setup was skipped because the update did not finish; run `jebctl add-path` to set it up")
+            }
+        }
         _ = run([liveJebctl, "doctor"], capture: false)
         return rc
     }
@@ -174,34 +186,39 @@ func standaloneInstall(_ flags: [String], signers: [String] = signerLines,
         if let rc = replaceOldClone(clone, f) { return rc }
     }
     if !Style.pretty { say("Installing Jeb\(tag)") }
+    if Style.pretty {       // the header and the fetch spinner before any network work, so a failure shows under them
+        Style.announce(plain: "", mode: .install)
+        lead("fetch")
+    }
+    /// A failed fetch step closed, then the reason and exit.
+    func failFetch(_ msg: String) -> Never {
+        if openLine { fin("failed") }
+        die(msg)
+    }
     let arch = hostArch(), base = releaseBase(releaseRepo())
     standaloneStep("architecture: \(arch)")
     let newest: String
     if let pinned = envVar("JEB_RELEASE_TAG") {
         // a named release instead of the newest (./release smoke <tag>); it is verified like any other
-        guard tagKey(pinned) != nil else { die("jebctl: JEB_RELEASE_TAG=\(pinned) is not a release tag (vX.Y.Z)") }
+        guard tagKey(pinned) != nil else { failFetch("jebctl: JEB_RELEASE_TAG=\(pinned) is not a release tag (vX.Y.Z)") }
         newest = pinned
     } else {
         do { newest = try latestTag(base) }
         catch let e as FetchError {
-            if e.status == 404 { die("jebctl: \(base) has no published release (HTTP 404; is the repository public?)") }
-            die("jebctl: could not reach GitHub (\(e)); check the network and run jebctl install again")
-        } catch { die("jebctl: could not reach GitHub (\(error)); check the network and run jebctl install again") }
+            if e.status == 404 { failFetch("jebctl: \(base) has no published release (HTTP 404; is the repository public?)") }
+            failFetch("jebctl: could not reach GitHub (\(e)); check the network and run jebctl install again")
+        } catch { failFetch("jebctl: could not reach GitHub (\(error)); check the network and run jebctl install again") }
     }
     standaloneStep((envVar("JEB_RELEASE_TAG") == nil ? "newest release: " : "release (JEB_RELEASE_TAG): ") + newest)
     if f.dry {
-        if Style.pretty { Style.announce(plain: "", mode: .install, version: newest) }
+        if Style.pretty { fin("skipped (dry run; newest is \(newest))") }
         standaloneStep("would download its manifest, signature and \(arch) zip from \(base)/download/\(newest)/,", always: true)
         standaloneStep("verify the signature and hashes, unpack into \(versionsDir())/<tag> and run the bundle's own install", always: true)
         say("Dry run only; nothing was changed.")
         return 0
     }
-    if Style.pretty {
-        Style.announce(plain: "", mode: .install, version: newest)
-        lead("fetch")
-    }
     let got = standaloneFetch(newest, signers: signers)
-    if Style.pretty { fin(got.path == nil ? "failed" : "ok") }
+    if Style.pretty { fin(got.path == nil ? "failed" : "ok (\(newest))") }
     guard let ver = got.path else {
         let e = got.err
         die("jebctl: " + (e?.permanent == true ? "refusing release \(newest): " : "could not fetch \(newest): ") + (e?.why ?? "unknown error"))

@@ -83,6 +83,54 @@ func styleTests(_ t: Tester) {
         t.eq(decodeKeys([0x1b, 0x5b, 0x42, 0x20]), [.down, .toggle], "a sequence then a key")
     }
 
+    t.test("style: an arrow key split across reads is not an escape; the reader waits briefly for the rest") {
+        t.check(needsMoreKeys([0x1b]), "a lone ESC may be the start of one")
+        t.check(needsMoreKeys([0x1b, 0x5b]), "ESC [")
+        t.check(needsMoreKeys([0x1b, 0x4f]), "ESC O")
+        t.check(needsMoreKeys([0x1b, 0x5b, 0x31, 0x3b]), "ESC [ 1 ;")
+        t.check(!needsMoreKeys([0x1b, 0x5b, 0x42]), "a whole arrow")
+        t.check(!needsMoreKeys(Array("kj".utf8)), "plain keys")
+        t.check(!needsMoreKeys([0x1b, 0x78]), "ESC then a letter is not a sequence")
+        t.check(needsMoreKeys([0x6a, 0x1b]), "a key then a trailing ESC")
+        t.eq(decodeKeys([0x1b] + [0x5b, 0x42]), [.down], "the joined bytes are one arrow")
+        var fds: [Int32] = [0, 0]
+        pipe(&fds)
+        defer { close(fds[0]); close(fds[1]) }
+        var esc: UInt8 = 0x1b
+        write(fds[1], &esc, 1)
+        let rest: [UInt8] = [0x5b, 0x42]
+        DispatchQueue.global().asyncAfter(deadline: .now() + .milliseconds(15)) { _ = rest.withUnsafeBufferPointer { write(fds[1], $0.baseAddress, 2) } }
+        t.eq(decodeKeys(readKeyBytes(fds[0], wait: 500)), [.down], "ESC, then [B a moment later")
+        write(fds[1], &esc, 1)
+        t.eq(decodeKeys(readKeyBytes(fds[0], wait: 20)), [.esc], "a lone ESC is Esc once nothing follows")
+    }
+
+    t.test("style: a warning in the middle of a step keeps the step's label for its fin") {
+        let file = t.scratch("err") + ".txt"
+        fflush(stdout)
+        let so = dup(1), se = dup(2), fd = open(file, O_WRONLY | O_CREAT | O_TRUNC, 0o600)
+        dup2(fd, 1)
+        dup2(fd, 2)
+        close(fd)
+        Style.pretty = true
+        Style.lead("checks")
+        Style.error("jebctl: something small went wrong")
+        let kept = Style.openLabel
+        Style.fin("ok")
+        let after = Style.openLabel
+        Style.pretty = false
+        fflush(stdout)
+        dup2(so, 1)
+        dup2(se, 2)
+        close(so)
+        close(se)
+        t.eq(kept, "checks", "the label survives the error")
+        t.eq(after, nil, "and fin closes it")
+        let out = readFile(file) ?? ""
+        t.check(out.contains("something small went wrong"), "the error is shown")
+        t.check(out.contains("✓") && out.contains("Checked the release is the real thing"), "the step line is still printed: \(out)")
+    }
+
     func state() -> PickerState { PickerState(loginShell: "zsh", setUp: ["fish"]) }
 
     t.test("style: the picker starts with the login shell and set-up shells checked") {
@@ -112,16 +160,19 @@ func styleTests(_ t: Tester) {
         t.eq(s.outcome, nil)
     }
 
-    t.test("style: enter confirms the checked shells, esc q and ctrl-c skip, an empty confirm selects nothing") {
+    t.test("style: enter confirms the checked shells, esc and q skip, ctrl-c aborts, an empty confirm selects nothing") {
         let done = pickerStep(pickerStep(state(), key: .toggle), key: .enter)
         t.eq(done.outcome, .confirmed)
         t.eq(pickerSelection(done), ["fish"], "zsh was unchecked by the toggle")
         t.eq(pickerStep(done, key: .down), done, "nothing moves after the outcome")
-        for k in [Key.esc, .quit, .interrupt] {
+        for k in [Key.esc, .quit] {
             let s = pickerStep(state(), key: k)
             t.eq(s.outcome, .skipped)
             t.eq(pickerSelection(s), [])
         }
+        let hit = pickerStep(state(), key: .interrupt)
+        t.eq(hit.outcome, .aborted, "ctrl-c aborts the install, it is not a skip")
+        t.eq(pickerSelection(hit), [])
         let none = pickerStep(pickerStep(state(), key: .all), key: .all)
         t.eq(pickerSelection(pickerStep(none, key: .enter)), [], "an empty selection is a skip")
     }
@@ -192,15 +243,23 @@ func styleTests(_ t: Tester) {
         if case .skipped = classifyStep("skipped (could not run nushell)") {} else { t.check(false, "unchecked is skipped") }
     }
 
-    t.test("reload: the source line per shell, as ~/… unless the path needs quoting") {
-        let h = "/Users/x"
-        t.eq(reloadCommand("zsh", file: h + "/.zprofile", home: h), "source ~/.zprofile")
-        t.eq(reloadCommand("bash", file: h + "/.bash_profile", home: h), "source ~/.bash_profile")
-        t.eq(reloadCommand("fish", file: h + "/.config/fish/conf.d/jeb.fish", home: h), "source ~/.config/fish/conf.d/jeb.fish")
-        t.eq(reloadCommand("zsh", file: h + "/my dots/.zprofile", home: h), "source '/Users/x/my dots/.zprofile'")
-        t.eq(reloadCommand("zsh", file: "/etc/zd/.zprofile", home: h), "source /etc/zd/.zprofile")
-        t.eq(reloadCommand("nu", file: h + "/Library/Application Support/nushell/env.nu", home: h), "source $nu.env-path")
-        t.eq(reloadCommand("sh", file: h + "/.profile", home: h), nil)
+    t.test("reload: just the PATH line per shell, not the whole profile") {
+        let names = ["HOME", "JEB_BIN_DIR"]
+        let was = names.map { envVar($0) }
+        defer { for (k, v) in zip(names, was) { setEnvVar(k, v) } }
+        setEnvVar("HOME", "/Users/x")
+        setEnvVar("JEB_BIN_DIR", nil)
+        t.eq(reloadCommand("zsh"), "export PATH=\"$HOME/.local/bin:$PATH\"")
+        t.eq(reloadCommand("bash"), "export PATH=\"$HOME/.local/bin:$PATH\"")
+        t.eq(reloadCommand("fish"), "fish_add_path -g ~/.local/bin")
+        t.eq(reloadCommand("nu"), "$env.PATH = ($env.PATH | split row (char esep) | prepend (\"~/.local/bin\" | path expand) | uniq)")
+        t.eq(reloadCommand("sh"), nil)
+        setEnvVar("JEB_BIN_DIR", "/opt/my bin")
+        t.eq(reloadCommand("zsh"), "export PATH='/opt/my bin':\"$PATH\"", "a folder that needs it is shell-quoted")
+        t.eq(reloadCommand("fish"), "fish_add_path -g '/opt/my bin'")
+        setEnvVar("JEB_BIN_DIR", "/opt/bin")
+        t.eq(reloadCommand("bash"), "export PATH=/opt/bin:\"$PATH\"")
+        t.eq(reloadCommand("nu"), pathLine("nu"), "nushell's is the line pathLine writes")
     }
 
     t.test("reload: the shell is the nearest shell the install runs under, else the login shell, if it has the line") {

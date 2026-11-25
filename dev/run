@@ -252,15 +252,17 @@ sb_tty=0; [ -t 1 ] && [ -z "${NO_COLOR:-}" ] && [ "${TERM:-dumb}" != dumb ] && s
 sb_ok()   { if [ $sb_tty = 1 ]; then printf '\r\033[2K  \033[32m✓\033[0m %s\n' "$1"; else echo "  $1 ... ok"; fi; }
 sb_note() { if [ $sb_tty = 1 ]; then printf '  \033[2m%s\033[0m\n' "$1"; else echo "$1"; fi; }
 # sb_step <label> <command...>: run quietly into the log; on failure show its tail and stop
+sb_spin=   # pid of the running spinner, empty when none (the EXIT trap kills it too)
+sb_unspin() { [ -n "$sb_spin" ] && { kill "$sb_spin" 2>/dev/null; wait "$sb_spin" 2>/dev/null; }; sb_spin=; return 0; }
 sb_step() {
   label=$1; shift
   if [ $sb_tty = 1 ]; then
     printf '\033[?25l'
     ( set -- ◐ ◓ ◑ ◒; while :; do for f; do printf '\r\033[2K  \033[36m%s\033[0m %s' "$f" "$label"; sleep 0.15; done; done ) &
-    spin=$!
+    sb_spin=$!
   fi
   "$@" >>"$log" 2>&1; st=$?
-  if [ $sb_tty = 1 ]; then kill $spin 2>/dev/null; wait $spin 2>/dev/null; printf '\033[?25h'; fi
+  if [ $sb_tty = 1 ]; then sb_unspin; printf '\033[?25h'; fi
   if [ $st = 0 ]; then sb_ok "$label"; return 0; fi
   if [ $sb_tty = 1 ]; then printf '\r\033[2K  \033[31m✗ %s\033[0m\n' "$label"; else echo "  $label ... failed"; fi
   tail -n 15 "$log" | sed 's/^/    /'
@@ -283,7 +285,7 @@ cmd_install_sandbox() {
   box=$(mktemp -d "${base%/}/jeb-sandbox.XXXXXX") || die "cannot make a folder under $base"
   box=$(cd "$box" && pwd -P)
   # the box goes on exit unless --keep, or a failed build (keep=1 then, so the log can be read)
-  trap '[ $sb_tty = 1 ] && printf "\033[?25h"; [ "$keep" = 1 ] || rm -rf "$box"' EXIT
+  trap 'sb_unspin; [ $sb_tty = 1 ] && printf "\033[?25h"; [ "$keep" = 1 ] || rm -rf "$box"' EXIT
   trap 'exit 130' INT TERM HUP
   home=$box/home; stage=$box/stage; out=$box/out; log=$box/build.log
   mkdir -p "$home" "$stage" "$out" || die "cannot create folders in $box"
@@ -310,13 +312,20 @@ cmd_install_sandbox() {
   sb_step "Unpacked it into the sandbox" sh -c 'mkdir -p "$2" && ditto -x -k "$1" "$2"' _ "$zip" "$home/.jeb/versions/$tag"
   echo
 
+  # the one source of truth for the sandbox's environment: the install sources it, and the hint below does too
+  sq() { printf "'%s'" "$(printf %s "$1" | sed "s/'/'\\\\''/g")"; }
+  {
+    echo "# the environment the sandbox install ran with"
+    for kv in "HOME=$home" "CLAUDE_CONFIG_DIR=$home/.claude" "JEB_APP_DIR=$home/Applications" "JEB_LAUNCHAGENTS=$home/Library/LaunchAgents" \
+      "JEB_SETTINGS=$home/.claude/settings.json" "JEB_BACKUPS=$home/.claude/backups/jeb" "JEB_STORE_DIR=$home/.claude/plugins/store" \
+      "JEB_BIN_DIR=$home/.local/bin" "JEB_NO_LAUNCHCTL=1"; do
+      echo "export ${kv%%=*}=$(sq "${kv#*=}")"
+    done
+  } > "$box/env.sh"
   (
     for v in $(env | sed -n 's/^\(JEB_[A-Za-z0-9_]*\)=.*/\1/p'); do unset "$v"; done
     unset CLAUDE_CODE_PLUGIN_DIRS ZDOTDIR XDG_CONFIG_HOME
-    HOME=$home CLAUDE_CONFIG_DIR=$home/.claude JEB_APP_DIR=$home/Applications JEB_LAUNCHAGENTS=$home/Library/LaunchAgents \
-      JEB_SETTINGS=$home/.claude/settings.json JEB_BACKUPS=$home/.claude/backups/jeb JEB_STORE_DIR=$home/.claude/plugins/store \
-      JEB_BIN_DIR=$home/.local/bin JEB_NO_LAUNCHCTL=1
-    export HOME CLAUDE_CONFIG_DIR JEB_APP_DIR JEB_LAUNCHAGENTS JEB_SETTINGS JEB_BACKUPS JEB_STORE_DIR JEB_BIN_DIR JEB_NO_LAUNCHCTL
+    . "$box/env.sh"
     "$home/.jeb/versions/$tag/desktop/bin/jebctl" install --no-agents "$@"
   )
   rc=$?
@@ -324,7 +333,7 @@ cmd_install_sandbox() {
   [ $rc = 0 ] || { keep=1; echo "install exited $rc"; }
   if [ $keep = 1 ]; then
     sb_note "Sandbox kept: $box"
-    sb_note "Look around: HOME=$home $home/.local/bin/jebctl doctor"
+    sb_note "Look around: (. $box/env.sh && $home/.local/bin/jebctl doctor)"
   else
     sb_note "Sandbox cleaned up (--keep leaves it to look around)."
   fi

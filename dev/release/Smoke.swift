@@ -16,7 +16,7 @@ private func smokeBase() -> String {
 
 /// Every child's environment: the owner's PATH but a fake HOME, no JEB_* from outside (but JEB_RELEASE_BASE) and no launchctl.
 private func smokeEnv(_ home: String, _ extra: [String: String] = [:]) -> [String: String] {
-    var env = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("JEB_") && $0.key != "CLAUDE_CODE_PLUGIN_DIRS" }
+    var env = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("JEB_") && $0.key != "CLAUDE_CODE_PLUGIN_DIRS" && $0.key != "ZDOTDIR" && $0.key != "XDG_CONFIG_HOME" }
     for (k, v) in ["HOME": home, "CLAUDE_CONFIG_DIR": home + "/.claude", "JEB_APP_DIR": home + "/Applications", "JEB_LAUNCHAGENTS": home + "/Library/LaunchAgents",
                    "JEB_SETTINGS": home + "/.claude/settings.json", "JEB_BACKUPS": home + "/.claude/backups/jeb", "JEB_STORE_DIR": home + "/.claude/plugins/store",
                    "JEB_BIN_DIR": home + "/.local/bin", "JEB_PROFILE": home + "/.zprofile", "JEB_NO_LAUNCHCTL": "1"] { env[k] = v }

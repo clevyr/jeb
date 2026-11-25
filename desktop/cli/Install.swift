@@ -87,8 +87,12 @@ func linkJebctl() -> Bool {
 /// XDG_CONFIG_HOME and the shells' folders) must sit inside the sandbox HOME too. The reason to refuse, or nil.
 func checkSandboxLinks() -> String? {
     let me = pyRealpath(homeDir())
-    var places = [("JEB_BIN_DIR", binDir()), ("ZDOTDIR", zshDir()), ("the fish config folder", fishDir()), ("the nushell config folder", nuDir())]
-    if let p = envVar("JEB_PROFILE"), !p.isEmpty { places.append(("JEB_PROFILE", (p as NSString).deletingLastPathComponent)) }
+    var places = [("JEB_BIN_DIR", binDir())]
+    if let p = envVar("JEB_PROFILE"), !p.isEmpty {      // pathFile gives that one file for every shell: the shells' own folders are never written
+        places.append(("JEB_PROFILE", (p as NSString).deletingLastPathComponent))
+    } else {
+        places += [("ZDOTDIR", zshDir()), ("the fish config folder", fishDir()), ("the nushell config folder", nuDir())]
+    }
     for (what, p) in places {
         let r = pyRealpath(p)
         if r != me && !r.hasPrefix(me + "/") { return "--no-agents: \(what) (\(p)) is outside the sandbox HOME \(me)" }
@@ -116,12 +120,16 @@ func fishDir() -> String { (xdgConfig() ?? expandUser("~/.config")) + "/fish" }
 /// nushell's own rule (nu-path): XDG_CONFIG_HOME/nushell when that is an absolute path, else the macOS default.
 func nuDir() -> String { xdgConfig().flatMap { $0.hasPrefix("/") ? $0 + "/nushell" : nil } ?? expandUser("~/Library/Application Support/nushell") }
 
-/// The file Jeb's PATH line goes in for a shell (JEB_PROFILE overrides every one).
+/// The files a login bash reads, first existing wins (macOS bash: ~/.bash_profile, else ~/.bash_login, else ~/.profile).
+func bashCandidates() -> [String] { [".bash_profile", ".bash_login", ".profile"].map { expandUser("~/" + $0) } }
+
+/// The file Jeb's PATH line goes in for a shell (JEB_PROFILE overrides every one). bash: the first of its login files that
+/// exists, else ~/.bash_profile, so a new ~/.bash_profile never hides an existing ~/.bash_login or ~/.profile.
 func pathFile(_ shell: String) -> String {
     if let p = envVar("JEB_PROFILE"), !p.isEmpty { return p }
     switch shell {
     case "zsh": return zshDir() + "/.zprofile"
-    case "bash": return expandUser("~/.bash_profile")
+    case "bash": return bashCandidates().first { FileManager.default.fileExists(atPath: $0) } ?? expandUser("~/.bash_profile")
     case "fish": return fishDir() + "/conf.d/jeb.fish"
     case "nu": return nuDir() + "/env.nu"
     default: return expandUser("~/.profile")
@@ -133,31 +141,39 @@ func shellConfigured(_ shell: String) -> Bool {
     let fm = FileManager.default
     switch shell {
     case "zsh": return fm.fileExists(atPath: zshDir() + "/.zprofile") || fm.fileExists(atPath: zshDir() + "/.zshrc")
-    case "bash": return fm.fileExists(atPath: expandUser("~/.bash_profile")) || fm.fileExists(atPath: expandUser("~/.bashrc"))
+    case "bash": return ([".bash_profile", ".bash_login", ".bashrc"].map { expandUser("~/" + $0) }).contains { fm.fileExists(atPath: $0) }   // not ~/.profile: zsh users have one too
     case "fish": return isDir(fishDir())
     case "nu": return isDir(nuDir())
     default: return false
     }
 }
 
-/// The login profile of the user's shell: zsh ~/.zprofile, bash ~/.bash_profile, else ~/.profile (JEB_PROFILE overrides).
-func profilePath() -> String {
-    let sh = ((envVar("SHELL") ?? "") as NSString).lastPathComponent
-    return pathFile(pathShells.contains(sh) && sh != "fish" && sh != "nu" ? sh : "sh")
-}
-
 func exportLine() -> String {
     let d = binDir()
-    return d == expandUser("~/.local/bin") ? "export PATH=\"$HOME/.local/bin:$PATH\"" : "export PATH=\"\(d):$PATH\""
+    return d == expandUser("~/.local/bin") ? "export PATH=\"$HOME/.local/bin:$PATH\"" : "export PATH=" + shQuote(d) + ":\"$PATH\""
+}
+
+/// A word for fish: as it is when plain, else in single quotes (inside them fish knows only \\ and \' as escapes).
+func fishQuote(_ s: String) -> String {
+    shQuote(s) == s ? s : "'" + s.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "'", with: "\\'") + "'"
+}
+
+/// A string for nushell: double quotes when that needs no escaping, else a raw string r#'...'# (more # than any '# inside).
+func nuQuote(_ s: String) -> String {
+    if !s.contains("\"") && !s.contains("\\") { return "\"" + s + "\"" }
+    var n = 1
+    while s.contains("'" + String(repeating: "#", count: n)) { n += 1 }
+    let h = String(repeating: "#", count: n)
+    return "r" + h + "'" + s + "'" + h
 }
 
 /// The line after pathMark, in the shell's own syntax (sh for zsh, bash, ~/.profile and JEB_PROFILE).
 func pathLine(_ shell: String) -> String {
     let d = binDir(), dflt = d == expandUser("~/.local/bin")
     switch shell {
-    case "fish": return "fish_add_path -g " + (dflt ? "~/.local/bin" : d)
+    case "fish": return "fish_add_path -g " + (dflt ? "~/.local/bin" : fishQuote(d))
     case "nu":
-        let p = dflt ? "(\"~/.local/bin\" | path expand)" : "\"\(d)\""   // not $nu.home-path: gone in nushell 0.117
+        let p = dflt ? "(\"~/.local/bin\" | path expand)" : nuQuote(d)   // not $nu.home-path: gone in nushell 0.117
         return "$env.PATH = ($env.PATH | split row (char esep) | prepend \(p) | uniq)"
     default: return exportLine()
     }
@@ -165,15 +181,28 @@ func pathLine(_ shell: String) -> String {
 
 func isPathLine(_ l: String) -> Bool { l.hasPrefix("export PATH=") || l.hasPrefix("$env.PATH = ") || l.hasPrefix("fish_add_path ") }
 
+/// One target: the shell's file (default: pathFile) and whether it already has Jeb's line (fish: as its first line).
+func pathTarget(_ s: String, file: String? = nil) -> PathTarget {
+    let f = file ?? pathFile(s), text = readText(f) ?? ""
+    let has = s == "fish" ? profileLines(text).first.map { bare($0) == pathMark } ?? false : profileLines(text).contains { bare($0) == pathMark }
+    return PathTarget(shell: s, file: f, has: has)
+}
+
+/// The targets with one per file (two shells can share ~/.profile, or a link can point one profile at another), the first
+/// kept; a plain sh target gives way to a named shell's. Files are compared by their resolved path.
+func uniqueByFile(_ ts: [PathTarget]) -> [PathTarget] {
+    let named = Set(ts.filter { $0.shell != "sh" }.map { pyRealpath($0.file) })
+    var seen = Set<String>()
+    return ts.filter { t in
+        let r = pyRealpath(t.file)
+        return (t.shell != "sh" || !named.contains(r)) && seen.insert(r).inserted
+    }
+}
+
 /// The login shell (zsh|bash|fish|nu, else sh) and every shell of the four that has a config, in that order; or `only`
 /// as given. JEB_PROFILE: its one file.
 func pathTargets(_ only: [String]?) -> [PathTarget] {
-    func target(_ s: String) -> PathTarget {
-        let f = pathFile(s), text = readText(f) ?? ""
-        let has = s == "fish" ? profileLines(text).first.map { bare($0) == pathMark } ?? false : profileLines(text).contains { bare($0) == pathMark }
-        return PathTarget(shell: s, file: f, has: has)
-    }
-    if let p = envVar("JEB_PROFILE"), !p.isEmpty { return [target("profile")] }
+    if let p = envVar("JEB_PROFILE"), !p.isEmpty { return [pathTarget("profile")] }
     var shells: [String] = []
     if let o = only {
         shells = o
@@ -183,13 +212,14 @@ func pathTargets(_ only: [String]?) -> [PathTarget] {
         shells += pathShells.filter { shellConfigured($0) }
     }
     var seen = Set<String>()
-    return shells.filter { seen.insert($0).inserted }.map(target)
+    return uniqueByFile(shells.filter { seen.insert($0).inserted }.map { pathTarget($0) })
 }
 
-/// Every place Jeb's line may be (uninstall looks in all of them).
+/// Every place Jeb's line may be (uninstall looks in all of them, bash's three login files included: an older install
+/// may have written to any of them).
 func allPathTargets() -> [PathTarget] {
     if envVar("JEB_PROFILE").map({ !$0.isEmpty }) == true { return pathTargets(nil) }
-    return pathTargets(pathShells + ["sh"])
+    return uniqueByFile(pathTargets(["zsh"]) + bashCandidates().map { pathTarget("bash", file: $0) } + pathTargets(["fish", "nu", "sh"]))
 }
 
 /// A comma list of zsh|bash|fish|nu; nil when a name is not one of them.
@@ -234,56 +264,83 @@ func profileLines(_ text: String) -> [String] {
 
 func bare(_ l: String) -> String { l.hasSuffix("\n") ? String(l.dropLast()) : l }
 
-func backupProfile(_ prof: String) {
+/// Copy the profile aside before it is changed. False when that fails: the profile is then left as it is.
+func backupProfile(_ prof: String) -> Bool {
     let dest = backupName((prof as NSString).lastPathComponent + "." + Clock.strftime("%Y%m%d-%H%M%S"), "bak")
-    do { try copyFile2(prof, dest) } catch { installFail("cannot back up \(prof): \(error.localizedDescription)") }
+    do { try copyFile2(prof, dest) } catch { return false }
     detail("  backup: " + dest)
+    return true
 }
 
-func writeProfile(_ prof: String, _ text: String) {
+/// False when the file cannot be opened for writing.
+func writeProfile(_ prof: String, _ text: String) -> Bool {
     // in place (not a rename): a profile that is a link into a dotfiles folder stays one
-    guard let h = FileHandle(forWritingAtPath: prof) ?? (FileManager.default.createFile(atPath: prof, contents: nil) ? FileHandle(forWritingAtPath: prof) : nil) else {
-        installFail("cannot write \(prof)")
+    guard let h = FileHandle(forWritingAtPath: prof) ?? (lexists(prof) || !FileManager.default.createFile(atPath: prof, contents: nil) ? nil : FileHandle(forWritingAtPath: prof)) else {
+        return false
     }
     h.truncateFile(atOffset: 0)
     h.write(Data(text.utf8))
     h.closeFile()
-}
-
-/// Add Jeb's lines to one target. Returns true when it wrote (or, in a dry run, would write) something.
-@discardableResult
-func addToProfile(_ t: PathTarget) -> Bool {
-    let prof = t.file, text = readText(prof) ?? ""
-    if t.shell == "fish" && lexists(prof) && !t.has {
-        say("\(prof) exists and is not Jeb's; left alone, so fish is not set up")
-        return false
-    }
-    if t.has {
-        say("\(prof) already has the PATH line; open a new terminal")
-        return false
-    }
-    let body = pathMark + "\n" + pathLine(t.shell) + "\n"
-    detail("add to \(prof): \(pathMark) / \(pathLine(t.shell))")
-    if dryRun { return true }
-    try? FileManager.default.createDirectory(atPath: (prof as NSString).deletingLastPathComponent, withIntermediateDirectories: true)
-    if t.shell == "fish" {
-        writeProfile(prof, body)
-        return true
-    }
-    if !text.isEmpty { backupProfile(prof) }
-    writeProfile(prof, text + (text.isEmpty || text.hasSuffix("\n") ? "" : "\n") + body)
     return true
 }
 
-/// Take Jeb's lines out of one target: Jeb's own jeb.fish goes, a foreign one stays; other files lose just the block.
-func removePathFrom(_ t: PathTarget) {
-    guard t.has else { return }
-    let prof = t.file, lines = profileLines(readText(prof) ?? "")
-    if t.shell == "fish" {
-        detail("remove \(prof)")
-        if !dryRun { unlink(prof) }
-        return
+/// The step text for a profile Jeb could not write (classifyStep reads it as failed).
+func unwritableStep(_ prof: String) -> String { "could not write \(prof)" }
+
+/// The step text for a profile Jeb could not back up, or read (classifyStep reads both as failed).
+func backupFailedStep(_ prof: String) -> String { "could not back up \(prof)" }
+func unreadableStep(_ prof: String) -> String { "could not read \(prof)" }
+
+/// A profile Jeb could not back up (so it is left as it is) or read: a warning line, or in pretty mode a failed step.
+func reportProfileProblem(_ step: String, _ plain: String) {
+    if Style.pretty { Style.step("PATH setup", step) } else { say(plain) }
+}
+func reportBackupFailed(_ prof: String) {
+    reportProfileProblem(backupFailedStep(prof), "warning: could not back up \(prof); left it as it is")
+}
+
+/// A profile Jeb could not write: a warning line, or in pretty mode a failed step (so the ending is not "All set").
+func reportUnwritable(_ prof: String) {
+    if Style.pretty {
+        Style.step("PATH setup", unwritableStep(prof))
+    } else {
+        say("warning: cannot write \(prof); check its permissions")
     }
+}
+
+enum ProfileResult: Equatable { case wrote, already, leftAlone, failed }
+
+/// Add Jeb's lines to one target. wrote also covers a dry run that would write.
+@discardableResult
+func addToProfile(_ t: PathTarget) -> ProfileResult {
+    let prof = t.file, read = readText(prof), text = read ?? ""
+    if t.shell == "fish" && lexists(prof) && !t.has {
+        say("\(prof) exists and is not Jeb's; left alone, so fish is not set up")
+        return .leftAlone
+    }
+    if read == nil && lexists(prof) {   // never overwrite what could not be read
+        reportProfileProblem(unreadableStep(prof), "warning: cannot read \(prof); check its permissions")
+        return .failed
+    }
+    if t.has || (t.shell != "fish" && profileLines(text).contains { bare($0) == pathMark }) {
+        say("\(prof) already has the PATH line; open a new terminal")
+        return .already
+    }
+    let body = pathMark + "\n" + pathLine(t.shell) + "\n"
+    detail("add to \(prof): \(pathMark) / \(pathLine(t.shell))")
+    if dryRun { return .wrote }
+    try? FileManager.default.createDirectory(atPath: (prof as NSString).deletingLastPathComponent, withIntermediateDirectories: true)
+    if t.shell != "fish" && !text.isEmpty && !backupProfile(prof) {
+        reportBackupFailed(prof)
+        return .failed
+    }
+    let ok = writeProfile(prof, t.shell == "fish" ? body : text + (text.isEmpty || text.hasSuffix("\n") ? "" : "\n") + body)
+    if !ok { reportUnwritable(prof) }
+    return ok ? .wrote : .failed
+}
+
+/// Jeb's mark line and the PATH line after it, taken out of the profile's lines.
+func withoutJebLines(_ lines: [String]) -> [String] {
     var out: [String] = [], i = 0
     while i < lines.count {
         if bare(lines[i]) == pathMark {
@@ -293,36 +350,54 @@ func removePathFrom(_ t: PathTarget) {
             i += 1
         }
     }
+    return out
+}
+
+/// Take Jeb's lines out of one target (just the block; the file goes only when it is Jeb's jeb.fish with nothing else in it,
+/// and a foreign one stays).
+func removePathFrom(_ t: PathTarget) {
+    guard t.has else { return }
+    let prof = t.file, out = withoutJebLines(profileLines(readText(prof) ?? ""))
+    if t.shell == "fish" && out.allSatisfy({ $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) {
+        detail("remove \(prof)")
+        if !dryRun { unlink(prof) }
+        return
+    }
     detail("remove the PATH lines from \(prof)")
     if !dryRun {
-        backupProfile(prof)
-        writeProfile(prof, out.joined())
+        if !backupProfile(prof) { reportBackupFailed(prof) } else if !writeProfile(prof, out.joined()) { reportUnwritable(prof) }
     }
 }
 
 func removeFromProfile() { allPathTargets().forEach(removePathFrom) }
 
-func pathStep(add: Bool, only: [String]? = nil) {
+/// The PATH step. False when a file could not be written, or (for shells named in `only`) was left alone.
+@discardableResult
+func pathStep(add: Bool, only: [String]? = nil) -> Bool {
     let d = binDir()
     if onPath(d) && only == nil {   // named shells are written even when this shell already has it
         detail("\(d) is on PATH")
-        return
+        return true
     }
     if add {
-        let wrote = pathTargets(only).map { addToProfile($0) }
-        if dryRun { return }
+        let results = pathTargets(only).map { addToProfile($0) }
+        let ok = !results.contains(.failed) && (only == nil || !results.contains(.leftAlone))
+        if dryRun { return ok }
         if Style.pretty {   // checked, with the reload line, once the install is done (askPathNow)
             let ready = pathTargets(only).filter { $0.has && pathShells.contains($0.shell) }
-            if !ready.isEmpty { pathConfirmPending = ready; return }
+            if !ready.isEmpty { pathConfirmPending = ready; return ok }
         }
-        if wrote.contains(true) { say("open a new terminal for `jebctl` to work") }
+        if results.contains(.wrote) { say("open a new terminal for `jebctl` to work") }
+        return ok
     } else {
         let home = expandUser("~")
         say("Run Jeb's tool as " + (d.range(of: home).map { d.replacingCharacters(in: $0, with: "~") } ?? d) + "/jebctl")
+        return true
     }
 }
 
-/// `jebctl add-path [zsh,bash,fish,nu]`: the jebctl link and the PATH step alone, for an installed Jeb. The exit code.
+/// `jebctl add-path [zsh,bash,fish,nu]`: the jebctl link and the PATH step alone, for an installed Jeb. The exit code: 1 when
+/// the link was refused or a requested file could not be written or was left alone.
 func cmdAddPath(_ args: [String]) -> Int32 {
     var shells: [String]?
     if args.count > 1 || args.first?.hasPrefix("-") == true {
@@ -340,8 +415,8 @@ func cmdAddPath(_ args: [String]) -> Int32 {
         say("jebctl add-path: Jeb is not installed; run jebctl install first")
         return 1
     }
-    if linkJebctl() { pathStep(add: true, only: shells) }
-    return 0
+    guard linkJebctl() else { return 1 }
+    return pathStep(add: true, only: shells) ? 0 : 1
 }
 
 func unlinkJebctl() {

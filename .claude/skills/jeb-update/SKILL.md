@@ -12,6 +12,6 @@ description: Update Jeb on this Mac to the newest release and report the result.
 
 ## Rules
 
-- Never ask for an administrator password or use `sudo`, never run `xcodebuild -license`, never install Homebrew, never edit the shell profile or PATH, never use `--add-path`, and never compile (`--build-from-source`). A release install needs no Xcode, Command Line Tools or git.
+- Never ask for an administrator password or use `sudo`, never run `xcodebuild -license`, never install Homebrew, never compile (`--build-from-source`), never edit a shell profile or PATH yourself, and never pass `--repin` or `--no-agents`. PATH setup happens only through `~/.jeb/bin/jebctl add-path`, and only after you have asked the user once and they said yes (it sets up their login shell and any of zsh, bash, fish and nushell they use, backing up each file first); on no or no answer, skip it and do not ask again. A release install needs no Xcode, Command Line Tools or git.
 - Do not take screenshots of the desktop or describe what it draws; the user should see it themselves.
 - Do not pause, resume, roll back or change anything beyond the update; if updates are paused, ask the user before resuming them.
