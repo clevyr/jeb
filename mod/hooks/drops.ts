@@ -315,6 +315,15 @@ export const dueSlot = ({ drops, nowMs, startedAt, lastAt }: DueInput): number |
   return undefined
 }
 
+// The slot a forced surprise (JEB_DROP_NOW) is made for: the latest slot whose hour has
+// come today, else the first. It only flavours the prompt; the forced surprise is not
+// recorded against it (see applyDelivery's isForced).
+export const forcedSlot = (nowMs: number): number => {
+  const hour = new Date(nowMs).getHours()
+
+  return [...SLOT_HOURS].reverse().find(slot => slot <= hour) ?? SLOT_HOURS[0]
+}
+
 export type Claimed<F> = { farm: F; outcome: 'claimed' | 'takeover' | 'busy' | 'done' }
 
 // Claims a slot on the farm as stored, before anything is generated: the one
@@ -465,11 +474,17 @@ const keepArt = (
 // Writes a delivered surprise into the farm as stored: the surprise, its log
 // line, the count, the arc (begun, stepped or finished), a permanent structure
 // when the final step keeps one, the festival, the custom art, and the slot done
-// with its claim let go. A slot already done delivers nothing.
-export const applyDelivery = <F extends CreativeFarm>(farm: F, d: Delivery, nowMs: number): { farm: F; surprise?: Surprise } => {
+// with its claim let go. A slot already done delivers nothing. A forced delivery
+// (JEB_DROP_NOW) is stored as a surprise but leaves the day's slots and claims as they are.
+export const applyDelivery = <F extends CreativeFarm>(
+  farm: F,
+  d: Delivery,
+  nowMs: number,
+  isForced = false,
+): { farm: F; surprise?: Surprise } => {
   const today = dateKeyOf(new Date(nowMs))
   const day: Drops = farm.drops.day === today ? farm.drops : { day: today, done: [], claims: [] }
-  if (day.done.includes(d.slot)) {
+  if (!isForced && day.done.includes(d.slot)) {
     return { farm }
   }
   // Two sessions may each begin an arc in different slots: the one that finds
@@ -522,7 +537,9 @@ export const applyDelivery = <F extends CreativeFarm>(farm: F, d: Delivery, nowM
     surprise,
     farm: {
       ...farm,
-      drops: { day: today, done: [...day.done, d.slot].sort((a, b) => a - b), claims: day.claims.filter(claim => claim.slot !== d.slot) },
+      drops: isForced
+        ? { day: today, done: day.done, claims: day.claims }
+        : { day: today, done: [...day.done, d.slot].sort((a, b) => a - b), claims: day.claims.filter(claim => claim.slot !== d.slot) },
       surprises: [...expire(farm.surprises, today), surprise].slice(-SURPRISES_MAX),
       creativeLog: [...farm.creativeLog, log].slice(-LOG_MAX),
       creative: {

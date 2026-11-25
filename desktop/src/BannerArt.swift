@@ -321,6 +321,10 @@ func bannerCheck(art: Art) -> Int32 {
     let dates = Holiday.check()
     checks += dates.checks; failed += dates.failures.count
     for f in dates.failures { log("banner check FAIL: \(f)") }
+    let flags = AppFlags.check()
+    checks += flags.checks; failed += flags.failures.count
+    for f in flags.failures { log("banner check FAIL: \(f)") }
+    log("banner check: app flags \(flags.checks) checks, \(flags.failures.count) failed")
     log("banner check: holiday dates \(dates.checks) checks, \(dates.failures.count) failed, at most \(dates.maxActive) at once 2026-2040")
     var shapeCount = 0
     for y in 0..<L.winH { for x in 0..<L.winW where L.inShape(x, y) { shapeCount += 1 } }

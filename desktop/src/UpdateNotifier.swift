@@ -28,6 +28,19 @@ enum NotifyPrefsFile {
     }
 }
 
+/// jebHome/flags.json: {"creativeDrops":false}, the app's feature flags (the Claude Code mod reads it). Main thread only; the app is
+/// its only writer; unknown keys are kept.
+enum AppFlagsFile {
+    static let path = jebHome + "/flags.json"
+    static func load() -> AppFlags { AppFlags.decode(try? Data(contentsOf: URL(fileURLWithPath: path))).flags }
+    static func update(_ change: (inout AppFlags) -> Void) {
+        var (flags, raw) = AppFlags.decode(try? Data(contentsOf: URL(fileURLWithPath: path)))
+        change(&flags)
+        ensurePrivateDir(jebHome)
+        writePrivate(flags.encode(over: raw) + "\n", to: path)
+    }
+}
+
 final class UpdateNotifier {
     private let statusFile = jebHome + "/update-status.json"
     private let live: Bool

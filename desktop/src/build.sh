@@ -8,7 +8,7 @@
 set -e
 cd "$(dirname "$0")"
 OUT="${JEB_OUT:-JebDesktop}"
-FILES="main.swift Store.swift Farm.swift Live.swift Story.swift FarmScene.swift Valley.swift Strip.swift Homestead.swift Camp.swift Area.swift Road.swift Cast.swift Broadcast.swift Holiday.swift Art.swift PixelArt.swift StatusMenu.swift UpdateStatus.swift AgentHeal.swift JebLines.swift BannerArt.swift Banner.swift UpdateNotifier.swift IconExport.swift EmojiExport.swift Heartbeat.swift Probe.swift Bench.swift"
+FILES="main.swift Store.swift Farm.swift Live.swift Story.swift FarmScene.swift Valley.swift Strip.swift Homestead.swift Camp.swift Area.swift Road.swift Cast.swift Broadcast.swift Holiday.swift Art.swift PixelArt.swift StatusMenu.swift UpdateStatus.swift AgentHeal.swift JebLines.swift BannerArt.swift Banner.swift UpdateNotifier.swift IconExport.swift EmojiExport.swift Heartbeat.swift Probe.swift Bench.swift Defaults.swift"
 FW="-framework AppKit -framework QuartzCore -framework Metal"
 if [ -n "$JEB_UNIVERSAL" ]; then
   for a in arm64 x86_64; do

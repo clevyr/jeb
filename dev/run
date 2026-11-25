@@ -1,0 +1,263 @@
+#!/bin/sh
+# dev/run: run this working tree (the plugin and the desktop app) on a separate dev farm, with the
+# installed release paused and quit meanwhile. See CONTRIBUTING.md, "Running a development build".
+#
+#   dev/run [--surprise] [claude args...]   the one command: start, a dev Claude Code session, then stop when it ends
+#   dev/run start [--alongside] [--no-build] [--dry-run]
+#   dev/run claude [--surprise] [args...]   a Claude Code session with the staged dev plugin
+#
+# --surprise (anywhere in the args, not passed to claude) sets JEB_DROP_NOW=1 for the session: it runs one
+# surprise right away instead of waiting for a 9, 12 or 15 weekday slot. The Creative Drops switch and the
+# daily model-call cap still apply.
+#   dev/run sync                 copy the working tree's plugin into the dev home (then /reload-plugins)
+#   dev/run stop [--purge]       stop the dev app, restore the installed Jeb; --purge removes the dev state
+#   dev/run status
+#
+# Everything the dev run writes lives under JEB_DEV_HOME and one store file named for the plugin id
+# jeb-dev@inline. It refuses to run against the installed Jeb's own folders and store.
+#
+# Environment (all optional; the tests point them at stubs):
+#   JEB_DEV_HOME        default ~/Library/Application Support/Jeb Dev
+#   JEB_DEV_REAL_HOME   the installed Jeb's home, default ~/Library/Application Support/Jeb (never written)
+#   JEB_DEV_STORE_DIR   default ~/.claude/plugins/store
+#   JEB_DEV_JEBCTL      the installed jebctl, default ~/.jeb/current/desktop/bin/jebctl
+#   JEB_DEV_BIN         the dev app binary, default desktop/src/JebDesktop.dev
+#   JEB_DEV_CLAUDE      default claude
+#   JEB_DEV_NO_BUILD    set: the one command skips the build (as start --no-build)
+#   JEB_DEV_APP_NAME    the dev app's process name, default JebDesktop.dev (stop signals only that)
+set -u
+
+REPO=$(cd "$(dirname "$0")/.." && pwd)
+H=${JEB_DEV_HOME:-$HOME/Library/Application Support/Jeb Dev}
+REAL=${JEB_DEV_REAL_HOME:-$HOME/Library/Application Support/Jeb}
+LEGACY=$HOME/.claude/jeb-desktop
+STORE_DIR=${JEB_DEV_STORE_DIR:-$HOME/.claude/plugins/store}
+JEBCTL=${JEB_DEV_JEBCTL:-$HOME/.jeb/current/desktop/bin/jebctl}
+BIN=${JEB_DEV_BIN:-$REPO/desktop/src/JebDesktop.dev}
+CLAUDE=${JEB_DEV_CLAUDE:-claude}
+DEV_APP_NAME=${JEB_DEV_APP_NAME:-JebDesktop.dev}
+# the store file name Claude Code gives jeb-dev@inline: "@" becomes "_", then the first 12 hex of
+# sha256("jeb-dev@inline") (checked against storeName in desktop/cli/Plugin.swift)
+STORE=$STORE_DIR/jeb-dev_inline-574da5d906c7.json
+SUITE=com.jeb.desktop.dev
+
+die() { echo "dev/run: $*" >&2; exit 1; }
+trim() { printf '%s' "${1%/}"; }
+
+# ---- refusals: nothing is launched or written when the dev home or store could be the installed Jeb's ----
+[ -n "$H" ] || die "JEB_DEV_HOME is empty"
+for bad in "$REAL" "$LEGACY" "$HOME" /; do
+  [ "$(trim "$H")" = "$(trim "$bad")" ] && die "JEB_DEV_HOME ($H) is the installed Jeb's or your own home; refusing"
+done
+case "$(basename "$STORE")" in
+  jeb_jeb-*|jeb_inline-*) die "the dev store ($STORE) would be the installed Jeb's store; refusing" ;;
+esac
+
+alive() { [ -n "${1:-}" ] && kill -0 "$1" 2>/dev/null; }
+# the pid is still the dev app, not a stale pid the system has since given to another process
+isdevapp() { alive "$1" && ps -p "$1" -o comm= 2>/dev/null | grep -q "$DEV_APP_NAME\$"; }
+devpid() { [ -f "$H/dev.pid" ] && tr -d ' \n' < "$H/dev.pid"; }
+# the installed jebctl always runs with JEB_HOME unset, so it acts on the installed Jeb
+jebctl() { env -u JEB_HOME "$JEBCTL" "$@"; }
+
+paused_now() { [ -e "$REAL/updates-paused" ] || [ -e "$LEGACY/updates-paused" ]; }
+running_now() {
+  out=$(jebctl status 2>/dev/null) && case "$out" in *"running: "*)
+    n=$(printf '%s\n' "$out" | sed -n 's/^running: \([0-9][0-9]*\).*/\1/p' | head -n 1)
+    [ -n "$n" ] && { [ "$n" -gt 0 ]; return; };;
+  esac
+  pgrep -x JebDesktop >/dev/null 2>&1 # the dev binary is JebDesktop.dev, which -x does not match
+}
+
+cmd_sync() {
+  [ -d "$REPO/mod/hooks" ] || die "no mod/ in $REPO"
+  rm -rf "$H/plugin"
+  mkdir -p "$H/plugin" || die "cannot create $H/plugin"
+  for d in .claude-plugin hooks types art; do
+    [ -e "$REPO/mod/$d" ] && cp -R "$REPO/mod/$d" "$H/plugin/$d"
+  done
+  rm -rf "$H/plugin/art/out"     # rendered previews, not part of the plugin
+  # only the first "name" (the plugin's own) changes
+  awk '!done && /"name"[ \t]*:/ { sub(/"name"[ \t]*:[ \t]*"[^"]*"/, "\"name\": \"jeb-dev\""); done = 1 } { print }' \
+    "$REPO/mod/.claude-plugin/plugin.json" > "$H/plugin/.claude-plugin/plugin.json" || die "cannot stage plugin.json"
+  # Shared values name their owning plugin; the engine lets only that plugin write
+  # them, so the staged copy's atoms must be owned by jeb-dev too.
+  n=0
+  for f in "$H"/plugin/hooks/*.ts "$H"/plugin/hooks/*.tsx; do
+    [ -f "$f" ] || continue
+    grep -q "atom({ plugin: 'jeb'," "$f" || continue
+    sed "s/atom({ plugin: 'jeb',/atom({ plugin: 'jeb-dev',/g" "$f" > "$f.tmp" && mv "$f.tmp" "$f" || die "cannot stage $f"
+    n=$((n + 1))
+  done
+  [ "$n" -gt 0 ] || die "no atom({ plugin: 'jeb', ... }) found in mod/hooks; dev/run needs updating"
+  echo "synced mod/ to $H/plugin; in a running dev session, run /reload-plugins"
+}
+
+# JEB_DROP_NOW reaches the dev session only through --surprise (an inherited value is dropped)
+session_env() {
+  if [ -n "$SURPRISE" ]; then JEB_DROP_NOW=1; export JEB_DROP_NOW; else unset JEB_DROP_NOW; fi
+}
+
+claude_args='{"enabledPlugins":{"jeb@jeb":false,"jeb@inline":false}}'
+
+cmd_claude() {
+  [ -f "$H/plugin/.claude-plugin/plugin.json" ] || cmd_sync || exit 1
+  JEB_HOME=$H
+  export JEB_HOME
+  session_env
+  exec "$CLAUDE" --plugin-dir "$H/plugin" --settings "$claude_args" "$@"
+}
+
+# The one command: start the dev app (or keep the one running), open a dev Claude Code session, and
+# stop the dev app and restore the installed Jeb when that session ends. Arguments go to claude.
+cmd_up() {
+  if alive "$(devpid)"; then
+    cmd_sync || exit 1
+  else
+    cmd_start ${JEB_DEV_NO_BUILD:+--no-build} || exit 1
+  fi
+  trap 'cmd_stop' EXIT
+  trap 'exit 130' INT TERM HUP
+  ( JEB_HOME=$H; export JEB_HOME; session_env; "$CLAUDE" --plugin-dir "$H/plugin" --settings "$claude_args" "$@" )
+}
+
+cmd_start() {
+  alongside=0; build=1; dry=0
+  for a in "$@"; do
+    case "$a" in
+      --alongside) alongside=1;; --no-build) build=0;; --dry-run) dry=1;;
+      *) die "start: unknown option $a";;
+    esac
+  done
+  if [ $dry = 1 ]; then
+    echo "dev/run start: dry run, nothing is changed"
+    echo "  dev home   $H"
+    echo "  store      $STORE"
+    if [ $alongside = 1 ]; then
+      echo "  installed  left running (--alongside)"
+    else
+      echo "  installed  record its state in $H/restore, then"
+      echo "             $JEBCTL pause-updates (unless already paused)"
+      echo "             $JEBCTL quit (if running)"
+    fi
+    echo "  sync       copy mod/ to $H/plugin"
+    if [ $build = 1 ]; then echo "  build      cd $REPO/desktop/src && JEB_OUT=JebDesktop.dev ./build.sh"; else echo "  build      skipped (--no-build)"; fi
+    echo "  launch     $BIN (detached; stderr appended to $H/run.log)"
+    echo "    env      JEB_HOME=$H"
+    echo "             JEB_STORE_PATH=$STORE"
+    echo "             JEB_MOD=$REPO/mod"
+    echo "             JEB_PID_FILE=$H/dev.pid"
+    echo "             JEB_LAUNCHAGENTS=$H/no-agents"
+    echo "             JEB_NO_LAUNCHCTL=1"
+    echo "             JEB_DEFAULTS_SUITE=$SUITE"
+    echo "    unset    JEB_START JEB_HANDOFF_FROM"
+    return 0
+  fi
+  mkdir -p "$H" || die "cannot create $H"
+  if alive "$(devpid)"; then die "a dev app is already running (pid $(devpid)); run dev/run stop first"; fi
+  rm -f "$H/dev.pid"
+  if [ $alongside = 0 ]; then
+    if [ ! -f "$H/restore" ]; then   # a second start keeps what the first recorded
+      p=0; r=0
+      paused_now && p=1
+      running_now && r=1
+      printf 'paused_before=%s\nrunning_before=%s\n' "$p" "$r" > "$H/restore" || die "cannot write $H/restore"
+    fi
+    . "$H/restore"
+    [ "$paused_before" = 1 ] || jebctl pause-updates
+    [ "$running_before" = 1 ] && jebctl quit
+  fi
+  cmd_sync || exit 1
+  if [ $build = 1 ]; then
+    (cd "$REPO/desktop/src" && JEB_OUT=JebDesktop.dev ./build.sh) || die "the desktop build failed (the installed Jeb stays paused; dev/run stop restores it)"
+  fi
+  [ -x "$BIN" ] || die "no dev binary at $BIN"
+  mkdir -p "$H/no-agents" "$STORE_DIR"
+  env -u JEB_START -u JEB_HANDOFF_FROM \
+    JEB_HOME="$H" JEB_STORE_PATH="$STORE" JEB_MOD="$REPO/mod" JEB_PID_FILE="$H/dev.pid" \
+    JEB_LAUNCHAGENTS="$H/no-agents" JEB_NO_LAUNCHCTL=1 JEB_DEFAULTS_SUITE="$SUITE" \
+    nohup "$BIN" >/dev/null 2>> "$H/run.log" &
+  child=$!
+  i=0
+  while [ $i -lt 30 ] && [ ! -s "$H/dev.pid" ]; do sleep 0.1; i=$((i + 1)); done
+  [ -s "$H/dev.pid" ] || echo "$child" > "$H/dev.pid"
+  echo "dev Jeb started, pid $(devpid)"
+  echo "  dev/run claude    a Claude Code session on the dev farm"
+  echo "  dev/run stop      stop it and restore the installed Jeb"
+}
+
+cmd_stop() {
+  purge=0
+  for a in "$@"; do
+    case "$a" in --purge) purge=1;; *) die "stop: unknown option $a";; esac
+  done
+  pid=$(devpid)
+  if alive "$pid" && ! isdevapp "$pid"; then
+    echo "pid $pid in dev.pid is not the dev app; left alone"
+  elif alive "$pid"; then
+    kill -TERM "$pid" 2>/dev/null
+    i=0
+    while alive "$pid" && [ $i -lt 50 ]; do sleep 0.1; i=$((i + 1)); done
+    alive "$pid" && kill -KILL "$pid" 2>/dev/null
+    echo "dev Jeb stopped (pid $pid)"
+  else
+    echo "no dev app running"
+  fi
+  rm -f "$H/dev.pid"
+  if [ -f "$H/restore" ]; then
+    paused_before=1; running_before=0
+    . "$H/restore"
+    [ "$running_before" = 1 ] && jebctl start
+    [ "$paused_before" = 1 ] || jebctl resume-updates
+    rm -f "$H/restore"
+    echo "installed Jeb restored"
+  fi
+  if [ $purge = 1 ]; then
+    rm -rf "$H"
+    rm -f "$STORE"
+    echo "removed $H and $STORE"
+  fi
+}
+
+cmd_status() {
+  pid=$(devpid)
+  if alive "$pid"; then
+    echo "dev app: running, pid $pid"
+    hb="$H/heartbeat/$pid"
+    if [ -f "$hb" ]; then
+      echo "heartbeat: $(( $(date +%s) - $(stat -f %m "$hb") )) s old"
+    else
+      echo "heartbeat: none found"
+    fi
+  else
+    echo "dev app: not running"
+  fi
+  echo "dev home: $H"
+  if [ -f "$STORE" ]; then echo "store: $STORE ($(wc -c < "$STORE" | tr -d ' ') bytes)"; else echo "store: $STORE (not created yet)"; fi
+  if [ -f "$H/restore" ]; then
+    echo "warning: the installed Jeb is paused/quit by dev/run; run dev/run stop"
+  fi
+}
+
+# a first argument that is not a subcommand goes to claude, as with up
+sub=up
+[ $# -gt 0 ] && case "$1" in start|claude|sync|stop|status|up) sub=$1; shift;; esac
+# --surprise is taken out of the args of the claude session (up and claude only)
+SURPRISE=
+case "$sub" in
+  up|claude)
+    n=$#
+    while [ $n -gt 0 ]; do
+      a=$1; shift; n=$((n - 1))
+      if [ "$a" = --surprise ]; then SURPRISE=1; else set -- "$@" "$a"; fi
+    done;;
+esac
+case "$sub" in
+  up) cmd_up "$@";;
+  start) cmd_start "$@";;
+  claude) cmd_claude "$@";;
+  sync) cmd_sync;;
+  stop) cmd_stop "$@";;
+  status) cmd_status;;
+  *) echo "usage: dev/run [--surprise] [claude args] | start [--alongside] [--no-build] [--dry-run] | claude [--surprise] [args] | sync | stop [--purge] | status" >&2; exit 2;;
+esac

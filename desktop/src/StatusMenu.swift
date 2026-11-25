@@ -109,6 +109,18 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         notify.addItem(.separator())
         notify.addItem(action("Show Sample Banners", #selector(showSampleBanners)))
         menu.addItem(submenu("Notifications", notify))
+        // Features: the app's feature flags (flags.json, read by the mod), each with a tooltip saying what it does.
+        let features = NSMenu()
+        // a session whose Claude Code option is off shows the creative drops disabled
+        let dropsOffInClaude = app.liveRecords.contains(where: { $0.dropsOff })
+        let drops = action(dropsOffInClaude ? "Creative Drops (off in Claude Code)" : "Creative Drops", #selector(toggleCreativeDrops))
+        drops.isEnabled = !dropsOffInClaude
+        drops.state = !dropsOffInClaude && AppFlagsFile.load().creativeDrops ? .on : .off
+        describe(drops, dropsOffInClaude
+            ? "Off in Claude Code: turn it on with /plugin,\nJeb, Configure options, to use this switch."
+            : "Weekday surprises at 9:00, 12:00 and 15:00, and a place\nfor each project. Up to 9 Haiku calls a day on your account.\nOff stops new ones; what's on the farm stays.")
+        features.addItem(drops)
+        menu.addItem(submenu("Features", features))
 
         menu.addItem(.separator())
         agent = updateAgent()
@@ -151,6 +163,18 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         return entry
     }
 
+    /// Shows what an item does in small grey lines under its title (a status-bar menu of a background app does not
+    /// reliably show tooltips), and as its tooltip too. The title itself is kept for the menu test hook and accessibility.
+    private func describe(_ entry: NSMenuItem, _ text: String) {
+        entry.toolTip = text.replacingOccurrences(of: "\n", with: " ")
+        let title = NSMutableAttributedString(string: entry.title, attributes: [.font: NSFont.menuFont(ofSize: 0)])
+        title.append(NSAttributedString(string: "\n" + text, attributes: [
+            .font: NSFont.menuFont(ofSize: NSFont.smallSystemFontSize),
+            .foregroundColor: NSColor.secondaryLabelColor,
+        ]))
+        entry.attributedTitle = title
+    }
+
     private func submenu(_ title: String, _ sub: NSMenu) -> NSMenuItem {
         let entry = NSMenuItem(title: title, action: nil, keyEquivalent: "")
         entry.submenu = sub
@@ -164,7 +188,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
 
     // MARK: Updates
 
-    /// The install mode's update agent, or nil when its plist is not installed (a bare run-live.sh instance).
+    /// The install mode's update agent, or nil when its plist is not installed (a dev/run instance).
     private func updateAgent() -> (mode: String, label: String, lock: String)? {
         let mode = ((try? String(contentsOfFile: jebHome + "/install-mode", encoding: .utf8)) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let release = mode == "release"
@@ -256,6 +280,11 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     @objc private func toggleNotifySound() {
         NotifyPrefsFile.update { $0.sound.toggle() }
         log("menu: banner sound \(NotifyPrefsFile.load().sound ? "on" : "off")")
+    }
+
+    @objc private func toggleCreativeDrops() {
+        AppFlagsFile.update { $0.creativeDrops.toggle() }
+        log("menu: creative drops \(AppFlagsFile.load().creativeDrops ? "on" : "off")")
     }
 
     @objc private func showSampleBanners() {

@@ -26,7 +26,7 @@
 // Store.swift, Farm.swift, Live.swift, Story.swift (which place, the trips and their
 // lines), FarmScene.swift (the valley), Valley.swift, Strip.swift, Homestead.swift,
 // Camp.swift, Road.swift, Cast.swift, Broadcast.swift (the Broadcast Window), Holiday.swift, Art.swift, PixelArt.swift, StatusMenu.swift, UpdateStatus.swift, JebLines.swift, BannerArt.swift and Banner.swift (Jeb's own notification banner), UpdateNotifier.swift, IconExport.swift, EmojiExport.swift,
-// Heartbeat.swift (install hooks), Probe.swift, Bench.swift (also Save Screenshot's renderer; JEB_SHOT_DIR its folder).   Build: ./build.sh   Live: ./run-live.sh
+// Heartbeat.swift (install hooks), Probe.swift, Bench.swift (also Save Screenshot's renderer; JEB_SHOT_DIR its folder).   Build: ./build.sh   Dev run: dev/run start
 // JEB_MOD the mod folder (default the bundle's JebMod, else mod/ beside desktop/ from the executable); JEB_ART_PATH the art file (default the mod's); JEB_ICONSET=<dir> writes the app icon's .iconset PNGs there and exits (tools/bundle.sh; nothing else starts); JEB_EMOJI=<out.gif> writes a 128 px animated GIF of a sprite for a Slack custom emoji and exits (JEB_EMOJI_SPRITE default jeb-idle, JEB_EMOJI_ROWS top rows kept, default 20, 0 = all, JEB_EMOJI_DELAY seconds per frame, default jeb-idle's blink timing, else 0.5; JEB_HOLIDAY picks a variant; jebctl emoji); JEB_PID_FILE a file the running
 // instance keeps its pid in. Banners (Banner.swift): JEB_NOTIFY_PREVIEW=1 shows one of every kind and exits (nothing else starts; no bundle needed); JEB_BANNER_CHECK=1 renders them all offscreen, checks the numbers and exits 0 or 1 (JEB_HOLIDAY adds the greeting and costumes); JEB_BANNER_SECONDS the dwell; JEB_BANNER_TEST=1 a test hook; JEB_BANNER=1 lets a raw binary show banners; JEB_REDUCE_MOTION=1 forces the fade-only entrance. JEB_NO_PAUSE=1 turns off the occlusion pause (for
 // measuring); JEB_IDLE_SECONDS sets the idle pause (default 120 s without a change
@@ -53,8 +53,8 @@ let modDir = env["JEB_MOD"] ?? (Bundle.main.object(forInfoDictionaryKey: "JebMod
         .appendingPathComponent("../../mod").standardizedFileURL.path ?? "mod")
 let artPath = env["JEB_ART_PATH"] ?? modDir + "/hooks/pixel-art.ts"
 // The menu's settings, kept in UserDefaults ("com.jeb.desktop"); the env vars override.
-// (as a bundle the suite name is the app's own id, which gives nil: the standard domain is the same one)
-let settings = Bundle.main.bundleIdentifier == "com.jeb.desktop" ? UserDefaults.standard : UserDefaults(suiteName: "com.jeb.desktop")!
+// (as a bundle the suite name is the app's own id, which gives nil: the standard domain is the same one; JEB_DEFAULTS_SUITE names another suite, see Defaults.swift)
+let settings = defaultsSuite(bundleId: Bundle.main.bundleIdentifier, env: env).flatMap { UserDefaults(suiteName: $0) } ?? UserDefaults.standard
 enum Rate: String, CaseIterable { case adaptive = "Adaptive", sixty = "60 fps", thirty = "30 fps" }
 var rate = Rate(rawValue: settings.string(forKey: "rate") ?? "") ?? .adaptive { didSet { settings.set(rate.rawValue, forKey: "rate"); applyRate() } }
 var fps = 60, calmFps = 30 // while something passes / otherwise
@@ -570,6 +570,8 @@ final class App {
         }
     }
 
+    /// The live records now read from the store (the menu looks for a session with the creative drops off).
+    var liveRecords: [LiveRecord] { Array(source.live.values) }
     /// Save Screenshot and SIGUSR2: the paths of the PNGs saved (Bench.swift).
     func screenshots() throws -> [String] { try saveScreenshots(art: art, farm: source.farm, live: source.live, story: story) }
 

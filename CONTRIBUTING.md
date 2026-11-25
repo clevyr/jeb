@@ -9,7 +9,7 @@ You need everything from [Requirements](docs/install-and-updates.md#requirements
     git clone https://github.com/clevyr/jeb.git ~/jeb-dev
     cd ~/jeb-dev
 
-There is no separate development install: the repo's `./install` and `./uninstall` only work inside a release bundle, and a working tree never follows releases. You build the pieces you are changing and check them with the tools below. A release (see [Releasing](docs/releasing.md)) is what puts a change on a Mac.
+There is no separate development install: the repo's `./install` and `./uninstall` only work inside a release bundle, and a working tree never follows releases. You build the pieces you are changing, check them with the tools below, and run them on a separate dev farm with `dev/run` (see [Running a development build](#running-a-development-build)). A release (see [Releasing](docs/releasing.md)) is what puts a change on a Mac.
 
 Make your changes on a branch and open a pull request against `main`.
 
@@ -18,7 +18,7 @@ Make your changes on a branch and open a pull request against `main`.
     cd desktop/src
     JEB_OUT=JebDesktop.dev ./build.sh
 
-Don't launch `JebDesktop.dev` directly: a new copy takes over from the running app. Look at your changes through `jebctl screenshot --fixture NAME` instead, which renders one of the test scenes with your build without touching the running app. Build `jebctl` with `JEB_VERSION=dev desktop/cli/build.sh`, then:
+Launch `JebDesktop.dev` only through `dev/run`: started by hand, a new copy takes over from the running app. Look at your changes through `jebctl screenshot --fixture NAME` instead, which renders one of the test scenes with your build without touching the running app. Build `jebctl` with `JEB_VERSION=dev desktop/cli/build.sh`, then:
 
     JEB_SRC=desktop/src JEB_BIN=desktop/src/JebDesktop.dev desktop/cli/jebctl screenshot --fixture NAME --out shots
 
@@ -30,6 +30,28 @@ To run every gate a release runs (parity, a scripted day) against your build:
     desktop/gates/jebgates all --bin desktop/src/JebDesktop.dev
 
 That takes several minutes. `jebgates` also runs one piece at a time: `parity`, `day [day|kinds|limit|evening|again|night|all]`, `smoke` (every fixture renders) and `start` (twenty seconds headless). The parity check compares each fixture against `desktop/src/fixtures/band-out.txt`, which is the reference output: don't regenerate it.
+
+## Running a development build
+
+`dev/run` runs this working tree's plugin and desktop app on a separate dev farm, with the installed Jeb paused meanwhile. Most of the time one command is all you need:
+
+    dev/run            # starts the dev app, opens a dev Claude Code session, and stops it all when you exit the session
+
+Arguments go to `claude` (for example `dev/run --resume`). `dev/run --surprise` (or `dev/run claude --surprise`) also runs one surprise right away instead of waiting for a 9, 12 or 15 weekday slot, at any hour; the Creative Drops switch and the daily model-call cap still apply. The pieces, for when you want them separately:
+
+    dev/run start      # pauses updates and quits the installed app, builds, syncs the plugin, launches the dev app
+    dev/run claude     # a Claude Code session with the staged dev plugin (extra arguments pass through)
+    dev/run sync       # after a change in mod/: copies it to the dev plugin; then run /reload-plugins in the dev session
+    dev/run status     # whether the dev app runs, its heartbeat, the dev store, and a warning if the installed Jeb is still paused
+    dev/run stop       # stops the dev app and restores the installed Jeb
+
+`dev/run start --alongside` leaves the installed Jeb running and its updates on (two desktops draw at once). `--no-build` skips the app build, and `--dry-run` prints the plan and does nothing. `dev/run stop --purge` also removes the dev state and the dev store file.
+
+Until `dev/run stop`, the installed Jeb has its updates paused and its app quit. A login brings the app back, but updates stay paused until `stop`; if you forget, `dev/run status` warns and `dev/run stop` puts it right (it resumes updates only when `dev/run` paused them).
+
+Dev state lives in `~/Library/Application Support/Jeb Dev` (`JEB_DEV_HOME`): the staged `plugin/`, `dev.pid`, `run.log`, and what the app and plugin write there. The dev plugin is named `jeb-dev`, so its store file is `~/.claude/plugins/store/jeb-dev_inline-*.json`, apart from the installed Jeb's `jeb_jeb-*.json`.
+
+Never start a session with a plain `claude --plugin-dir mod`, and never point `JEB_STORE_PATH` at a real store: a plugin loaded that way is `jeb@inline`, which can be someone's real farm. `dev/run` refuses a dev home or store that is the installed Jeb's.
 
 ## The plugin
 

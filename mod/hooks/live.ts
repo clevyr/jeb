@@ -60,6 +60,7 @@ export type LiveBody = {
   hidden?: true
   talk?: Talk // 'ambient'
   area?: string // none: the key of the project's area, 8 hex (see areas.ts)
+  drops?: 'off' // on: the plugin option for the creative drops is off
 }
 
 export type LiveRecord = { v: typeof LIVE_VERSION; at: number; frame: number } & LiveBody
@@ -98,6 +99,7 @@ export const LIVE_FIELDS = [
   'hidden',
   'talk',
   'area',
+  'drops',
 ] as const
 
 // What the session hands in: the scene's state (see `snapshot` in register.tsx)
@@ -110,6 +112,8 @@ export type LiveInput = {
   isBusy: boolean
   isStill: boolean
   talk: Talk
+  // Whether the plugin's own creative-drops option is off.
+  isDropsOff?: boolean
   // Every loose cow, as a neighbor's number.
   cows: readonly number[]
   // The key of the project's area, when the session works in one.
@@ -214,6 +218,10 @@ export const liveBody = (input: LiveInput): LiveBody => {
   }
   if (input.area !== undefined && AREA_KEY_RE.test(input.area)) {
     body.area = input.area
+  }
+
+  if (input.isDropsOff) {
+    body.drops = 'off'
   }
 
   return body

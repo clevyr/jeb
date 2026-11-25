@@ -5,7 +5,8 @@
 #
 #   The Swift tools (the probe jebctl, dev/release/release, desktop/gates/jebgates, art/jebart) run with the clock and pid pinned
 #   through JEB_TEST_NOW / JEB_TEST_PID.
-#   --only <prefix> only the goldens whose path starts with <prefix>, e.g. runtime/follow or release/steps/auto-minor
+#   --only <prefix> only the goldens whose path starts with <prefix>, e.g. runtime/follow or release/steps/auto-minor;
+#                   --only dev-run runs just dev/run's own test (desktop/tests/dev-run.sh) and --only defaults just run-defaults-test.sh
 #   --update        write the produced files into desktop/tests/golden (for intentional deviations; review the diff)
 #   --render        also run the parity compare against the frozen band-out.txt (needs a built desktop/src/JebDesktop)
 #
@@ -27,6 +28,11 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
+# the shell and unit tests that are not goldens: dev/run (stubs, no real Jeb) and the defaults-suite check
+EXTRA=0
+case "$ONLY" in ""|dev-run*) sh "$ROOT/desktop/tests/dev-run.sh" || EXTRA=1;; esac
+case "$ONLY" in ""|defaults*) sh "$ROOT/desktop/tests/run-defaults-test.sh" || EXTRA=1;; esac
+case "$ONLY" in dev-run*|defaults*) exit $EXTRA;; esac
 TMP=${TMPDIR:-/tmp}; TMP=${TMP%/}      # macOS's default TMPDIR ends in "/"; a "//" in a path would dodge the normalizer
 
 # build the checker when a source is newer than the binary. Explicit file list.
@@ -101,3 +107,6 @@ for v in $(env | sed -n 's/^\(JEB_[A-Za-z0-9_]*\)=.*/\1/p'); do
 done
 # not exec: the EXIT trap must still run to remove $T
 "$BIN" --root "$ROOT" --tmp "$T" --arch "$ARCH" --only "$ONLY" --update "$UPDATE" --render "$RENDER" --home "$HOME"
+rc=$?
+[ "$EXTRA" = 0 ] || rc=1
+exit $rc

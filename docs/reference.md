@@ -17,6 +17,34 @@ Jeb's commands, troubleshooting steps, and where its files and settings live.
 
 `jebctl screenshot --fixture <name> [--out <dir>] [--hour <h>]` renders one of the test scenes to `<dir>/<name>.png` without touching the running app. `--list` shows the scene names. That's how the screenshots in the README were made (scaled up 3x with `desktop/src/tools/up <in> <out> 3`).
 
+## The menu bar
+
+Jeb's menu bar item has these entries:
+
+- A status line showing whether Jeb is running and at what frame rate, or why it is paused. Drawing pauses on its own while the screen is asleep or locked, while you are idle, or while windows cover it, and the status line names the reason (asleep, locked, idle, covered, or by you).
+- **Pause / Resume** stops and starts drawing.
+- **Frame rate**: Adaptive (the default, which slows down when nothing is moving), 60 fps or 30 fps.
+- **Check for Updates** updates now instead of waiting. The menu shows the installed version, when Jeb last checked, the progress of a running update and its result.
+- **Notifications** turns update banners, holiday greetings and sound on or off, or shows sample banners. When an update finishes, Jeb shows its own banner at the top right of the screen; click or swipe to dismiss it. These are not macOS notifications, so any old Jeb entries in System Settings or Notification Center can be cleared.
+- **Features** turns Jeb's optional features off and on (a checkmark means on), each with a short line underneath saying what it does. Today that is **Creative Drops**, the weekday surprises and project places. It shows as unchecked and greyed out, "Creative Drops (off in Claude Code)", while a session has the Claude Code option off.
+- **Reload art** picks up new plugin art without restarting.
+- **Save Screenshot** saves a picture per screen to `~/Pictures/Jeb/` and shows it in Finder. It only saves what Jeb draws, never your other windows.
+- **Restart** starts a fresh copy.
+- **Quit Jeb Desktop** stops Jeb until you next log in.
+
+## What your work turns into
+
+The README leaves this as a surprise. This section spoils it.
+
+Crops (tobacco, corn and apples) each ripen with Claude's work, and the harvest goes in the barn. When Claude hires a subagent, a hired hand turns up in the field.
+
+Jeb grew up on a Laravel and Docker Compose workflow, so the weather and chores come from those tools:
+
+- Passing PHP test runs (`artisan test`, Pest, PHPUnit, `composer test`) bring rain. Failing ones bring a dry spell.
+- Lint and type-check runs (Pint, PHPStan, ESLint, Prettier, `vue-tsc`, `npm run lint` and the like) are weeding.
+- `docker compose` services named `app`, `hot` and `database` become a barn, a hothouse and a root cellar. Services with other names do not get a building.
+- A ticket key you pass to `/triage` or look up through the Jira connector shows up as a loose cow, as a number only, never the key itself.
+
 ## Troubleshooting
 
 Run `jebctl doctor` first. It ends with the steps that fix every `FIX` line, in order. `jebctl doctor --fix` runs the safe steps for you (each once, re-checking between them) and then prints the full report; it leaves resume-updates, the PATH steps and the new-session step to you.
@@ -37,7 +65,7 @@ All the logs live in `~/Library/Application Support/Jeb/` (older installs stay a
 
 Code runs from `~/.jeb/current` (a link to `~/.jeb/versions/<tag>`) and state lives outside it:
 
-- `~/Library/Application Support/Jeb`: logs, installed versions, heartbeat, telemetry, updater and release state, staging.
+- `~/Library/Application Support/Jeb`: logs, installed versions, heartbeat, telemetry, updater and release state, staging, and `flags.json`, the app's feature flags (today only `{"creativeDrops": false}`, written by the menu's **Creative Drops** item and read by the plugin at session start and when a weekday slot comes due). Only `false` turns the drops off; a missing, unreadable or malformed file leaves them on.
 - `~/.claude/jeb-creative`: the builder's changelog, run log, lock and output (unused while it's off).
 - `~/.claude/plugins/store/`: the plugin's state file (`jeb_jeb-*.json`; installs from before v1.5.0 used `jeb_inline-*.json`, which is copied over), which the desktop reads.
 
@@ -46,6 +74,8 @@ The installed app finds the plugin through the `JebMod` key in its `Info.plist`,
 Environment variables, mostly for tests (the install sets the paths itself):
 
 - `JEB_HOME`: desktop state folder (default `~/Library/Application Support/Jeb`).
+- `JEB_DROP_NOW`: read by the plugin, not the app. `1` makes the Claude Code session run one surprise at its first chance, at any hour and on any day, without using up a 9, 12 or 15 slot; the Creative Drops switch and the daily model-call cap still apply. `dev/run --surprise` sets it.
+- `JEB_DEFAULTS_SUITE`: the UserDefaults suite the app keeps its menu settings in (default: the app's own, `com.jeb.desktop`). `dev/run` sets `com.jeb.desktop.dev` so a development build does not share settings with the installed app.
 - `JEB_HOLIDAY`: `<name>[,<name>...]` forces holidays (several can be active at once, as on the real calendar): `newyear`, `valentines`, `stpatricks`, `easter`, `july4`, `halloween`, `thanksgiving`, `christmas`; `none` turns them off. Only halloween, thanksgiving and christmas have costume sprite variants (the first active one with a costume is worn); every holiday has a banner badge, tab colour and greeting. A variant `<base>--<holiday>` must have its base's width and frame count and may be up to 8 rows taller (a costume's tall hat); it is drawn from the feet up. Holidays are always off under `JEB_BENCH` (so the checks stay deterministic) unless forced.
 - `JEB_EMOJI`: `<out.gif>` writes an animated 128 px GIF of a sprite for a Slack custom emoji and exits before the app starts (what `jebctl emoji` runs). `JEB_EMOJI_SPRITE` (default `jeb-idle`), `JEB_EMOJI_ROWS` (top rows of the base sprite kept, default 20, `0` the whole sprite; a taller holiday variant adds its extra rows on top), `JEB_EMOJI_DELAY` (seconds per frame; by default `jeb-idle` keeps the desktop's blink timing and other sprites get 0.5); `JEB_HOLIDAY` picks a variant.
 - `JEB_SRC`: the app source folder `jebctl` writes into the LaunchAgent plists (default `desktop/src` in `~/.jeb/current`).

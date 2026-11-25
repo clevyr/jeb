@@ -143,3 +143,49 @@ struct NotifyPrefs: Equatable {
         return String(decoding: data, as: UTF8.self)
     }
 }
+
+/// The app's feature flags (jebHome/flags.json), which the Claude Code mod reads: {"creativeDrops":false}. Only `false` turns
+/// the creative drops off; a missing, unreadable, oversized or malformed file, or any other value, leaves them on.
+struct AppFlags: Equatable {
+    static let maxBytes = 4096
+    var creativeDrops = true
+
+    /// `raw` keeps every key so a newer app's flags survive a write.
+    static func decode(_ data: Data?) -> (flags: AppFlags, raw: [String: Any]) {
+        guard let data = data, data.count <= maxBytes, let raw = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { return (AppFlags(), [:]) }
+        var f = AppFlags()
+        if let v = raw["creativeDrops"] as? NSNumber, CFGetTypeID(v) == CFBooleanGetTypeID(), !v.boolValue { f.creativeDrops = false }
+        return (f, raw)
+    }
+
+    func encode(over raw: [String: Any]) -> String {
+        var doc = raw
+        doc["creativeDrops"] = creativeDrops
+        let data = (try? JSONSerialization.data(withJSONObject: doc, options: [.sortedKeys])) ?? Data("{}".utf8)
+        return String(decoding: data, as: UTF8.self)
+    }
+
+    /// Numbers-only self-check, run by bannerCheck (JEB_BANNER_CHECK=1).
+    static func check() -> (checks: Int, failures: [String]) {
+        var checks = 0, failures: [String] = []
+        func expect(_ ok: Bool, _ what: String) { checks += 1; if !ok { failures.append("app flags: \(what)") } }
+        func on(_ text: String?) -> Bool { decode(text.map { Data($0.utf8) }).flags.creativeDrops }
+        expect(on(nil), "a missing file is on")
+        expect(on(""), "an empty file is on")
+        expect(on("not json"), "a malformed file is on")
+        expect(on("[false]"), "a non-object is on")
+        expect(on("{}"), "no key is on")
+        expect(on("{\"creativeDrops\":true}"), "true is on")
+        expect(on("{\"creativeDrops\":\"false\"}"), "the string false is on")
+        expect(on("{\"creativeDrops\":0}"), "0 is on")
+        expect(!on("{\"creativeDrops\":false}"), "false is off")
+        expect(on("{\"creativeDrops\":false,\"pad\":\"" + String(repeating: "x", count: maxBytes) + "\"}"), "an oversized file is on")
+        let (f, raw) = decode(Data("{\"creativeDrops\":true,\"later\":7}".utf8))
+        var off = f
+        off.creativeDrops = false
+        expect(off.encode(over: raw) == "{\"creativeDrops\":false,\"later\":7}", "encode keeps unknown keys")
+        expect(decode(Data(off.encode(over: raw).utf8)).flags == off, "encode then decode round-trips")
+        expect(AppFlags().encode(over: [:]) == "{\"creativeDrops\":true}", "a fresh file says on")
+        return (checks, failures)
+    }
+}

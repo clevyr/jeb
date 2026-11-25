@@ -52,6 +52,7 @@ struct LiveRecord: Equatable {
     var cows: [Int] = []
     var live = "N"
     var talk = "ambient"
+    var dropsOff = false    // the plugin's own creative-drops option is off (the desktop menu then shows its item disabled)
     var area: String?   // the project's area key (8 lowercase hex), when the session works in one
 
     init?(_ d: [String: Any]) {
@@ -115,6 +116,7 @@ struct LiveRecord: Equatable {
         }
         live = pick("live", Self.squares) ?? "N"
         talk = pick("talk", Self.talks) ?? "ambient"
+        dropsOff = (d["drops"] as? String) == "off"
         if let key = d["area"] as? String, isAreaKey(key) { area = key }
     }
 
@@ -147,7 +149,7 @@ struct LiveRecord: Equatable {
             && a.wet == b.wet && a.hidden == b.hidden && a.dogRun == b.dogRun && a.mates == b.mates && a.star == b.star && a.moreCows == b.moreCows
             && a.truck == b.truck && a.visit == b.visit && a.event == b.event && a.fx == b.fx && a.weather?.kind == b.weather?.kind
             && a.weather?.plot == b.weather?.plot && a.building == b.building && a.hands == b.hands && a.more == b.more && a.cows == b.cows
-            && a.live == b.live && a.talk == b.talk && a.area == b.area
+            && a.live == b.live && a.talk == b.talk && a.area == b.area && a.dropsOff == b.dropsOff
     }
 
     /// Everything that changes what the camp draws, apart from the anchors (at, frame) that move with every write.

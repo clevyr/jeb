@@ -9,7 +9,7 @@
 //   quit              written by the menu's Quit (and `jebctl quit`); the watchdog starts
 //                     nothing while it exists.
 //   start-reason      written by the watchdog just before it kickstarts the agent.
-// The heartbeat is on for a start by launchd (JEB_START set), run-live.sh (JEB_PID_FILE) or
+// The heartbeat is on for a start by launchd (JEB_START set), dev/run (JEB_PID_FILE) or
 // JEB_HEARTBEAT_DIR; measuring and test runs write none.
 
 import Foundation

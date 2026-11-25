@@ -81,6 +81,7 @@ import {
   applyDelivery,
   claimSlot,
   dueSlot,
+  forcedSlot,
   freshDrops,
   newsOf,
   nextArcStep,
@@ -90,6 +91,7 @@ import {
   withNewsSeen,
 } from './drops'
 import type { Claimed, Delivery } from './drops'
+import { flagsPathOf, isDropsOffByApp } from './flags'
 import { JEB_NEWS } from './news'
 import { offlineDrop } from './offline'
 import { askHaiku, askHaikuArea, promptInputOf } from './signals'
@@ -444,6 +446,15 @@ const fresh = () => ({
   isDropping: false,
   dropPlay: null as { art: { sprites: Surprise['sprites']; custom: DropArt[] }; until: number } | null,
   creativity: 'on' as 'on' | 'off' | 'local',
+  // The desktop app's creative-drops flag (see flags.ts), as last read at a decision
+  // point, and the slot (by day) it was last read for.
+  isAppDropsOff: false,
+  flagSlot: '',
+  flagAt: 0,
+  // JEB_DROP_NOW=1: one forced surprise this session, ignoring the clock (see tendDrops).
+  // 'pending' until it has run (or been skipped by a failed gate), then 'done'.
+  dropNow: 'off' as 'off' | 'pending' | 'done',
+  dropNowAt: 0,
   // The news item to announce: this build's (see news.ts), or what JEB_NEWS says (JSON, for a test).
   news: null as unknown,
   // What this session has done so far, for its square and its journal line.
@@ -1146,8 +1157,9 @@ async function pushLive($: EngineInterface) {
     isBusy: S.isBusy,
     isStill: S.isStill,
     talk: talkLevel(),
+    isDropsOff: !isCreativityOn(),
     cows: S.cows,
-    area: S.areaKey === '' ? undefined : S.areaKey,
+    area: S.areaKey === '' || !isCreative() ? undefined : S.areaKey,
   })
   const key = JSON.stringify(body)
   if (key === S.lastLive) {
@@ -1782,7 +1794,31 @@ async function dueCoffee($: EngineInterface) {
 // ---- the creative drops (see drops.ts, surprise.ts, signals.ts) ----
 
 // Whether drops may happen now: the option (the stored value first) and the dial.
-const isCreative = () => isCreativityOn() && S.creativity !== 'off'
+const isCreative = () => isPluginCreative() && !S.isAppDropsOff
+
+// The option and the dial alone: what the app's flag is added to.
+const isPluginCreative = () => isCreativityOn() && S.creativity !== 'off'
+
+// Reads the app's flags file into S, only at a decision point (never on a quiet
+// tick). A file that cannot be read leaves the drops on.
+async function readAppFlag($: EngineInterface) {
+  const run = S
+  let isOff = false
+  try {
+    const path = flagsPathOf(await $.env.get('JEB_HOME'), await $.env.get('HOME'))
+    if (path !== undefined) {
+      isOff = isDropsOffByApp(await $.fs.read(path))
+    }
+  } catch {
+    isOff = false
+  }
+  if (S === run) {
+    S.isAppDropsOff = isOff
+  }
+}
+
+// A slot the app's flag holds back is looked at again this often.
+const FLAG_RETRY_MS = 600_000
 
 // A happening waits this long for the road to clear before it is let go.
 const DROP_WAIT_MS = 300_000
@@ -1895,7 +1931,7 @@ async function makeDrop($: EngineInterface, old: Farm, slot: number, level: numb
   const recent = recentSummaries(old.creativeLog)
   let drop: Drop | undefined
   let made: 'haiku' | 'local' = 'local'
-  if (!isTakeover && S.creativity !== 'local') {
+  if (!isTakeover && S.creativity !== 'local' && !S.isAppDropsOff) {
     drop = await askHaiku($, promptInputOf(old, now, slot, level, recent, isArcOpen), ctx, () => reserveCall($))
     made = drop ? 'haiku' : 'local'
   }
@@ -1950,19 +1986,24 @@ async function playDrop($: EngineInterface, surprise: Surprise) {
 // A slot is due: claimed on the stored farm first (so two sessions never make the
 // same one), then made, stored and played. A claim that dies with its session is
 // taken over, offline, once it is two minutes old.
-async function dueDrop($: EngineInterface, slot: number) {
+async function dueDrop($: EngineInterface, slot: number, isForced = false) {
   S.isDropping = true
-  S.dropLast = S.nowMs
+  if (!isForced) {
+    S.dropLast = S.nowMs
+  }
   const run = S
   try {
+    // A forced surprise claims nothing: it must leave the real slots as they are.
     let claim: Claimed<Farm> | undefined
-    await saveFarm($, old => {
-      claim = claimSlot(old, slot, S.nowMs)
+    if (!isForced) {
+      await saveFarm($, old => {
+        claim = claimSlot(old, slot, S.nowMs)
 
-      return claim.farm
-    })
-    if (!claim || claim.outcome === 'busy' || claim.outcome === 'done') {
-      return
+        return claim.farm
+      })
+      if (!claim || claim.outcome === 'busy' || claim.outcome === 'done') {
+        return
+      }
     }
     const old = await read($, farm)
     const today = dateKeyOf(nowDate())
@@ -1971,13 +2012,13 @@ async function dueDrop($: EngineInterface, slot: number) {
     const delivery =
       arc && due
         ? stepDelivery(arc, due.index, slot)
-        : await makeDrop($, old, slot, levelOf(old.creative.total), arc === null, claim.outcome === 'takeover')
+        : await makeDrop($, old, slot, levelOf(old.creative.total), arc === null, claim?.outcome === 'takeover')
     if (S !== run) {
       return
     }
     let surprise: Surprise | undefined
     await saveFarm($, stored => {
-      const done = applyDelivery(stored, delivery, S.nowMs)
+      const done = applyDelivery(stored, delivery, S.nowMs, isForced)
       surprise = done.surprise
 
       return done.farm
@@ -1997,7 +2038,7 @@ async function dueDrop($: EngineInterface, slot: number) {
 // Plain arithmetic on S until a slot is due: a happening waiting for the road
 // goes out when it is clear, and the day's next slot runs if its time has come.
 async function tendDrops($: EngineInterface) {
-  if (!S.isInteractive || S.isDropping || !isCreative()) {
+  if (!S.isInteractive || S.isDropping || !isPluginCreative()) {
     return
   }
   if (S.dropPlay) {
@@ -2008,8 +2049,34 @@ async function tendDrops($: EngineInterface) {
       await pushAnim($)
     }
   }
+  // JEB_DROP_NOW: one forced surprise, once per session, at the first pass the gates allow.
+  // The app's flag is read when it first comes up and, while it holds the surprise back,
+  // again every FLAG_RETRY_MS, as for a due slot.
+  if (S.dropNow === 'pending') {
+    if (S.dropNowAt === 0 || (S.isAppDropsOff && S.nowMs - S.dropNowAt >= FLAG_RETRY_MS)) {
+      S.dropNowAt = S.nowMs
+      await readAppFlag($)
+    }
+    if (!S.isAppDropsOff) {
+      S.dropNow = 'done'
+      await dueDrop($, forcedSlot(S.nowMs), true)
+
+      return
+    }
+  }
   const slot = dueSlot({ drops: S.drops, nowMs: S.nowMs, startedAt: S.startedAt, lastAt: S.dropLast })
   if (slot !== undefined) {
+    // The app's flag is read once as each slot comes due; while it holds the slot
+    // back it is read again every ten minutes, so turning it on lets the slot run.
+    const due = `${dateKeyOf(nowDate())}:${slot}`
+    if (S.flagSlot !== due || (S.isAppDropsOff && S.nowMs - S.flagAt >= FLAG_RETRY_MS)) {
+      S.flagSlot = due
+      S.flagAt = S.nowMs
+      await readAppFlag($)
+    }
+    if (S.isAppDropsOff) {
+      return
+    }
     await dueDrop($, slot)
   }
 }
@@ -2047,10 +2114,12 @@ async function areaSecret($: EngineInterface) {
 
 // The session's project as a key, worked out once from where it is: the git
 // remote, else the repository's root, else the folder (see identityOf). The
-// identity goes into the keyed hash at once and is kept nowhere.
+// identity goes into the keyed hash at once and is kept nowhere. Only the plugin
+// option keeps the key from being made: the app's switch can come back on during
+// the session, and the key is what the project's work and place wait on.
 async function resolveArea($: EngineInterface) {
   S.areaKey = ''
-  if (!isCreative()) {
+  if (!isPluginCreative()) {
     return
   }
   try {
@@ -2149,10 +2218,16 @@ async function makeArea($: EngineInterface, key: string, profile: AreaProfile) {
   }
   const input: AreaInput = { key, day, choices: choicesOf(key, profile), profile, bible: bibleOf(areas, key) }
   let area: Area | undefined
-  if (claim.outcome === 'claimed' && isCreative() && S.creativity === 'on') {
-    area = await askHaikuArea($, input, () => reserveAreaCall($))
-  }
   try {
+    // The app's switch is read again before a place is made: turned off since it
+    // was last read, it makes none, from Haiku or offline.
+    await readAppFlag($)
+    if (!isCreative()) {
+      return
+    }
+    if (claim.outcome === 'claimed' && S.creativity === 'on') {
+      area = await askHaikuArea($, input, () => reserveAreaCall($))
+    }
     // A model area that does not hold up is replaced by the offline one.
     let checked = area ? validateArea(area) : undefined
     if (!checked?.ok) {
@@ -3355,8 +3430,16 @@ export const register: Register = (on, options) => {
           S.creativity = 'on'
         }
 
+        // JEB_DROP_NOW=1 (dev/run --surprise) runs one surprise at once, whatever the hour.
+        try {
+          S.dropNow = (await $.env.get('JEB_DROP_NOW')) === '1' ? 'pending' : 'off'
+        } catch {
+          S.dropNow = 'off'
+        }
+
         // The project's key, once the creativity dial is known (an area is creative
         // content: with creativity off there is no key, no counting and no area).
+        await readAppFlag($)
         await resolveArea($)
 
         S.news = JEB_NEWS

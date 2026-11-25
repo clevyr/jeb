@@ -726,7 +726,10 @@ test('GD1 through a stretch of work Jeb reads no file, registers no command, and
     if (watched.includes(event)) {
       const hook = rest[rest.length - 1]
       rest[rest.length - 1] = (...args: any[]) => {
-        asked.push(event)
+        // The one file Jeb may read is the app's flags file, for the creative drops.
+        if (!(event === 'fs.read' && args[1]?.path === '/home/zxquser/Library/Application Support/Jeb/flags.json')) {
+          asked.push(event)
+        }
 
         return hook(...args)
       }
